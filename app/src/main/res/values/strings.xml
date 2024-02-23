@@ -1,0 +1,76 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">Aican Lab App</string>
+    <string name="background_transition">background_transition</string>
+    <string name="title_transition">title_transition</string>
+    <string name="room_transition">room_transition</string>
+    <string name="room_name_transition">room_name_transition</string>
+    <string name="advanced_controls_transition">advanced_controls_transition</string>
+    <string name="return_temperature">Return temperature</string>
+    <string name="current_humidity">Current humidity</string>
+    <string name="light">Light</string>
+    <string name="dark">Dark</string>
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="user_name">User Name</string>
+    <string name="user_id">User ID</string>
+    <string name="user_role">User Role</string>
+    <string name="verification">Verification</string>
+    <string name="enter_userid">Enter UserID</string>
+    <string name="passcode">Passcode</string>
+    <string name="authenticate">Authenticate</string>
+    <string name="clear">Clear</string>
+    <string name="enter_compound_name">Enter Product Name</string>
+    <string name="log">Log</string>
+    <string name="add_user">Add User</string>
+    <string name="home">Home</string>
+    <string name="temp">Temp</string>
+    <string name="compound_name">Product Name</string>
+    <string name="ph">pH</string>
+    <string name="date">Date</string>
+    <string name="tip_long_press_to_delete_the_record">TIP: Long Press to Delete the Record</string>
+    <string name="ok">OK</string>
+    <string name="battery_low">pH Meter Battery Low</string>
+    <string name="the_battery_is_getting_low_nplease_charge_the_device_with_switch_off">The battery is getting low.\nPlease charge the device with switch off</string>
+    <string name="enter_company_name">Enter Company Name</string>
+    <string name="export">Export</string>
+    <string name="_7_4">7.4</string>
+    <string name="set_temperature">Set Temperature</string>
+    <string name="current_temperature">Current Temperature</string>
+    <string name="temperature">Temperature</string>
+    <string name="set">Set</string>
+    <string name="start">Start</string>
+    <string name="device_status">Device Status</string>
+    <string name="end_time">End Time</string>
+    <string name="start_time">Start Time</string>
+    <string name="start_date">Start Date</string>
+    <string name="end_date">End Date</string>
+    <string name="mode">Mode</string>
+    <string name="temperature_1">Temperature 1</string>
+    <string name="temperature_2">Temperature 2</string>
+    <string name="add_reminder">Add Reminder</string>
+    <string name="enter_x_value">Enter x value:</string>
+    <string name="enter_y_value">Enter y value:</string>
+    <string name="start_alarm">Start Alarm</string>
+    <string name="add_email_id">Add Email ID</string>
+    <string name="add_mobile_number">Add Mobile Number</string>
+    <string name="calliberate">Calibrate</string>
+    <string name="alarm">Alarm</string>
+    <string name="time">Time</string>
+    <string name="schedule_mode">Schedule Mode</string>
+    <string name="log_on_stable">Log On Stable:</string>
+    <string name="log_at_interval">Log at Interval:</string>
+    <string name="log_on_button_click">Log on Button:</string>
+    <string name="edit_user_details">Edit user details</string>
+
+    <string-array name="mode">
+        <item>Regular</item>
+        <item>Timer</item>
+    </string-array>
+    <string name="folderLocation">AICAN Latest Apk</string>
+
+    <string name="ecLogFolder">/LabApp/Currentlog/ECLog</string>
+    <string name="set_Speed">Set Speed</string>
+    <string name="set_volume">Set Volume</string>
+
+</resources>
+
+
