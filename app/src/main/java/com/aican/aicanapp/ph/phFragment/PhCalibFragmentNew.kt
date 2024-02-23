@@ -1622,7 +1622,7 @@ class PhCalibFragmentNew : Fragment() {
             }
         }
         document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
-        val imgBit1: Bitmap = getSignImage()!!
+        val imgBit1: Bitmap? = getSignImage()
         if (imgBit1 != null) {
             val uri1: Uri = getImageUri(fragmentContext, imgBit1)!!
             try {
@@ -1661,7 +1661,7 @@ class PhCalibFragmentNew : Fragment() {
         val sh = fragmentContext.getSharedPreferences("signature", Context.MODE_PRIVATE)
         val photo = sh.getString("signature_data", "")
         var bitmap: Bitmap? = null
-        if (!photo.equals("", ignoreCase = true)) {
+        if (!photo.isNullOrEmpty()) {
             val b = Base64.decode(photo, Base64.DEFAULT)
             bitmap = BitmapFactory.decodeByteArray(b, 0, b.size)
         }
