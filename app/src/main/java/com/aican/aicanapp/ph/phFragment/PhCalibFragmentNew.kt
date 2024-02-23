@@ -1398,9 +1398,12 @@ class PhCalibFragmentNew : Fragment() {
 
     private fun calibrateButtons() {
 
+        Constants.OFFLINE_DATA = true
+        Constants.OFFLINE_MODE = true
         calibrateBtn.setOnClickListener { v: View? ->
             if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
                 if (connectedWebsocket) {
+
                     calibrateFivePointOffline()
                 } else {
                     Toast.makeText(

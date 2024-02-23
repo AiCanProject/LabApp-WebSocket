@@ -157,7 +157,12 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         binding.offlineModeSwitch.setOnCheckedChangeListener { _, isChecked ->
             webSocketConnected = if (isChecked) {
                 // Connect to WebSocket
+//                //wss://socketsbay.com/wss/v2/1/demo/
+//                val uri = URI("ws://localhost:3000")
                 val uri = URI("wss://socketsbay.com/wss/v2/1/demo/")
+//                val uri =
+//                    URI("wss://demo.piesocket.com/v3/channel_123?api_key=VCXCEuvhGcBDP7XhiJJUDvR1e1D3eiVjgZ9VRiaV&notify_self")
+//                    URI("wss://echo.websocket.org")
                 WebSocketManager.initializeWebSocket(uri)
                 true
             } else {
