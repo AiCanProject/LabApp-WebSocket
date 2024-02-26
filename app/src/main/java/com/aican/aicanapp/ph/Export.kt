@@ -211,12 +211,13 @@ class Export : AppCompatActivity() {
 
         convertToXls.visibility = View.INVISIBLE
 
-        if (Source.subscription.equals("nonCfr")) {
-            exportUserData.visibility = View.GONE
-            userRecyclerView.visibility = View.GONE
-            tvUserLog.visibility = View.GONE
+        if (Source.subscription != null ) {
+          if(  Source.subscription.equals("nonCfr") ){
+                exportUserData.visibility = View.GONE
+                userRecyclerView.visibility = View.GONE
+                tvUserLog.visibility = View.GONE
+            }
         }
-
         mDateBtn.setOnClickListener {
             val calendar1 = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
 
@@ -510,17 +511,25 @@ class Export : AppCompatActivity() {
             }
             temp = if (SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "TEMP_VAL_" + PhActivity.DEVICE_ID)
+                val data = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
                 "Temperature: $data"
             } else {
                 "Temperature: " + "null"
             }
+            val batteryVal = SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
+            if (batteryVal != null) {
+                if (batteryVal != "") {
+                    battery = "$batteryVal %"
+//                    binding.batteryPercent.text = "$batteryVal %"
+                }
+            }
+
         } else {
             slope = "Slope: " + shp.getString("slope", "")
         }
@@ -865,17 +874,25 @@ $slope  |  $temp"""
             }
             if (SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "TEMP_VAL_" + PhActivity.DEVICE_ID)
+                val data = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
                 temp = "Temperature: $data"
             } else {
                 temp = "Temperature: " + "null"
             }
+            val batteryVal = SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
+            if (batteryVal != null) {
+                if (batteryVal != "") {
+                    battery  = "$batteryVal %"
+//                    binding.batteryPercent.text = "$batteryVal %"
+                }
+            }
+
         } else {
             slope = "Slope: " + shp.getString("slope", "")
         }
@@ -1163,6 +1180,17 @@ $slope  |  $temp"""
 
     @Throws(FileNotFoundException::class)
     fun generatePDF2() {
+        if (SharedPref.getSavedData(
+                this@Export,
+                "COMPANY_NAME"
+            ) != null && SharedPref.getSavedData(
+                this@Export, "COMPANY_NAME"
+            ) != "N/A"
+        ) {
+            companyName = SharedPref.getSavedData(this@Export, "COMPANY_NAME");
+        } else {
+            companyName = "N/A";
+        }
         val company_name = "Company: $companyName"
         val user_name = "Supervisor: " + Source.logUserName
         val device_id = "DeviceID: $deviceID"
@@ -1204,17 +1232,25 @@ $slope  |  $temp"""
             }
             tempe = if (SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "TEMP_VAL_" + PhActivity.DEVICE_ID)
+                val data = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
                 "Temperature: $data"
             } else {
                 "Temperature: " + "null"
             }
+            val batteryVal = SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
+            if (batteryVal != null) {
+                if (batteryVal != "") {
+                    battery = "$batteryVal %"
+//                    binding.batteryPercent.text = "$batteryVal %"
+                }
+            }
+
         } else {
             slope = "Slope: " + shp.getString("slope", "")
         }
