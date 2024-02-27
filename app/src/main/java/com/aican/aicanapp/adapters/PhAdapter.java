@@ -151,7 +151,7 @@ public class PhAdapter extends RecyclerView.Adapter<PhAdapter.PhAdapterViewHolde
             String ssid = getCurrentSsid(context);
 
             if (!Constants.OFFLINE_MODE && !Constants.OFFLINE_DATA) {
-                offlineLayout.setVisibility(View.VISIBLE);
+                offlineLayout.setVisibility(View.GONE);
 
                 offlineModeSwitch.setChecked(false);
                 offlineStatus.setVisibility(View.GONE);

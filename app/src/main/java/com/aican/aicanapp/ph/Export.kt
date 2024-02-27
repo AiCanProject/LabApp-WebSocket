@@ -98,15 +98,15 @@ class Export : AppCompatActivity() {
     lateinit var tvUserLog: TextView
     lateinit var deviceId: TextView
     lateinit var dateA: TextView
-    lateinit var deviceID: String
-    lateinit var user: String
-    lateinit var roleExport: String
-    lateinit var reportDate: String
-    lateinit var reportTime: String
-    lateinit var startDateString: String
-    lateinit var endDateString: String
-    lateinit var startTimeString: String
-    lateinit var endTimeString: String
+     var deviceID: String = ""
+     var user: String = ""
+     var roleExport: String = ""
+     var reportDate: String = ""
+     var reportTime: String = ""
+     var startDateString: String = ""
+     var endDateString: String = ""
+     var startTimeString: String = ""
+     var endTimeString: String = ""
     var arNumString: String? = null
     var compoundName: String? = null
     var batchNumString: String? = null
@@ -169,12 +169,16 @@ class Export : AppCompatActivity() {
                 PhActivity.DEVICE_ID!!
             )
 
+
+        deviceID = PhActivity.DEVICE_ID!!
+
         companyNameEditText = findViewById<EditText>(R.id.companyName)
 
         companyNameEditText.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 companyName = charSequence.toString()
+                SharedPref.saveData(this@Export, "COMPANY_NAME", companyName)
             }
 
             override fun afterTextChanged(editable: Editable) {}
@@ -388,10 +392,7 @@ class Export : AppCompatActivity() {
 
         exportUserData.setOnClickListener {
             companyName = companyNameEditText.text.toString()
-            if (!companyName.isEmpty()) {
-                deviceRef.child("UI").child("PH").child("PH_CAL").child("COMPANY_NAME")
-                    .setValue(companyName)
-            }
+
             try {
                 generatePDF2()
             } catch (e: FileNotFoundException) {
@@ -420,8 +421,13 @@ class Export : AppCompatActivity() {
         }
 
         if (Constants.OFFLINE_MODE) {
-            val company_name = getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
-            companyNameEditText.setText(company_name.getString("COMPANY_NAME", "N/A"))
+            val company_name = SharedPref.getSavedData(this@Export, "COMPANY_NAME")
+            if (company_name != null) {
+                companyNameEditText.setText(company_name)
+            }else{
+                companyNameEditText.setText("N/A")
+
+            }
         }
 
         val comLo = getCompanyLogo()

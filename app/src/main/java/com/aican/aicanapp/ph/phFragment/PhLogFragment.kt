@@ -30,6 +30,7 @@ import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aican.aicanapp.R
@@ -46,6 +47,7 @@ import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.utils.Source.deviceID
+import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.google.common.base.Splitter
 import com.google.firebase.database.DatabaseReference
@@ -170,7 +172,15 @@ class PhLogFragment : Fragment() {
 
     private var holdFlag: Int = 0
     var isAlertShow = true
+    private val sharedViewModel: SharedViewModel by activityViewModels()
 
+    private fun updateMessage(message: String) {
+        sharedViewModel.messageLiveData.value = message
+    }
+
+    private fun updateError(error: String) {
+        sharedViewModel.errorLiveData.value = error
+    }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -756,6 +766,7 @@ class PhLogFragment : Fragment() {
                 floatVal = phVal.toFloat()
                 binding.tvPhCurr.text = floatVal.toString()
                 binding.phView.moveTo(floatVal)
+                ph = floatVal.toString()
                 AlarmConstants.PH = floatVal
             }
         }
@@ -785,10 +796,19 @@ class PhLogFragment : Fragment() {
 
 
     private fun webSocketConnection() {
+        WebSocketManager.setErrorListener {error ->
+            requireActivity().runOnUiThread {
+
+            updateError(error.toString())
+            }
+        }
         WebSocketManager.setMessageListener { message ->
+
 
             requireActivity().runOnUiThread {
                 try {
+                    updateMessage(message)
+
                     jsonData = JSONObject(message)
                     Log.d("JSONReceived:PHFragment", "onMessage: " + message)
                     if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
@@ -799,7 +819,7 @@ class PhLogFragment : Fragment() {
                         ) {
                             phk = jsonData.getString("PH_VAL").toFloat()
                         }
-                        tvPhCurr.text = ph
+                        tvPhCurr.text = phk.toString()
                         phView.moveTo(phk)
                         SharedPref.saveData(
                             requireContext(),
@@ -1007,7 +1027,18 @@ class PhLogFragment : Fragment() {
 
     @Throws(FileNotFoundException::class)
     private fun generatePDF() {
-        val company_name = "Company: $companyName"
+
+        var company_name = ""
+
+        val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
+        if (companyname != null) {
+             company_name = "Company: $companyname"
+
+        }else{
+             company_name = "Company: N/A"
+
+        }
+
         val user_name = "Username: " + Source.logUserName
         val device_id = "DeviceID: " + deviceID
         reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())

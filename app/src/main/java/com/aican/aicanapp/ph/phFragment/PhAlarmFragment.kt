@@ -1,5 +1,6 @@
 package com.aican.aicanapp.ph.phFragment
 
+import android.R.attr.text
 import android.content.Intent
 import android.media.Ringtone
 import android.media.RingtoneManager
@@ -15,11 +16,18 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import com.aican.aicanapp.R
 import com.aican.aicanapp.databinding.FragmentPhAlarmFragmentBinding
+import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.utils.AlarmConstants
+import com.aican.aicanapp.viewModels.SharedViewModel
+import com.aican.aicanapp.websocket.WebSocketManager
 import com.google.firebase.database.DatabaseReference
+import org.json.JSONException
 import org.json.JSONObject
+import java.util.Locale
+
 
 class PhAlarmFragment : Fragment() {
 
@@ -102,9 +110,48 @@ class PhAlarmFragment : Fragment() {
             alarm.isEnabled = true
         }
 
+        webSocketInit()
+
 
     }
 
+    private fun webSocketInit() {
+        WebSocketManager.setMessageListener { message ->
+            requireActivity().runOnUiThread {
+                updateMessage(message)
+
+                try {
+                    jsonData = JSONObject(message)
+                    Log.d("JSONReceived:PHFragment", "onMessage: " + message)
+                    if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val ph = jsonData.getString("PH_VAL").toFloat()
+                        val phForm =
+                            String.format(Locale.UK, "%.2f", ph)
+                        AlarmConstants.PH = ph
+                    }
+                    if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val temp = jsonData.getString("TEMP_VAL")
+                    }
+                } catch (e: JSONException) {
+                    e.printStackTrace()
+                }
+            }
+        }
+        WebSocketManager.setErrorListener { error ->
+            requireActivity().runOnUiThread {
+                updateError(error.toString())
+            }
+        }
+    }
+    private val sharedViewModel: SharedViewModel by activityViewModels()
+
+    private fun updateMessage(message: String) {
+        sharedViewModel.messageLiveData.value = message
+    }
+
+    private fun updateError(error: String) {
+        sharedViewModel.errorLiveData.value = error
+    }
     class alarmBackgroundService :
         AsyncTask<String?, String?, String?>() {
         override fun doInBackground(vararg p0: String?): String? {

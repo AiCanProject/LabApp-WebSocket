@@ -12,12 +12,15 @@ import android.widget.Button
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import com.aican.aicanapp.R
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.FragmentPhGraphBinding
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.utils.AlarmConstants
 import com.aican.aicanapp.utils.Constants
+import com.aican.aicanapp.utils.SharedPref
+import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.data.Entry
@@ -61,6 +64,15 @@ class PhGraphFragment : Fragment() {
         binding = FragmentPhGraphBinding.inflate(inflater, container, false);
         return binding.root;
     }
+    private val sharedViewModel: SharedViewModel by activityViewModels()
+
+    private fun updateMessage(message: String) {
+        sharedViewModel.messageLiveData.value = message
+    }
+
+    private fun updateError(error: String) {
+        sharedViewModel.errorLiveData.value = error
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -76,6 +88,9 @@ class PhGraphFragment : Fragment() {
         jsonData = JSONObject()
 
         tvGraphPH.text = "0"
+
+        Constants.OFFLINE_MODE = true
+        Constants.OFFLINE_DATA = true
 
         lineDataSet.label = "Data"
         spinnerSelected()
@@ -112,13 +127,42 @@ class PhGraphFragment : Fragment() {
         }
 
         webSocketInit()
-
+setPreviousData()
     }
 
+
+    private fun setPreviousData() {
+        val phVal = SharedPref.getSavedData(requireContext(), "phValue" + PhActivity.DEVICE_ID)
+
+        if (phVal != null) {
+            var floatVal = 0.0f
+            if (PhFragment.validateNumber(phVal)) {
+                floatVal = phVal.toFloat()
+                binding.tvGraphPH.text = floatVal.toString()
+                ec_val_offline = floatVal
+                AlarmConstants.PH = floatVal
+            }
+        }
+
+        val tempVal = SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
+        if (tempVal != null) {
+//            temp = tempVal
+            binding.tvGraphTemp.text = "$tempVal °C"
+        }
+
+    }
     private fun webSocketInit() {
-        WebSocketManager.setErrorListener { message ->
+
+        WebSocketManager.setErrorListener { error ->
+            requireActivity().runOnUiThread {
+                updateError(error.toString())
+            }
+        }
+
+        WebSocketManager.setMessageListener { message ->
             requireActivity().runOnUiThread {
                 try {
+                    updateMessage(message.toString())
                     jsonData = JSONObject(message.toString())
                     Log.d("JSONReceived:PHFragment", "onMessage: $message")
                     if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
