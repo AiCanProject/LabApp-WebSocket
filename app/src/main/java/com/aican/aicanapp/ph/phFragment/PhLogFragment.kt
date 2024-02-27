@@ -30,6 +30,7 @@ import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aican.aicanapp.R
@@ -38,6 +39,7 @@ import com.aican.aicanapp.adapters.PrintLogAdapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.dataClasses.phData
 import com.aican.aicanapp.databinding.FragmentPhLogBinding
+import com.aican.aicanapp.ph.Export
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.ph.phAnim.PhView
 import com.aican.aicanapp.utils.AlarmConstants
@@ -45,12 +47,12 @@ import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.utils.Source.deviceID
+import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.google.common.base.Splitter
 import com.google.firebase.database.DatabaseReference
 import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.pdf.PdfDocument
-import com.itextpdf.kernel.pdf.PdfName.Export
 import com.itextpdf.kernel.pdf.PdfWriter
 import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Image
@@ -85,9 +87,8 @@ class PhLogFragment : Fragment() {
         var LOG_INTERVAL: Float = 0F
     }
 
-    private lateinit var handler1: Handler
+    private  var handler1: Handler? = null
     private lateinit var runnable1: Runnable
-    private lateinit var webSocket1: WebSocket
     private lateinit var jsonData: JSONObject
 
     var autoLogggg: Int = 0
@@ -95,36 +96,36 @@ class PhLogFragment : Fragment() {
     private lateinit var phView: PhView
     private lateinit var tvPhCurr: TextView
     private lateinit var tvPhNext: TextView
-    private lateinit var ph: String
-    private lateinit var temp: String
-    private lateinit var mv: String
-    private lateinit var date: String
-    private lateinit var time: String
-    private lateinit var batchnum: String
-    private lateinit var arnum: String
-    private lateinit var compound_name: String
-    private lateinit var ph_fetched: String
-    private lateinit var m_fetched: String
-    private lateinit var currentDate_fetched: String
-    private lateinit var currentTime_fetched: String
-    private lateinit var batchnum_fetched: String
-    private lateinit var arnum_fetched: String
-    private lateinit var compound_name_fetched: String
-    private lateinit var ph1: String
-    private lateinit var mv1: String
-    private lateinit var ph2: String
-    private lateinit var mv2: String
-    private lateinit var ph3: String
-    private lateinit var mv3: String
-    private lateinit var ph4: String
-    private lateinit var mv4: String
-    private lateinit var ph5: String
-    private lateinit var mv5: String
-    private lateinit var dt1: String
-    private lateinit var dt2: String
-    private lateinit var dt3: String
-    private lateinit var dt4: String
-    private lateinit var dt5: String
+    private  var ph: String = "0.0"
+    private  var temp: String = "0.0"
+    private  var mv: String = "0.0"
+    private  var date: String = ""
+    private  var time: String = ""
+    private  var batchnum: String = ""
+    private  var arnum: String = ""
+    private  var compound_name: String = ""
+    private  var ph_fetched: String = ""
+    private  var m_fetched: String = ""
+    private  var currentDate_fetched: String = ""
+    private  var currentTime_fetched: String = ""
+    private  var batchnum_fetched: String = ""
+    private  var arnum_fetched: String = ""
+    private  var compound_name_fetched: String = ""
+    private  var ph1: String = "0.0"
+    private  var mv1: String = "0.0"
+    private  var ph2: String = "0.0"
+    private  var mv2: String = "0.0"
+    private  var ph3: String = "0.0"
+    private  var mv3: String = "0.0"
+    private  var ph4: String = "0.0"
+    private  var mv4: String = "0.0"
+    private  var ph5: String = "0.0"
+    private  var mv5: String = "0.0"
+    private  var dt1: String = ""
+    private  var dt2: String = ""
+    private  var dt3: String = ""
+    private  var dt4: String = ""
+    private  var dt5: String = ""
     private lateinit var mode: String
     private lateinit var reportDate: String
     private lateinit var reportTime: String
@@ -154,7 +155,7 @@ class PhLogFragment : Fragment() {
     private lateinit var enterTime: EditText
     private lateinit var TABLE_NAME: String
     private lateinit var recyclerView: RecyclerView
-    private lateinit var handler: Handler
+    private  var handler: Handler? = null
     private lateinit var runnable: Runnable
     private lateinit var switchHold: SwitchCompat
     private lateinit var switchInterval: SwitchCompat
@@ -167,11 +168,19 @@ class PhLogFragment : Fragment() {
 
     private var timerInSec: Int = 0
     private var isTimer: Boolean = false
-    private lateinit var companyName: String
+    private var companyName: String = ""
 
     private var holdFlag: Int = 0
     var isAlertShow = true
+    private val sharedViewModel: SharedViewModel by activityViewModels()
 
+    private fun updateMessage(message: String) {
+        sharedViewModel.messageLiveData.value = message
+    }
+
+    private fun updateError(error: String) {
+        sharedViewModel.errorLiveData.value = error
+    }
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -182,6 +191,9 @@ class PhLogFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        Constants.OFFLINE_MODE = true
+        Constants.OFFLINE_DATA = true
 
         phView = view.findViewById(R.id.phView)
         tvPhCurr = view.findViewById(R.id.tvPhCurr)
@@ -213,6 +225,7 @@ class PhLogFragment : Fragment() {
         csvRecyclerView.setHasFixedSize(true)
         csvRecyclerView.layoutManager = LinearLayoutManager(context)
 
+        phDataModelList = ArrayList()
         databaseHelper = DatabaseHelper(context)
         adapter = LogAdapter(context, getSQLList())
         adapter.notifyItemInserted(0)
@@ -287,7 +300,7 @@ class PhLogFragment : Fragment() {
                 //                    Source.userTrack = "PhLogFragment logged in by ";
 //                dialogMain.show(activity!!.supportFragmentManager, "example dialog")
             } else {
-                val intent = Intent(context, Export::class.java)
+                val intent = Intent(requireContext(), Export::class.java)
                 startActivity(intent)
             }
         }
@@ -487,7 +500,7 @@ class PhLogFragment : Fragment() {
                         enterTime.isEnabled = false
                         jsonData.put("AUTOLOG", "2")
                         jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                        webSocket1.send(jsonData.toString())
+                        WebSocketManager.sendMessage(jsonData.toString())
                         Toast.makeText(
                             requireContext(),
                             "C " + Constants.timeInSec,
@@ -497,7 +510,7 @@ class PhLogFragment : Fragment() {
                         } else {
                             val f = Constants.timeInSec.toFloat() / 60000
                             enterTime.setText("" + f)
-                            if (handler != null) handler.removeCallbacks(runnable)
+                            if (handler != null) handler!!.removeCallbacks(runnable)
                             takeLog()
                             handler()
                         }
@@ -517,19 +530,19 @@ class PhLogFragment : Fragment() {
                         jsonData = JSONObject()
                         jsonData.put("AUTOLOG", "0")
                         jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                        webSocket1.send(jsonData.toString())
+                        WebSocketManager.sendMessage(jsonData.toString())
                         isAlertShow = true
                         if (handler != null) {
-                            handler.removeCallbacks(runnable)
+                            handler!!.removeCallbacks(runnable)
                             if (handler1 != null) {
-                                handler1.removeCallbacks(runnable1)
+                                handler1!!.removeCallbacks(runnable1)
                             }
                         }
                         if (!switchHold.isChecked && !switchBtnClick.isChecked) {
                             jsonData = JSONObject()
                             jsonData.put("AUTOLOG", "0")
                             jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                            webSocket1.send(jsonData.toString())
+                            WebSocketManager.sendMessage(jsonData.toString())
                         }
                     } catch (e: JSONException) {
                         e.printStackTrace()
@@ -589,7 +602,7 @@ class PhLogFragment : Fragment() {
                                     jsonData = JSONObject()
                                     jsonData.put("LOG_INTERVAL", a.toString())
                                     jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                    webSocket1.send(jsonData.toString())
+                                    WebSocketManager.sendMessage(jsonData.toString())
                                     LOG_INTERVAL = enterTime.text.toString().toFloat() * 60
                                     log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
 
@@ -643,12 +656,12 @@ class PhLogFragment : Fragment() {
                         jsonData = JSONObject()
                         jsonData.put("AUTOLOG", "3")
                         jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                        webSocket1.send(jsonData.toString())
+                        WebSocketManager.sendMessage(jsonData.toString())
                         if (switchInterval.isChecked) {
                             isTimer = false
-                            handler.removeCallbacks(runnable)
+                            handler!!.removeCallbacks(runnable)
                             if (handler1 != null) {
-                                handler1.removeCallbacks(runnable1)
+                                handler1!!.removeCallbacks(runnable1)
                             }
                             switchInterval.isChecked = false
                         }
@@ -667,7 +680,7 @@ class PhLogFragment : Fragment() {
                         jsonData.put("AUTOLOG", "0")
                         jsonData.put("LOG", "0")
                         jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                        webSocket1.send(jsonData.toString())
+                        WebSocketManager.sendMessage(jsonData.toString())
                     } catch (e: JSONException) {
                         e.printStackTrace()
                     }
@@ -685,10 +698,10 @@ class PhLogFragment : Fragment() {
                         //                            jsonData.put("HOLD", "0");
                         jsonData.put("AUTOLOG", "1")
                         jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                        webSocket1.send(jsonData.toString())
+                        WebSocketManager.sendMessage(jsonData.toString())
                         if (switchInterval.isChecked) {
                             isTimer = false
-                            handler.removeCallbacks(runnable)
+                            handler!!.removeCallbacks(runnable)
                             switchInterval.isChecked = false
                         }
                         switchBtnClick.isChecked = false
@@ -706,7 +719,7 @@ class PhLogFragment : Fragment() {
                             jsonData = JSONObject()
                             jsonData.put("AUTOLOG", "0")
                             jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                            webSocket1.send(jsonData.toString())
+                            WebSocketManager.sendMessage(jsonData.toString())
                         } catch (e: JSONException) {
                             e.printStackTrace()
                         }
@@ -740,13 +753,62 @@ class PhLogFragment : Fragment() {
 
         webSocketConnection()
 
+        setPreviousData()
+
     }
 
+    private fun setPreviousData() {
+        val phVal = SharedPref.getSavedData(requireContext(), "phValue" + PhActivity.DEVICE_ID)
+
+        if (phVal != null) {
+            var floatVal = 0.0f
+            if (PhFragment.validateNumber(phVal)) {
+                floatVal = phVal.toFloat()
+                binding.tvPhCurr.text = floatVal.toString()
+                binding.phView.moveTo(floatVal)
+                ph = floatVal.toString()
+                AlarmConstants.PH = floatVal
+            }
+        }
+
+        val tempVal = SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
+        if (tempVal != null) {
+            temp = tempVal
+//            binding.tvTempCurr.text = "$tempVal °C"
+        }
+
+
+        val slopeVal = SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
+
+        if (slopeVal != null) {
+            slope = slopeVal
+//            binding.finalSlope.text2t = "$slopeVal %"
+
+        }
+
+        val ecValue = SharedPref.getSavedData(requireContext(), "ecValue" + PhActivity.DEVICE_ID)
+        if (ecValue != null) {
+//            binding.tvEcCurr.text = ecValue
+        }
+
+
+    }
+
+
     private fun webSocketConnection() {
+        WebSocketManager.setErrorListener {error ->
+            requireActivity().runOnUiThread {
+
+            updateError(error.toString())
+            }
+        }
         WebSocketManager.setMessageListener { message ->
+
 
             requireActivity().runOnUiThread {
                 try {
+                    updateMessage(message)
+
                     jsonData = JSONObject(message)
                     Log.d("JSONReceived:PHFragment", "onMessage: " + message)
                     if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
@@ -757,8 +819,13 @@ class PhLogFragment : Fragment() {
                         ) {
                             phk = jsonData.getString("PH_VAL").toFloat()
                         }
-                        tvPhCurr.text = ph
+                        tvPhCurr.text = phk.toString()
                         phView.moveTo(phk)
+                        SharedPref.saveData(
+                            requireContext(),
+                            "phValue" + PhActivity.DEVICE_ID,
+                            phk.toString()
+                        )
                         ph = phk.toString()
                         AlarmConstants.PH = phk
                     }
@@ -769,13 +836,21 @@ class PhLogFragment : Fragment() {
                             )
                         ) {
                             tempval = jsonData.getString("TEMP_VAL").toFloat()
+
                         }
                         val temp1 = Math.round(tempval).toString()
                         temp = if (temp1.toInt() <= -127) {
+
                             "NA"
                         } else {
                             temp1
                         }
+
+                        SharedPref.saveData(
+                            requireContext(),
+                            "tempValue" + PhActivity.DEVICE_ID,
+                            temp
+                        )
                     }
                     if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
                             "DEVICE_ID"
@@ -828,7 +903,7 @@ class PhLogFragment : Fragment() {
                                 jsonData = JSONObject()
                                 jsonData.put("HOLD", 0.toString())
                                 jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                webSocket1.send(jsonData.toString())
+                                WebSocketManager.sendMessage(jsonData.toString())
 
 //                                deviceRef.child("Data").child("HOLD").setValue(0);
                                 if (holdFlag == 1) {
@@ -922,17 +997,17 @@ class PhLogFragment : Fragment() {
                 if (!Constants.logIntervalActive) {
                     LOG_INTERVAL = 0F
                     log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
-                    handler1.removeCallbacks(this)
+                    handler1!!.removeCallbacks(this)
                 }
                 Log.d("Runnable", "Handler is working")
                 if (LOG_INTERVAL === 0.toFloat()) { // just remove call backs
                     log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
-                    handler1.removeCallbacks(this)
+                    handler1!!.removeCallbacks(this)
                     Log.d("Runnable", "ok")
                 } else { // post again
                     --LOG_INTERVAL
                     log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
-                    handler1.postDelayed(this, 1000)
+                    handler1!!.postDelayed(this, 1000)
                 }
             }
         }
@@ -952,7 +1027,18 @@ class PhLogFragment : Fragment() {
 
     @Throws(FileNotFoundException::class)
     private fun generatePDF() {
-        val company_name = "Company: $companyName"
+
+        var company_name = ""
+
+        val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
+        if (companyname != null) {
+             company_name = "Company: $companyname"
+
+        }else{
+             company_name = "Company: N/A"
+
+        }
+
         val user_name = "Username: " + Source.logUserName
         val device_id = "DeviceID: " + deviceID
         reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -995,18 +1081,26 @@ class PhLogFragment : Fragment() {
             }
             temp = if (SharedPref.getSavedData(
                     requireContext(),
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
                     requireContext(),
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
                 val data =
-                    SharedPref.getSavedData(requireContext(), "TEMP_VAL_" + PhActivity.DEVICE_ID)
+                    SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
                 "Temperature: $data"
             } else {
                 "Temperature: " + "null"
             }
+
+            val batteryVal = SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
+            if (batteryVal != null) {
+                if (batteryVal != "") {
+                    battery= "$batteryVal %"
+                }
+            }
+
         } else {
             slope = "Slope: " + shp.getString("slope", "")
         }
@@ -1424,7 +1518,7 @@ $slope  |  $tempe"""
 
     override fun onPause() {
         Log.d("Timer", "onPause: ")
-        if (handler != null) handler.removeCallbacks(runnable)
+        if (handler != null) handler!!.removeCallbacks(runnable)
         super.onPause()
     }
 
@@ -1435,24 +1529,24 @@ $slope  |  $tempe"""
 //        Toast.makeText(getContext(), "Background service running ", Toast.LENGTH_SHORT).show();
 //        Toast.makeText(getContext(), Constants.timeInSec + "", Toast.LENGTH_SHORT).show();
         if (handler1 != null) {
-            handler1.removeCallbacks(runnable1)
+            handler1!!.removeCallbacks(runnable1)
         }
         if (handler != null) {
-            handler.removeCallbacks(runnable)
+            handler!!.removeCallbacks(runnable)
         }
         startTimer()
         handler = Handler()
         runnable = object : Runnable {
             override fun run() {
                 if (!Constants.logIntervalActive) {
-                    handler.removeCallbacks(this)
+                    handler!!.removeCallbacks(this)
                 }
                 Log.d("Timer", "doInBackground: in handler")
                 takeLog()
                 handler()
             }
         }
-        handler.postDelayed(runnable, Constants.timeInSec.toLong())
+        handler!!.postDelayed(runnable, Constants.timeInSec.toLong())
         Log.d("Timer", "doInBackground: out handler")
     }
 
@@ -1614,10 +1708,10 @@ $slope  |  $tempe"""
         super.onResume()
         Source.activeFragment = 2
         if (handler != null && runnable != null) {
-            handler.removeCallbacks(runnable)
+            handler!!.removeCallbacks(runnable)
         }
         if (handler1 != null && runnable1 != null) {
-            handler1.removeCallbacks(runnable1)
+            handler1!!.removeCallbacks(runnable1)
         }
     }
 

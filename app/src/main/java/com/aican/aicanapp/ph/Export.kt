@@ -98,15 +98,15 @@ class Export : AppCompatActivity() {
     lateinit var tvUserLog: TextView
     lateinit var deviceId: TextView
     lateinit var dateA: TextView
-    lateinit var deviceID: String
-    lateinit var user: String
-    lateinit var roleExport: String
-    lateinit var reportDate: String
-    lateinit var reportTime: String
-    lateinit var startDateString: String
-    lateinit var endDateString: String
-    lateinit var startTimeString: String
-    lateinit var endTimeString: String
+    var deviceID: String = ""
+    var user: String = ""
+    var roleExport: String = ""
+    var reportDate: String = ""
+    var reportTime: String = ""
+    var startDateString: String = ""
+    var endDateString: String = ""
+    var startTimeString: String = ""
+    var endTimeString: String = ""
     var arNumString: String? = null
     var compoundName: String? = null
     var batchNumString: String? = null
@@ -169,6 +169,9 @@ class Export : AppCompatActivity() {
                 PhActivity.DEVICE_ID!!
             )
 
+
+        deviceID = PhActivity.DEVICE_ID!!
+
         companyNameEditText = findViewById<EditText>(R.id.companyName)
 
         companyNameEditText.addTextChangedListener(object : TextWatcher {
@@ -176,6 +179,7 @@ class Export : AppCompatActivity() {
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 companyName = charSequence.toString()
 
+                SharedPref.saveData(this@Export, "COMPANY_NAME", companyName)
             }
 
             override fun afterTextChanged(editable: Editable) {}
@@ -212,12 +216,13 @@ class Export : AppCompatActivity() {
 
         convertToXls.visibility = View.INVISIBLE
 
-        if (Source.subscription.equals("nonCfr")) {
-            exportUserData.visibility = View.GONE
-            userRecyclerView.visibility = View.GONE
-            tvUserLog.visibility = View.GONE
+        if (Source.subscription != null) {
+            if (Source.subscription.equals("nonCfr")) {
+                exportUserData.visibility = View.GONE
+                userRecyclerView.visibility = View.GONE
+                tvUserLog.visibility = View.GONE
+            }
         }
-
         mDateBtn.setOnClickListener {
             val calendar1 = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
 
@@ -388,10 +393,7 @@ class Export : AppCompatActivity() {
 
         exportUserData.setOnClickListener {
             companyName = companyNameEditText.text.toString()
-            if (!companyName.isEmpty()) {
-                deviceRef.child("UI").child("PH").child("PH_CAL").child("COMPANY_NAME")
-                    .setValue(companyName)
-            }
+
             try {
                 generatePDF2()
             } catch (e: FileNotFoundException) {
@@ -420,8 +422,13 @@ class Export : AppCompatActivity() {
         }
 
         if (Constants.OFFLINE_MODE) {
-            val company_name = getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
-            companyNameEditText.setText(company_name.getString("COMPANY_NAME", "N/A"))
+            val company_name = SharedPref.getSavedData(this@Export, "COMPANY_NAME")
+            if (company_name != null) {
+                companyNameEditText.setText(company_name)
+            } else {
+                companyNameEditText.setText("N/A")
+
+            }
         }
 
         val comLo = getCompanyLogo()
@@ -511,17 +518,25 @@ class Export : AppCompatActivity() {
             }
             temp = if (SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "TEMP_VAL_" + PhActivity.DEVICE_ID)
+                val data = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
                 "Temperature: $data"
             } else {
                 "Temperature: " + "null"
             }
+            val batteryVal = SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
+            if (batteryVal != null) {
+                if (batteryVal != "") {
+                    battery = "$batteryVal %"
+//                    binding.batteryPercent.text = "$batteryVal %"
+                }
+            }
+
         } else {
             slope = "Slope: " + shp.getString("slope", "")
         }
@@ -866,17 +881,25 @@ $slope  |  $temp"""
             }
             if (SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "TEMP_VAL_" + PhActivity.DEVICE_ID)
+                val data = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
                 temp = "Temperature: $data"
             } else {
                 temp = "Temperature: " + "null"
             }
+            val batteryVal = SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
+            if (batteryVal != null) {
+                if (batteryVal != "") {
+                    battery = "$batteryVal %"
+//                    binding.batteryPercent.text = "$batteryVal %"
+                }
+            }
+
         } else {
             slope = "Slope: " + shp.getString("slope", "")
         }
@@ -1164,6 +1187,17 @@ $slope  |  $temp"""
 
     @Throws(FileNotFoundException::class)
     fun generatePDF2() {
+        if (SharedPref.getSavedData(
+                this@Export,
+                "COMPANY_NAME"
+            ) != null && SharedPref.getSavedData(
+                this@Export, "COMPANY_NAME"
+            ) != "N/A"
+        ) {
+            companyName = SharedPref.getSavedData(this@Export, "COMPANY_NAME");
+        } else {
+            companyName = "N/A";
+        }
         val company_name = "Company: $companyName"
         val user_name = "Supervisor: " + Source.logUserName
         val device_id = "DeviceID: $deviceID"
@@ -1205,17 +1239,25 @@ $slope  |  $temp"""
             }
             tempe = if (SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
                     this@Export,
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "TEMP_VAL_" + PhActivity.DEVICE_ID)
+                val data = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
                 "Temperature: $data"
             } else {
                 "Temperature: " + "null"
             }
+            val batteryVal = SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
+            if (batteryVal != null) {
+                if (batteryVal != "") {
+                    battery = "$batteryVal %"
+//                    binding.batteryPercent.text = "$batteryVal %"
+                }
+            }
+
         } else {
             slope = "Slope: " + shp.getString("slope", "")
         }

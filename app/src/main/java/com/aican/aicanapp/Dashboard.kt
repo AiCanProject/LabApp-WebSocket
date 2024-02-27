@@ -26,6 +26,7 @@ import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.aican.aicanapp.AddDevice.AddDeviceOption
 import com.aican.aicanapp.Authentication.AdminLoginActivity
 import com.aican.aicanapp.FirebaseAccounts.DeviceAccount
 import com.aican.aicanapp.FirebaseAccounts.PrimaryAccount
@@ -163,13 +164,23 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 //                val uri =
 //                    URI("wss://demo.piesocket.com/v3/channel_123?api_key=VCXCEuvhGcBDP7XhiJJUDvR1e1D3eiVjgZ9VRiaV&notify_self")
 //                    URI("wss://echo.websocket.org")
+                binding.offlineStatus.visibility = View.VISIBLE
+                binding.onlineStatus.visibility = View.GONE
                 WebSocketManager.initializeWebSocket(uri)
                 true
             } else {
                 // Disconnect WebSocket
+
+                binding.offlineStatus.visibility = View.GONE
+                binding.onlineStatus.visibility = View.VISIBLE
+
                 WebSocketManager.disconnect()
                 false
             }
+        }
+        binding.addNewDevice.setOnClickListener {
+            val toAddDevice = Intent(this@Dashboard, AddDeviceOption::class.java)
+            startActivity(toAddDevice)
         }
 
         binding.batteryPercent.setOnClickListener {

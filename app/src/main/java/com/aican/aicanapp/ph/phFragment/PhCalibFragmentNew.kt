@@ -32,6 +32,7 @@ import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aican.aicanapp.Dashboard
@@ -45,11 +46,13 @@ import com.aican.aicanapp.databinding.FragmentPhCalibNewBinding
 import com.aican.aicanapp.dialogs.EditPhBufferDialog
 import com.aican.aicanapp.ph.PHCalibGraph
 import com.aican.aicanapp.ph.PhActivity
+import com.aican.aicanapp.ph.PhMvTable
 import com.aican.aicanapp.ph.phAnim.PhView
 import com.aican.aicanapp.utils.AlarmConstants
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
+import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.google.firebase.database.DatabaseReference
 import com.itextpdf.io.image.ImageData
@@ -71,6 +74,7 @@ import java.net.MalformedURLException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
 
 class PhCalibFragmentNew : Fragment() {
 
@@ -102,6 +106,7 @@ class PhCalibFragmentNew : Fragment() {
     lateinit var mode: String
     var currentBuf = 0
     var currentBufThree = 0
+    private val sharedViewModel: SharedViewModel by activityViewModels()
 
     // Within your fragment's lifecycle methods or when the context is available
     override fun onAttach(context: Context) {
@@ -116,6 +121,10 @@ class PhCalibFragmentNew : Fragment() {
         jsonData = JSONObject()
         databaseHelper = DatabaseHelper(requireContext())
 
+
+        Constants.OFFLINE_DATA = true
+        Constants.OFFLINE_MODE = true
+
         /////
         val exportDir =
             File(ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData")
@@ -128,6 +137,11 @@ class PhCalibFragmentNew : Fragment() {
         phGraphOnClick()
 
         calibrateButtons()
+
+        phMvTable.setOnClickListener {
+            val intent = Intent(fragmentContext, PhMvTable::class.java)
+            startActivity(intent)
+        }
 
 
         printCalibData.setOnClickListener { v: View? ->
@@ -172,14 +186,29 @@ class PhCalibFragmentNew : Fragment() {
 
 
     }
+    private fun updateMessage(message: String) {
+        sharedViewModel.messageLiveData.value = message
+    }
+
+    private fun updateError(error: String) {
+        sharedViewModel.errorLiveData.value = error
+    }
 
     private fun websocketData() {
+
+        WebSocketManager.setErrorListener {error ->
+            requireActivity().runOnUiThread {
+
+                updateError(error.toString())
+            }
+        }
         WebSocketManager.setMessageListener { message ->
             connectedWebsocket = true
 
 
             requireActivity().runOnUiThread {
                 try {
+                     updateMessage(message)
                     jsonData = JSONObject(message)
                     Log.d("JSONReceived:PHFragment", "onMessage: $message")
                     if (jsonData.has("SLOPE") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
@@ -225,6 +254,11 @@ class PhCalibFragmentNew : Fragment() {
                             }
                             val phForm =
                                 String.format(Locale.UK, "%.2f", ph)
+                            SharedPref.saveData(
+                                requireContext(),
+                                "phValue" + PhActivity.DEVICE_ID,
+                                phForm.toString()
+                            )
                             tvPhCurr.text = phForm
                             phView.moveTo(ph)
                             AlarmConstants.PH = ph
@@ -241,14 +275,14 @@ class PhCalibFragmentNew : Fragment() {
                                 tvTempCurr.text = "$tempForm°C"
                                 SharedPref.saveData(
                                     requireContext(),
-                                    "TEMP_VAL_" + PhActivity.DEVICE_ID,
+                                    "tempValueu" + PhActivity.DEVICE_ID,
                                     tempForm
                                 )
                                 if (tempVal <= -127.0) {
                                     tvTempCurr.text = "NA"
                                     SharedPref.saveData(
                                         requireContext(),
-                                        "TEMP_VAL_" + PhActivity.DEVICE_ID,
+                                        "tempValue" + PhActivity.DEVICE_ID,
                                         "NA"
                                     )
                                 }
@@ -256,7 +290,7 @@ class PhCalibFragmentNew : Fragment() {
                                 tvTempCurr.text = "nan"
                                 SharedPref.saveData(
                                     requireContext(),
-                                    "TEMP_VAL_" + PhActivity.DEVICE_ID,
+                                    "tempValue" + PhActivity.DEVICE_ID,
                                     "nan"
                                 )
                             }
@@ -1398,8 +1432,89 @@ class PhCalibFragmentNew : Fragment() {
 
     private fun calibrateButtons() {
 
-        Constants.OFFLINE_DATA = true
-        Constants.OFFLINE_MODE = true
+
+
+
+
+
+        resetCalibThree.setOnClickListener {
+            jsonData = JSONObject()
+            try {
+                jsonData.put("CAL", "0")
+                jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+
+                WebSocketManager.sendMessage(jsonData.toString())
+            } catch (e: JSONException) {
+                throw java.lang.RuntimeException(e)
+            }
+            line_3 = 0
+            currentBufThree = 0
+
+
+            //                resetCalibration.resetCalibration();
+            calibrateBtnThree.isEnabled = true
+            isCalibrating = false
+            phGraph.isEnabled = true
+            phMvTable.isEnabled = true
+            printCalibData.isEnabled = true
+            calibSpinner.isEnabled = true
+            spin.isEnabled = true
+            Source.calibratingNow = false
+            if (timer3 != null) {
+                timer3!!.cancel()
+            }
+            log1_3.setBackgroundColor(Color.GRAY)
+            log2_3.setBackgroundColor(Color.WHITE)
+            log3_3.setBackgroundColor(Color.WHITE)
+
+
+            //
+            tvTimerThree.visibility = View.INVISIBLE
+        }
+
+        resetCalibFive.setOnClickListener {
+            Source.calibratingNow = false
+            //                Intent i = new Intent(requireContext(), PhActivity.class);
+            //                i.putExtra("refreshCalib", "y");
+            //                i.putExtra(Dashboard.KEY_DEVICE_ID, PhActivity.DEVICE_ID);
+            //                startActivity(i);
+            //                getActivity().finish();
+            jsonData = JSONObject()
+            try {
+                jsonData.put("CAL", "0")
+                jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+
+                WebSocketManager.sendMessage(jsonData.toString())
+            } catch (e: JSONException) {
+                throw java.lang.RuntimeException(e)
+            }
+            line = 0
+            currentBuf = 0
+
+
+            //                resetCalibration.resetCalibration();
+            calibrateBtn.isEnabled = true
+            isCalibrating = false
+            phGraph.isEnabled = true
+            phMvTable.isEnabled = true
+            printCalibData.isEnabled = true
+            calibSpinner.isEnabled = true
+            spin.isEnabled = true
+            Source.calibratingNow = false
+            if (timer5 != null) {
+                timer5!!.cancel()
+            }
+            log1.setBackgroundColor(Color.GRAY)
+            log2.setBackgroundColor(Color.WHITE)
+            log3.setBackgroundColor(Color.WHITE)
+            log4.setBackgroundColor(Color.WHITE)
+            log5.setBackgroundColor(Color.WHITE)
+
+
+            //
+            tvTimer.visibility = View.INVISIBLE
+        }
+
         calibrateBtn.setOnClickListener { v: View? ->
             if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
                 if (connectedWebsocket) {
@@ -1456,9 +1571,32 @@ class PhCalibFragmentNew : Fragment() {
     var temp = ""
     var calib_stat = "incomplete"
 
+    private fun getCompanyLogo(): Bitmap? {
+        val sh = requireActivity().getSharedPreferences("logo", Context.MODE_PRIVATE)
+        val photo = sh.getString("logo_data", "")
+        var bitmap: Bitmap? = null
+        if (!photo.equals("", ignoreCase = true)) {
+            val b: ByteArray = Base64.decode(photo, Base64.DEFAULT)
+            bitmap = BitmapFactory.decodeByteArray(b, 0, b.size)
+        }
+        return bitmap
+    }
 
     @Throws(FileNotFoundException::class)
     private fun generatePDF() {
+
+        if (SharedPref.getSavedData(
+                getContext(),
+                "COMPANY_NAME"
+            ) != null && SharedPref.getSavedData(
+                getContext(), "COMPANY_NAME"
+            ) != "N/A"
+        ) {
+            companyName = SharedPref.getSavedData(getContext(), "COMPANY_NAME");
+        } else {
+            companyName = "N/A";
+        }
+
         val company_name = "Company: $companyName"
         val user_name = "Report generated by: " + Source.logUserName
         val device_id = "DeviceID: $deviceID"
@@ -1503,18 +1641,26 @@ class PhCalibFragmentNew : Fragment() {
             }
             if (SharedPref.getSavedData(
                     requireContext(),
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
                     requireContext(),
-                    "TEMP_VAL_" + PhActivity.DEVICE_ID
+                    "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
                 val data =
-                    SharedPref.getSavedData(requireContext(), "TEMP_VAL_" + PhActivity.DEVICE_ID)
+                    SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
                 temp = "Temperature: $data"
             } else {
                 temp = "Temperature: " + "null"
             }
+
+            val batteryVal = SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
+            if (batteryVal != null) {
+                if (batteryVal != "") {
+                    battery = "$batteryVal %"
+                }
+            }
+
 
 //            "TEMP_VAL_"+PhActivity.DEVICE_ID
         } else {
@@ -1544,7 +1690,21 @@ class PhCalibFragmentNew : Fragment() {
 //
 //
         if (Constants.OFFLINE_MODE || Constants.OFFLINE_DATA) {
-            document.add(Paragraph("Offline Mode"))
+//            document.add(Paragraph("Offline Mode"))
+        }
+        val imgBit = getCompanyLogo()
+        if (imgBit != null) {
+            val uri: Uri? = getImageUri(requireContext(), imgBit)
+            try {
+                val add: String? = getPath(uri)
+                val imageData = ImageDataFactory.create(add)
+                val image: Image = Image(imageData).setHeight(80f).setWidth(80f)
+                //                table12.addCell(new Cell(2, 1).add(image));
+                // Adding image to the document
+                document.add(image)
+            } catch (e: MalformedURLException) {
+                e.printStackTrace()
+            }
         }
         document.add(
             Paragraph(
@@ -1672,7 +1832,7 @@ class PhCalibFragmentNew : Fragment() {
     var isCalibrating = false
 
 
-    lateinit var timer5: CountDownTimer
+     var timer5: CountDownTimer? = null
     val handler55 = Handler()
     lateinit var runnable55: Runnable
 
@@ -2244,7 +2404,7 @@ class PhCalibFragmentNew : Fragment() {
                             } else {
 //                            --line_3;
 //                            --currentBufThree;
-                                timer5.cancel()
+                                timer5!!.cancel()
                                 handler55.removeCallbacks(this)
                                 PhCalibFragmentNew.wrong_5 = false
                                 calibrateBtn.isEnabled = true
@@ -2263,7 +2423,7 @@ class PhCalibFragmentNew : Fragment() {
             jsonData.put("CAL", calValues.get(currentBuf).toString())
             jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
             WebSocketManager.sendMessage(jsonData.toString())
-            timer5.start()
+            timer5!!.start()
         } catch (e: JSONException) {
             e.printStackTrace()
         }
@@ -2432,7 +2592,7 @@ class PhCalibFragmentNew : Fragment() {
 
     private var line_3 = 0
     var wrong_3 = false
-    lateinit var timer3: CountDownTimer
+     var timer3: CountDownTimer? =null
     val handler33 = Handler()
     lateinit var runnable33: Runnable
 
@@ -2825,7 +2985,7 @@ class PhCalibFragmentNew : Fragment() {
             jsonData.put("CAL", calValuesThree[currentBufThree].toString())
             jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
             WebSocketManager.sendMessage(jsonData.toString())
-            timer3.start()
+            timer3!!.start()
         } catch (e: JSONException) {
             e.printStackTrace()
         }
@@ -2969,6 +3129,8 @@ class PhCalibFragmentNew : Fragment() {
         if (Constants.OFFLINE_DATA) {
             PH_MODE = "5"
         }
+        threePointCalib.visibility = View.GONE
+
 
         when (PH_MODE) {
             "both" -> {

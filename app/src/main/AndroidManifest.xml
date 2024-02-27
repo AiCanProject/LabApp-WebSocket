@@ -40,6 +40,9 @@
         <activity
             android:name=".ph.PhMvTable"
             android:exported="false" />
+        <activity android:name=".AddDevice.AddDeviceOption" />
+        <activity android:name=".AddDevice.ScanQrActivity" />
+
         <activity
             android:name=".ph.Export"
             android:exported="false" />
