@@ -175,6 +175,7 @@ class Export : AppCompatActivity() {
             override fun beforeTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {}
             override fun onTextChanged(charSequence: CharSequence, i: Int, i1: Int, i2: Int) {
                 companyName = charSequence.toString()
+
             }
 
             override fun afterTextChanged(editable: Editable) {}
@@ -1152,7 +1153,7 @@ $slope  |  $temp"""
     }
 
 
-    fun fileNotWrite(file: File) {
+    private fun fileNotWrite(file: File) {
         file.setWritable(false)
         if (file.canWrite()) {
             Log.d("csv", "Nhi kaam kar rha")
