@@ -187,7 +187,7 @@ setPreviousData()
     fun spinnerSelected() {
         graphInterval.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
-                adapterView: AdapterView<*>?, view: View, position: Int, id: Long
+                adapterView: AdapterView<*>?, view: View?, position: Int, id: Long
             ) {
                 if (position == 0) {
                     intervalSelected = "5 sec"

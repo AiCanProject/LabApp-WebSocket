@@ -1,13 +1,19 @@
 package com.aican.aicanapp
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.location.LocationManager
+import android.net.wifi.SupplicantState
+import android.net.wifi.WifiInfo
+import android.net.wifi.WifiManager
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Build.VERSION
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.view.MenuItem
 import android.view.View
@@ -37,6 +43,7 @@ import com.aican.aicanapp.databinding.ActivityDashboardBinding
 import com.aican.aicanapp.dialogs.EditNameDialog
 import com.aican.aicanapp.dialogs.EditNameDialog.OnNameChangedListener
 import com.aican.aicanapp.interfaces.DashboardListsOptionsClickListener
+import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -323,7 +330,79 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
             startActivity(intent)
         }
 
+        binding.refreshWifi.setOnClickListener { v: View? ->
+            if (isLocnEnabled(this)) {
+                val ssid: String? = getCurrentSsid(this@Dashboard)
+                Constants.wifiSSID = ssid
+                binding.connectedDeviceSSID.text = ssid ?: "N/A"
+            } else {
+                startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+                val ssid: String? = getCurrentSsid(this@Dashboard)
+                Constants.wifiSSID = ssid
+                binding.connectedDeviceSSID.text = ssid ?: "N/A"
+            }
+            if (isConnected) {
+                binding.internetStatus.text = "Active"
+                binding.internetStatus.setTextColor(resources.getColor(R.color.internetActive))
+            } else {
+                binding.internetStatus.text = "Inactive"
+                binding.internetStatus.setTextColor(resources.getColor(R.color.internetInactive))
+            }
+        }
+
+
     }
+
+    override fun onStart() {
+        super.onStart()
+        if (isLocnEnabled(this)) {
+            val ssid: String? = getCurrentSsid(this@Dashboard)
+            Constants.wifiSSID = ssid
+            binding.connectedDeviceSSID.text = ssid ?: "N/A"
+        } else {
+            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+            val ssid: String? = getCurrentSsid(this@Dashboard)
+            Constants.wifiSSID = ssid
+            binding.connectedDeviceSSID.text = ssid ?: "N/A"
+        }
+    }
+
+    var isConnected = false
+
+    fun isLocnEnabled(context: Context): Boolean {
+        var locnProviders: List<*>? = null
+        try {
+            val lm =
+                context.applicationContext.getSystemService(LOCATION_SERVICE) as LocationManager
+            locnProviders = lm.getProviders(true)
+            return locnProviders.isNotEmpty()
+        } catch (e: java.lang.Exception) {
+            e.printStackTrace()
+        } finally {
+            if (BuildConfig.DEBUG) {
+                if (locnProviders == null || locnProviders.isEmpty()) Log.d(
+                    TAG,
+                    "Location services disabled"
+                ) else Log.d(
+                    TAG,
+                    "locnProviders: $locnProviders"
+                )
+            }
+        }
+        return false
+    }
+
+    fun getCurrentSsid(context: Context): String? {
+        var ssid: String? = null
+        val wifiManager = context.getSystemService(WIFI_SERVICE) as WifiManager
+        val wifiInfo: WifiInfo
+        wifiInfo = wifiManager.connectionInfo
+        if (wifiInfo.supplicantState == SupplicantState.COMPLETED) {
+            ssid = wifiInfo.ssid
+        }
+        return ssid
+    }
+
 
     //Toolbar------------------------------------------------------------------------------------------------------
     fun setUpToolBar() {
