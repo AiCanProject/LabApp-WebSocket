@@ -1860,7 +1860,7 @@ class PhCalibFragmentNew : Fragment() {
         calibrateBtn.isEnabled = false
         tvTimer.visibility = View.VISIBLE
         isCalibrating = true
-        timer5 = object : CountDownTimer(45000, 1000) {
+        timer5 = object : CountDownTimer(5000, 1000) {
             //45000
             //        timer5 = new CountDownTimer(5000, 1000) { //45000
             override fun onTick(millisUntilFinished: Long) {
@@ -2536,7 +2536,7 @@ class PhCalibFragmentNew : Fragment() {
                         "-",
                         "-"
                     )
-                    deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(0)
+//                    deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(0)
                     tvTimer.text = "00:45"
                     Log.d("Runnable", "ok")
                 } else { // post again
