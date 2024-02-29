@@ -186,6 +186,7 @@ class PhCalibFragmentNew : Fragment() {
 
 
     }
+
     private fun updateMessage(message: String) {
         sharedViewModel.messageLiveData.value = message
     }
@@ -196,7 +197,15 @@ class PhCalibFragmentNew : Fragment() {
 
     private fun websocketData() {
 
-        WebSocketManager.setErrorListener {error ->
+        WebSocketManager.setCloseListener { i, s, b ->
+            sharedViewModel.closeConnectionLiveData.value = s + ""
+
+        }
+        WebSocketManager.setOpenListener {
+            sharedViewModel.openConnectionLiveData.value = ""
+        }
+
+        WebSocketManager.setErrorListener { error ->
             requireActivity().runOnUiThread {
 
                 updateError(error.toString())
@@ -208,7 +217,7 @@ class PhCalibFragmentNew : Fragment() {
 
             requireActivity().runOnUiThread {
                 try {
-                     updateMessage(message)
+                    updateMessage(message)
                     jsonData = JSONObject(message)
                     Log.d("JSONReceived:PHFragment", "onMessage: $message")
                     if (jsonData.has("SLOPE") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
@@ -1433,10 +1442,6 @@ class PhCalibFragmentNew : Fragment() {
     private fun calibrateButtons() {
 
 
-
-
-
-
         resetCalibThree.setOnClickListener {
             jsonData = JSONObject()
             try {
@@ -1654,7 +1659,8 @@ class PhCalibFragmentNew : Fragment() {
                 temp = "Temperature: " + "null"
             }
 
-            val batteryVal = SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
+            val batteryVal =
+                SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
             if (batteryVal != null) {
                 if (batteryVal != "") {
                     battery = "$batteryVal %"
@@ -1832,7 +1838,7 @@ class PhCalibFragmentNew : Fragment() {
     var isCalibrating = false
 
 
-     var timer5: CountDownTimer? = null
+    var timer5: CountDownTimer? = null
     val handler55 = Handler()
     lateinit var runnable55: Runnable
 
@@ -2592,7 +2598,7 @@ class PhCalibFragmentNew : Fragment() {
 
     private var line_3 = 0
     var wrong_3 = false
-     var timer3: CountDownTimer? =null
+    var timer3: CountDownTimer? = null
     val handler33 = Handler()
     lateinit var runnable33: Runnable
 

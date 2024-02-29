@@ -14,6 +14,7 @@ import java.util.ArrayList;
 
 public class Source {
 
+    public static boolean SOCKET_CONNECTED = false;
     public static int calibMode = 0;
     public static int activeFragment = 0;
 
@@ -79,7 +80,6 @@ public class Source {
             }
         }
     }
-
 
 
 }

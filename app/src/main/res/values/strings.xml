@@ -70,6 +70,7 @@
     <string name="ecLogFolder">/LabApp/Currentlog/ECLog</string>
     <string name="set_Speed">Set Speed</string>
     <string name="set_volume">Set Volume</string>
+    <string name="title_activity_settings_page">SettingsPage</string>
 
 </resources>
 

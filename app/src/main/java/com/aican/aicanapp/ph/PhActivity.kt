@@ -86,9 +86,22 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 //            }
 //        }
 
+        sharedViewModel.closeConnectionLiveData.observe(this) {
+            binding.socketConnected.visibility = View.GONE
+            binding.socketDisconnected.visibility = View.VISIBLE
+        }
+
+        sharedViewModel.openConnectionLiveData.observe(this) {
+
+            binding.socketConnected.visibility = View.VISIBLE
+            binding.socketDisconnected.visibility = View.GONE
+        }
+
         sharedViewModel.messageLiveData.observe(this) { message ->
             runOnUiThread {
                 binding.monitorText.text = message
+                binding.socketConnected.visibility = View.VISIBLE
+                binding.socketDisconnected.visibility = View.GONE
                 binding.monitorText.setTextColor(resources.getColor(R.color.normalColor))
             }
         }
@@ -131,8 +144,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         log = binding.item3
         graph = binding.item4
         alarm = binding.item5
-        offlineMode = binding.offlineMode
-        onlineMode = binding.onlineMode
+        offlineMode = binding.socketConnected
+        onlineMode = binding.socketDisconnected
         notice = binding.notice
         tabItemPh = binding.tabItemP
         tabItemCalib = binding.select2
@@ -143,22 +156,22 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         graph.setOnClickListener(this)
         alarm.setOnClickListener(this)
 
-        onlineMode.setVisibility(View.VISIBLE)
-        offlineMode.setVisibility(View.GONE)
-        notice.setVisibility(View.GONE)
+        onlineMode.visibility = View.VISIBLE
+        offlineMode.visibility = View.GONE
+        notice.visibility = View.GONE
 
         if (Constants.OFFLINE_DATA && Constants.OFFLINE_MODE) {
-            onlineMode.setVisibility(View.GONE)
-            offlineMode.setVisibility(View.VISIBLE)
+            onlineMode.visibility = View.GONE
+            offlineMode.visibility = View.VISIBLE
         } else {
-            onlineMode.setVisibility(View.VISIBLE)
-            offlineMode.setVisibility(View.GONE)
+            onlineMode.visibility = View.VISIBLE
+            offlineMode.visibility = View.GONE
             if (Constants.OFFLINE_MODE) {
-                notice.setVisibility(View.GONE)
+                notice.visibility = View.GONE
             }
             if (Constants.OFFLINE_DATA) {
-                notice.setVisibility(View.VISIBLE)
-                notice.setText("Device is not connected")
+                notice.visibility = View.VISIBLE
+                notice.text = "Device is not connected"
                 onlineMode.visibility = View.GONE
                 offlineMode.visibility = View.VISIBLE
             }
@@ -168,8 +181,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         val i = intent.getStringExtra("refreshCalib")
         if (i != null) {
             if (i == "y") {
-                tabItemPh.setBackground(resources.getDrawable(R.drawable.backselect1))
-                tabItemPh.setVisibility(View.INVISIBLE)
+                tabItemPh.background = resources.getDrawable(R.drawable.backselect1)
+                tabItemPh.visibility = View.INVISIBLE
                 val select2 = findViewById<TextView>(R.id.select2)
                 select2.background = resources.getDrawable(R.drawable.back_select2)
                 loadFragments(phCalibFragmentNew)
@@ -207,47 +220,30 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         })
 
         if (Constants.OFFLINE_DATA) {
-            offlineModeSwitch.setChecked(true)
-            offlineModeSwitch.setText("Connected")
-            offlineModeSwitch.setOnClickListener(View.OnClickListener {
-//                if (offlineModeSwitch.isChecked()) {
-//                    offlineModeSwitch.setText("Connect")
-//                    if (Source.activeFragment === 0) {
-//                        phFragment.receiveDataFromPhActivity("Connect", DEVICE_ID, lastJsonData)
-//                    }
-//                    if (Source.activeFragment === 1) {
-//                        phCalibFragmentNew.receiveDataFromPhActivity(
-//                            "Connect",
-//                            DEVICE_ID,
-//                            lastJsonData
-//                        )
-//                    }
-//                    if (Source.activeFragment === 2) {
-//                        phLogFragment.receiveDataFromPhActivity("Connect", DEVICE_ID, lastJsonData)
-//                    }
-//                } else {
-//                    offlineModeSwitch.setText("Connected")
-//                    if (Source.activeFragment === 1) {
-//                        phCalibFragmentNew.receiveDataFromPhActivity(
-//                            "Disconnect",
-//                            DEVICE_ID,
-//                            lastJsonData
-//                        )
-//                    }
-//                    if (Source.activeFragment === 2) {
-//                        phLogFragment.receiveDataFromPhActivity(
-//                            "Disconnect",
-//                            DEVICE_ID,
-//                            lastJsonData
-//                        )
-//                    }
-//                    if (Source.activeFragment === 0) {
-//                        phFragment.receiveDataFromPhActivity("Disconnect", DEVICE_ID, lastJsonData)
-//                    }
-//                }
-            })
+            offlineModeSwitch.isChecked = true
+            offlineModeSwitch.text = "Connected"
+            offlineModeSwitch.setOnClickListener {
+            }
         }
 
+        offlineModeSwitch.visibility = View.GONE
+
+    }
+
+    override fun onBackPressed() {
+        super.onBackPressed()
+        val count = supportFragmentManager.backStackEntryCount
+        if (Source.auto_log == 0 && !Source.calibratingNow) {
+//            Intent intent = new Intent(PhActivity.this, Dashboard.class);
+//            startActivity(intent);
+            finish()
+        } else {
+            Toast.makeText(
+                this,
+                "You cannot change fragment while logging / calibrating",
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     private fun loadFragments(fragment: Fragment?): Boolean {
@@ -347,6 +343,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 Toast.LENGTH_SHORT
             ).show()
         }
+        offlineModeSwitch.visibility = View.GONE
     }
 
 }

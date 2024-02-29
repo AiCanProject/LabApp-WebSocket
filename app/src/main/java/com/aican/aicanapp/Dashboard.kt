@@ -162,29 +162,85 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
         phDev = binding.phDev
 
+        binding.settingPage.setOnClickListener {
+            startActivity(Intent(this@Dashboard, SettingsPage::class.java))
+        }
+
         binding.offlineModeSwitch.setOnCheckedChangeListener { _, isChecked ->
             webSocketConnected = if (isChecked) {
-                // Connect to WebSocket
-//                //wss://socketsbay.com/wss/v2/1/demo/
-//                val uri = URI("ws://localhost:3000")
+                //                val uri = URI("ws://localhost:3000")
                 val uri = URI("wss://socketsbay.com/wss/v2/1/demo/")
-//                val uri =
-//                    URI("wss://demo.piesocket.com/v3/channel_123?api_key=VCXCEuvhGcBDP7XhiJJUDvR1e1D3eiVjgZ9VRiaV&notify_self")
-//                    URI("wss://echo.websocket.org")
-                binding.offlineStatus.visibility = View.VISIBLE
-                binding.onlineStatus.visibility = View.GONE
-                WebSocketManager.initializeWebSocket(uri)
+//
+//                WebSocketManager.disconnect()
+                WebSocketManager.initializeWebSocket(uri,
+                    // Open listener
+                    {
+                        // WebSocket connection opened
+                        runOnUiThread {
+                            Source.SOCKET_CONNECTED = true
+                            binding.socketConnected.visibility = View.VISIBLE
+                            binding.socketDisconnected.visibility = View.GONE
+                        }
+                    },
+                    // Close listener
+                    { code, reason, remote ->
+                        // WebSocket connection closed
+                        // Handle UI or other actions as needed
+                        runOnUiThread {
+                            Source.SOCKET_CONNECTED = false
+                            binding.socketConnected.visibility = View.GONE
+                            binding.socketDisconnected.visibility = View.VISIBLE
+                        }
+                    }
+                )
                 true
             } else {
                 // Disconnect WebSocket
+                runOnUiThread {
 
-                binding.offlineStatus.visibility = View.GONE
-                binding.onlineStatus.visibility = View.VISIBLE
-
-                WebSocketManager.disconnect()
+//                    Toast.makeText(this@Dashboard, "hjvvb", Toast.LENGTH_SHORT).show()
+                    binding.socketConnected.visibility = View.GONE
+                    binding.socketDisconnected.visibility = View.VISIBLE
+                    WebSocketManager.disconnect(true)
+                }
+//                val inte = Intent(this@Dashboard, Dashboard::class.java)
+//                startActivity(inte)
+//                finish()
                 false
             }
         }
+
+        WebSocketManager.setMessageListener {
+            runOnUiThread {
+                Toast.makeText(this@Dashboard, "Message " + it, Toast.LENGTH_SHORT).show()
+                binding.monitorText.text = it.toString()
+            }
+        }
+
+        WebSocketManager.setOpenListener {
+            runOnUiThread {
+
+                binding.socketConnected.visibility = View.VISIBLE
+                binding.socketDisconnected.visibility = View.GONE
+            }
+        }
+        WebSocketManager.setErrorListener { exception ->
+            runOnUiThread {
+
+                binding.socketConnected.visibility = View.GONE
+                binding.socketDisconnected.visibility = View.VISIBLE
+            }
+
+        }
+
+        WebSocketManager.setCloseListener { code, reason, remote ->
+            runOnUiThread {
+
+                binding.socketConnected.visibility = View.GONE
+                binding.socketDisconnected.visibility = View.VISIBLE
+            }
+        }
+
         binding.addNewDevice.setOnClickListener {
             val toAddDevice = Intent(this@Dashboard, AddDeviceOption::class.java)
             startActivity(toAddDevice)

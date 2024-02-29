@@ -23,6 +23,7 @@
         <item name="bottomSheetDialogTheme">@style/AppBottomSheetDialogTheme</item>
 
     </style>
+
     <style name="AppBottomSheetDialogTheme" parent="Theme.Design.Light.BottomSheetDialog">
         <item name="bottomSheetStyle">@style/AppModalStyle</item>
     </style>
@@ -30,6 +31,7 @@
     <style name="AppModalStyle" parent="Widget.Design.BottomSheet.Modal">
         <item name="android:background">@drawable/rect_white_top_rounded_20</item>
     </style>
+
     <style name="Switch" parent="Theme.AppCompat.Light">
         <item name="colorControlActivated">@color/blueDark</item>
         <item name="colorSwitchThumbNormal">@color/lightWhite</item>
@@ -64,12 +66,11 @@
 
 
     <style name="MyCheckBox" parent="Theme.AppCompat.NoActionBar">
-        <item name="colorControlNormal">#000</item>   <!-- normal border color change as you wish -->
+        <item name="colorControlNormal">#000
+        </item>   <!-- normal border color change as you wish -->
         <item name="colorControlActivated">#000</item> <!-- activated color change as you wish -->
         <item name="android:textColor">#FFFF3F3C</item> <!-- checkbox text color -->
     </style>
-
-
 
 
 </resources>

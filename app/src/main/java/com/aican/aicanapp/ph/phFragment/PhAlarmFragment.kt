@@ -1,6 +1,5 @@
 package com.aican.aicanapp.ph.phFragment
 
-import android.R.attr.text
 import android.content.Intent
 import android.media.Ringtone
 import android.media.RingtoneManager
@@ -142,16 +141,26 @@ class PhAlarmFragment : Fragment() {
                 updateError(error.toString())
             }
         }
+        WebSocketManager.setCloseListener { i, s, b ->
+            sharedViewModel.closeConnectionLiveData.value = s + ""
+
+        }
+        WebSocketManager.setOpenListener {
+            sharedViewModel.openConnectionLiveData.value = ""
+        }
     }
+
     private val sharedViewModel: SharedViewModel by activityViewModels()
 
     private fun updateMessage(message: String) {
         sharedViewModel.messageLiveData.value = message
     }
 
+
     private fun updateError(error: String) {
         sharedViewModel.errorLiveData.value = error
     }
+
     class alarmBackgroundService :
         AsyncTask<String?, String?, String?>() {
         override fun doInBackground(vararg p0: String?): String? {

@@ -796,6 +796,15 @@ class PhLogFragment : Fragment() {
 
 
     private fun webSocketConnection() {
+
+        WebSocketManager.setCloseListener { i, s, b ->
+            sharedViewModel.closeConnectionLiveData.value = s + ""
+
+        }
+        WebSocketManager.setOpenListener {
+            sharedViewModel.openConnectionLiveData.value = ""
+        }
+
         WebSocketManager.setErrorListener {error ->
             requireActivity().runOnUiThread {
 

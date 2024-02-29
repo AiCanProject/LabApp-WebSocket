@@ -289,8 +289,8 @@
                                 android:layout_width="221dp"
                                 android:layout_height="100dp"
                                 android:layout_margin="10dp"
-                                app:cardCornerRadius="24dp"
                                 android:visibility="gone"
+                                app:cardCornerRadius="24dp"
                                 app:cardElevation="10dp">
 
                                 <TextView
@@ -466,7 +466,7 @@
                                 tools:ignore="UseSwitchCompatOrMaterialXml" />
 
                             <LinearLayout
-                                android:id="@+id/onlineStatus"
+                                android:id="@+id/socketDisconnected"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center"
@@ -495,7 +495,7 @@
                             </LinearLayout>
 
                             <LinearLayout
-                                android:id="@+id/offlineStatus"
+                                android:id="@+id/socketConnected"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_gravity="center"
@@ -521,6 +521,35 @@
                                     android:textColor="@color/black"
                                     android:textSize="12dp"
                                     android:textStyle="bold" />
+
+                            </LinearLayout>
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:gravity="start|center"
+                                android:orientation="horizontal">
+
+                                <TextView
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="5dp"
+                                    android:layout_marginEnd="8dp"
+                                    android:text="Monitor: "
+                                    android:textColor="@color/black"
+                                    android:textSize="14dp"
+                                    android:textStyle="bold" />
+
+                                <TextView
+                                    android:id="@+id/monitorText"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:layout_marginStart="5dp"
+                                    android:layout_marginEnd="8dp"
+                                    android:text="Nothing"
+                                    android:textColor="@color/red"
+                                    android:textSize="12dp" />
+
 
                             </LinearLayout>
 
@@ -734,6 +763,18 @@
                 android:paddingHorizontal="22dp"
                 android:paddingVertical="16dp"
                 android:text="Instruction Manual"
+                android:textColor="@color/black"
+                android:textSize="18sp" />
+
+
+            <TextView
+                android:visibility="visible"
+                android:id="@+id/settingPage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="22dp"
+                android:paddingVertical="16dp"
+                android:text="Settings"
                 android:textColor="@color/black"
                 android:textSize="18sp" />
 

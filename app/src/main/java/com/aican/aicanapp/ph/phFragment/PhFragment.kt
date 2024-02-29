@@ -130,7 +130,7 @@ class PhFragment : Fragment() {
                 val editT = togglePref.edit()
                 editT.putInt("toggleValue", 0)
                 editT.commit()
-                binding.setATC.setVisibility(View.INVISIBLE)
+                binding.setATC.visibility = View.INVISIBLE
             }
         })
     }
@@ -197,6 +197,23 @@ class PhFragment : Fragment() {
 
 
     private fun webSocketInit() {
+
+        if (Source.SOCKET_CONNECTED) {
+            sharedViewModel.openConnectionLiveData.value = ""
+
+        } else {
+            sharedViewModel.closeConnectionLiveData.value = ""
+
+        }
+
+        WebSocketManager.setCloseListener { _, s, b ->
+            sharedViewModel.closeConnectionLiveData.value = s + ""
+
+        }
+        WebSocketManager.setOpenListener {
+            sharedViewModel.openConnectionLiveData.value = ""
+        }
+
         WebSocketManager.setMessageListener { message ->
             requireActivity().runOnUiThread {
                 Log.e("WebSocketMessageAican", message)

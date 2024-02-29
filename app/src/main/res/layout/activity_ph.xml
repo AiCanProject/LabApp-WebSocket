@@ -22,24 +22,24 @@
         android:theme="@style/ThemeOverlay.AppCompat.Dark">
 
         <TextView
-            android:id="@+id/offlineMode"
+            android:id="@+id/socketConnected"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="25dp"
             android:layout_marginEnd="10dp"
 
-            android:text="Offline"
-            android:textColor="@color/internetInactive"
+            android:text="Socket Connected"
+            android:textColor="@color/internetActive"
             android:textSize="16sp" />
 
         <TextView
-            android:id="@+id/onlineMode"
+            android:id="@+id/socketDisconnected"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginEnd="10dp"
 
-            android:text="Online"
-            android:textColor="@color/internetActive"
+            android:text="Socket Disconnected"
+            android:textColor="@color/internetInactive"
             android:textSize="16sp" />
 
         <Switch
