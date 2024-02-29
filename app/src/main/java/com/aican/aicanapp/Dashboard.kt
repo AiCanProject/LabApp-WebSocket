@@ -214,7 +214,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         WebSocketManager.setMessageListener {
             runOnUiThread {
                 Toast.makeText(this@Dashboard, "Message " + it, Toast.LENGTH_SHORT).show()
-                binding.monitorText.text = it.toString()
+                binding.monitorText.text = it
             }
         }
 
@@ -234,7 +234,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
         }
 
-        WebSocketManager.setCloseListener { code, reason, remote ->
+        WebSocketManager.setCloseListener { _, _, _ ->
             runOnUiThread {
 
                 binding.socketConnected.visibility = View.GONE

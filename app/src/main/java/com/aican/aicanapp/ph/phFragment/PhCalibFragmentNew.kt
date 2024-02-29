@@ -1181,6 +1181,10 @@ class PhCalibFragmentNew : Fragment() {
                         }
                         if (jsonData.has("EC_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                             val ph = jsonData.getString("EC_VAL")
+                            SharedPref.saveData(
+                                requireContext(),
+                                "ecValue" + PhActivity.DEVICE_ID, ph
+                            )
                             tvEcCurr.text = ph
                         }
                         if (jsonData.has("MV_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
