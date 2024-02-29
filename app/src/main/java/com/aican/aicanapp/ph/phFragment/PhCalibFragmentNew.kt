@@ -1864,7 +1864,7 @@ class PhCalibFragmentNew : Fragment() {
         calibrateBtn.isEnabled = false
         tvTimer.visibility = View.VISIBLE
         isCalibrating = true
-        timer5 = object : CountDownTimer(5000, 1000) {
+        timer5 = object : CountDownTimer(50000, 1000) {
             //45000
             //        timer5 = new CountDownTimer(5000, 1000) { //45000
             override fun onTick(millisUntilFinished: Long) {

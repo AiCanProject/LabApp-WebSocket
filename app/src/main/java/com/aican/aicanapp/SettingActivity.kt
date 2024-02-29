@@ -161,7 +161,7 @@ class SettingActivity : AppCompatActivity(), AdapterView.OnItemSelectedListener 
             }
         }
 
-        val comLo: Bitmap = getSignImage()!!
+        val comLo: Bitmap? = getSignImage()
         if (comLo != null) {
             imageView.setImageBitmap(comLo)
         }

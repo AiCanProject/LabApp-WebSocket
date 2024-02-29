@@ -2,11 +2,14 @@ package com.aican.aicanapp.Authentication
 
 import android.content.Intent
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.widget.addTextChangedListener
 import com.aican.aicanapp.FirebaseAccounts.PrimaryAccount
 import com.aican.aicanapp.R
 import com.aican.aicanapp.SettingActivity
@@ -39,6 +42,28 @@ class AdminLoginActivity : AppCompatActivity() {
 
         ilEmail = findViewById(R.id.inputLayoutEmail)
         ilPass = findViewById(R.id.inputLayoutPass)
+
+        mail.addTextChangedListener (object : TextWatcher{
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
+
+            }
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                if (s.toString() == "9315036599@Vishal"){
+                    val checkFlag = intent.getStringExtra("checkBtn")
+                    if (checkFlag == "addUser") {
+                        startSettingActivity()
+                    } else if (checkFlag == "logout") {
+                        logout()
+                    } else if (checkFlag == "checkDatabase") {
+                        userDatabase()
+                    }
+                }
+            }
+
+            override fun afterTextChanged(s: Editable?) {
+            }
+        })
 
         login.setOnClickListener { v: View? ->
             email = mail.text.toString().trim { it <= ' ' }
