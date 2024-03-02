@@ -14,6 +14,8 @@ import com.aican.aicanapp.FirebaseAccounts.PrimaryAccount
 import com.aican.aicanapp.R
 import com.aican.aicanapp.SettingActivity
 import com.aican.aicanapp.UserDatabase
+import com.aican.aicanapp.specificActivities.Users.AddNewUser
+import com.aican.aicanapp.specificActivities.Users.AllUsers
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.AuthResult
 import com.google.firebase.auth.FirebaseAuth
@@ -106,7 +108,8 @@ class AdminLoginActivity : AppCompatActivity() {
     }
 
     private fun startSettingActivity() {
-        val intent = Intent(this, SettingActivity::class.java)
+        val intent = Intent(this, AllUsers::class.java)
+//        val intent = Intent(this, SettingActivity::class.java)
         startActivity(intent)
     }
 

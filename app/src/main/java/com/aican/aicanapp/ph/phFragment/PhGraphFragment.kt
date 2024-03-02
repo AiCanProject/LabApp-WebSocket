@@ -11,15 +11,24 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Spinner
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.room.Room
 import com.aican.aicanapp.R
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.FragmentPhGraphBinding
+import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.PhActivity
+import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
+import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
+import com.aican.aicanapp.roomDatabase.database.AppDatabase
+import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
+import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.github.mikephil.charting.charts.LineChart
@@ -28,6 +37,8 @@ import com.github.mikephil.charting.data.LineData
 import com.github.mikephil.charting.data.LineDataSet
 import com.github.mikephil.charting.interfaces.datasets.ILineDataSet
 import com.google.firebase.database.DatabaseReference
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Locale
@@ -64,6 +75,7 @@ class PhGraphFragment : Fragment() {
         binding = FragmentPhGraphBinding.inflate(inflater, container, false);
         return binding.root;
     }
+
     private val sharedViewModel: SharedViewModel by activityViewModels()
 
     private fun updateMessage(message: String) {
@@ -97,6 +109,7 @@ class PhGraphFragment : Fragment() {
         refresh.setOnClickListener {
             if (Constants.OFFLINE_MODE) {
                 if (intervalSelected == "5 sec") {
+
                     graphShowOffline(5, 5)
                 }
                 if (intervalSelected == "10 sec") {
@@ -127,7 +140,54 @@ class PhGraphFragment : Fragment() {
         }
 
         webSocketInit()
-setPreviousData()
+        setPreviousData()
+    }
+
+    fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+
+            userActionDao.insertUserAction(
+                UserActionEntity(
+                    0, Source.getCurrentTime(), Source.getPresentDate(),
+                    action, ph, temp, mv, compound, PhActivity.DEVICE_ID.toString()
+                )
+            )
+        }
+    }
+
+    lateinit var userDao: UserDao
+    lateinit var userActionDao: UserActionDao
+    override fun onResume() {
+        super.onResume()
+
+        userDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userDao()
+
+        userActionDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userActionDao()
+
+        if (Source.cfr_mode) {
+            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
+            userAuthDialog.showLoginDialog { isValidCredentials ->
+                if (isValidCredentials) {
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", entered ph graph fragment", "", "", "", ""
+                    )
+                } else {
+                    requireActivity().runOnUiThread {
+                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+            }
+        }
     }
 
 
@@ -151,6 +211,7 @@ setPreviousData()
         }
 
     }
+
     private fun webSocketInit() {
 
         WebSocketManager.setCloseListener { i, s, b ->
@@ -199,50 +260,62 @@ setPreviousData()
             ) {
                 if (position == 0) {
                     intervalSelected = "5 sec"
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", changed graph interval to " + intervalSelected, "", "", "", ""
+                    )
                 }
                 if (position == 1) {
                     intervalSelected = "10 sec"
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", changed graph interval to " + intervalSelected, "", "", "", ""
+                    )
                 }
                 if (position == 2) {
                     intervalSelected = "30 sec"
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", changed graph interval to " + intervalSelected, "", "", "", ""
+                    )
                 }
                 if (position == 3) {
                     intervalSelected = "1 min"
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", changed graph interval to " + intervalSelected, "", "", "", ""
+                    )
                 }
                 if (position == 4) {
                     intervalSelected = "3 min"
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", changed graph interval to " + intervalSelected, "", "", "", ""
+                    )
                 }
                 if (position == 5) {
                     intervalSelected = "5 min"
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", changed graph interval to " + intervalSelected, "", "", "", ""
+                    )
                 }
                 if (position == 6) {
                     intervalSelected = "10 min"
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", changed graph interval to " + intervalSelected, "", "", "", ""
+                    )
                 }
-                //                if (adapterView.getPositionForView(view) == 0) {
-                //                    intervalSelected = "5 sec";
-                //                }
-                //                if (adapterView.getPositionForView(view) == 1) {
-                //                    intervalSelected = "10 sec";
-                //                }
-                //                if (adapterView.getPositionForView(view) == 2) {
-                //                    intervalSelected = "30 sec";
-                //                }
-                //                if (adapterView.getPositionForView(view) == 3) {
-                //                    intervalSelected = "1 min";
-                //                }
-                //                if (adapterView.getPositionForView(view) == 4) {
-                //                    intervalSelected = "3 min";
-                //                }
-                //                if (adapterView.getPositionForView(view) == 5) {
-                //                    intervalSelected = "5 min";
-                //                }
-                //                if (adapterView.getPositionForView(view) == 6) {
-                //                    intervalSelected = "10 min";
-                //                }
+
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
                 intervalSelected = "5 sec"
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", interval selected to " + intervalSelected, "", "", "", ""
+                )
             }
         }
     }
@@ -277,6 +350,10 @@ setPreviousData()
     var start = false
 
     fun graphShowOffline(totalMin: Long, interval: Long) {
+        addUserAction(
+            "username: " + Source.userName + ", Role: " + Source.userRole +
+                    ", started plotting graph, with interval" + intervalSelected, "", "", "", ""
+        )
         lineChart.clear()
         lineChart.invalidate()
         val information = java.util.ArrayList<Entry>()

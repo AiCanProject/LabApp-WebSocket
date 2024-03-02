@@ -7,16 +7,26 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.room.Room
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.FragmentPhBinding
+import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.PhActivity
+import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
+import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
+import com.aican.aicanapp.roomDatabase.database.AppDatabase
+import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -48,9 +58,52 @@ class PhFragment : Fragment() {
 
     }
 
+    fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+
+            userActionDao.insertUserAction(
+                UserActionEntity(
+                    0, Source.getCurrentTime(), Source.getPresentDate(),
+                    action, ph, temp, mv, compound, PhActivity.DEVICE_ID.toString()
+                )
+            )
+        }
+    }
+
+    private lateinit var userDao: UserDao
+    lateinit var userActionDao: UserActionDao
+
     override fun onResume() {
         super.onResume()
 
+        userDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userDao()
+
+        userActionDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userActionDao()
+
+        if (Source.cfr_mode) {
+            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
+            userAuthDialog.showLoginDialog { isValidCredentials ->
+                if (isValidCredentials) {
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", entered ph main fragment", "", "", "", ""
+                    )
+                } else {
+                    requireActivity().runOnUiThread {
+                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+            }
+        }
         getPreviousData()
 
 
@@ -62,21 +115,10 @@ class PhFragment : Fragment() {
     private fun turnAtcSwitch() {
         binding.switchAtc.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { v: CompoundButton?, isChecked: Boolean ->
             if (binding.switchAtc.isChecked()) {
-                val date =
-                    SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                        .format(Date())
-                val time =
-                    SimpleDateFormat("HH:mm", Locale.getDefault())
-                        .format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "ATC toggle on : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", ATC toggle on", "", "", "", ""
                 )
                 try {
                     jsonData = JSONObject()
@@ -113,15 +155,9 @@ class PhFragment : Fragment() {
                 } catch (e: JSONException) {
                     e.printStackTrace()
                 }
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "ATC toggle off : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", ATC toggle off", "", "", "", ""
                 )
                 val togglePref = requireContext().getSharedPreferences(
                     "togglePref",

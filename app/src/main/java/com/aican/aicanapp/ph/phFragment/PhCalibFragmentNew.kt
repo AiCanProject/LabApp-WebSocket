@@ -33,8 +33,10 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.room.Room
 import com.aican.aicanapp.Dashboard
 import com.aican.aicanapp.ProbeScanner
 import com.aican.aicanapp.R
@@ -44,10 +46,15 @@ import com.aican.aicanapp.dataClasses.BufferData
 import com.aican.aicanapp.dataClasses.CalibDatClass
 import com.aican.aicanapp.databinding.FragmentPhCalibNewBinding
 import com.aican.aicanapp.dialogs.EditPhBufferDialog
+import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.PHCalibGraph
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.ph.PhMvTable
 import com.aican.aicanapp.ph.phAnim.PhView
+import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
+import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
+import com.aican.aicanapp.roomDatabase.database.AppDatabase
+import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
@@ -63,6 +70,8 @@ import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
@@ -95,8 +104,7 @@ class PhCalibFragmentNew : Fragment() {
 
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         binding = FragmentPhCalibNewBinding.inflate(inflater, container, false)
         return binding.root;
@@ -139,6 +147,10 @@ class PhCalibFragmentNew : Fragment() {
         calibrateButtons()
 
         phMvTable.setOnClickListener {
+            addUserAction(
+                "username: " + Source.userName + ", Role: " + Source.userRole +
+                        ", clicked on PhMvTable button", "", "", "", ""
+            )
             val intent = Intent(fragmentContext, PhMvTable::class.java)
             startActivity(intent)
         }
@@ -147,13 +159,19 @@ class PhCalibFragmentNew : Fragment() {
         printCalibData.setOnClickListener { v: View? ->
             try {
                 generatePDF()
+
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", print calib report ", "", "", "", ""
+                )
+
             } catch (e: FileNotFoundException) {
 //                Toast.makeText(requireContext(), "" + e.getMessage(), Toast.LENGTH_SHORT).show();
                 e.printStackTrace()
             }
 //                exportCalibData();
-            val path = ContextWrapper(requireContext()).externalMediaDirs[0]
-                .toString() + File.separator + "/LabApp/CalibrationData"
+            val path =
+                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData"
             val root = File(path)
             val filesAndFolders = root.listFiles()
             if (filesAndFolders == null || filesAndFolders.size == 0) {
@@ -165,14 +183,12 @@ class PhCalibFragmentNew : Fragment() {
                 }
             }
             val pathPDF =
-                ContextWrapper(requireContext()).externalMediaDirs[0]
-                    .toString() + File.separator + "/LabApp/CalibrationData/"
+                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData/"
             val rootPDF = File(pathPDF)
             fileNotWrite(root)
             val filesAndFoldersPDF = rootPDF.listFiles()
             calibFileAdapter = CalibFileAdapter(
-                requireContext().applicationContext,
-                reverseFileArray(filesAndFoldersPDF)
+                requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF)
             )
             calibRecyclerView.adapter = calibFileAdapter
             calibFileAdapter.notifyDataSetChanged()
@@ -229,9 +245,7 @@ class PhCalibFragmentNew : Fragment() {
                             Toast.makeText(requireContext(), "" + finalSlopes, Toast.LENGTH_SHORT)
                                 .show()
                             SharedPref.saveData(
-                                requireContext(),
-                                "SLOPE_" + PhActivity.DEVICE_ID,
-                                finalSlopes
+                                requireContext(), "SLOPE_" + PhActivity.DEVICE_ID, finalSlopes
                             )
                             finalSlope.text = finalSlopes
                         }
@@ -245,9 +259,7 @@ class PhCalibFragmentNew : Fragment() {
                             Toast.makeText(requireContext(), "" + finalSlopes, Toast.LENGTH_SHORT)
                                 .show()
                             SharedPref.saveData(
-                                requireContext(),
-                                "OFFSET_" + PhActivity.DEVICE_ID,
-                                finalSlopes
+                                requireContext(), "OFFSET_" + PhActivity.DEVICE_ID, finalSlopes
                             )
                             finalSlope.text = finalSlopes
                         }
@@ -261,8 +273,7 @@ class PhCalibFragmentNew : Fragment() {
                             ) {
                                 ph = jsonData.getString("PH_VAL").toFloat()
                             }
-                            val phForm =
-                                String.format(Locale.UK, "%.2f", ph)
+                            val phForm = String.format(Locale.UK, "%.2f", ph)
                             SharedPref.saveData(
                                 requireContext(),
                                 "phValue" + PhActivity.DEVICE_ID,
@@ -279,28 +290,21 @@ class PhCalibFragmentNew : Fragment() {
                                 )
                             ) {
                                 tempVal = jsonData.getString("TEMP_VAL").toFloat()
-                                val tempForm =
-                                    String.format(Locale.UK, "%.1f", tempVal)
+                                val tempForm = String.format(Locale.UK, "%.1f", tempVal)
                                 tvTempCurr.text = "$tempForm°C"
                                 SharedPref.saveData(
-                                    requireContext(),
-                                    "tempValueu" + PhActivity.DEVICE_ID,
-                                    tempForm
+                                    requireContext(), "tempValueu" + PhActivity.DEVICE_ID, tempForm
                                 )
                                 if (tempVal <= -127.0) {
                                     tvTempCurr.text = "NA"
                                     SharedPref.saveData(
-                                        requireContext(),
-                                        "tempValue" + PhActivity.DEVICE_ID,
-                                        "NA"
+                                        requireContext(), "tempValue" + PhActivity.DEVICE_ID, "NA"
                                     )
                                 }
                             } else {
                                 tvTempCurr.text = "nan"
                                 SharedPref.saveData(
-                                    requireContext(),
-                                    "tempValue" + PhActivity.DEVICE_ID,
-                                    "nan"
+                                    requireContext(), "tempValue" + PhActivity.DEVICE_ID, "nan"
                                 )
                             }
                         }
@@ -315,19 +319,15 @@ class PhCalibFragmentNew : Fragment() {
                                 "nan"
                             } else {
                                 String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             mv1.text = ecForm
                             mV1 = mv1.text.toString()
                             Log.d("test1", mV1)
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("MV1", mV1)
                             myEdit.commit()
@@ -337,19 +337,15 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             mv2.text = v
                             mV2 = mv2.text.toString()
                             Log.d("test2", mV2)
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("MV2", mV2)
                             myEdit.commit()
@@ -359,19 +355,15 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             mv3.text = v
                             mV3 = mv3.text.toString()
                             Log.d("test3", mV3)
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("MV3", mV3)
                             myEdit.commit()
@@ -381,19 +373,15 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             mv4.text = v
                             mV4 = mv4.text.toString()
                             Log.d("test4", mV4)
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("MV4", mV4)
                             myEdit.commit()
@@ -403,19 +391,15 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             mv5.text = v
                             mV5 = mv5.text.toString()
                             Log.d("test5", mV5)
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("MV5", mV5)
                             myEdit.commit()
@@ -425,9 +409,7 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             phAfterCalib1.text = v
@@ -447,11 +429,9 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataFive(calibDatClass)
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("pHAC1", pHAC1)
                             myEdit.commit()
@@ -461,9 +441,7 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             phAfterCalib2.text = v
@@ -483,11 +461,9 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataFive(calibDatClass)
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("pHAC2", pHAC2)
                             myEdit.commit()
@@ -500,9 +476,7 @@ class PhCalibFragmentNew : Fragment() {
                                 )
                             ) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             slope2.text = v
@@ -530,9 +504,7 @@ class PhCalibFragmentNew : Fragment() {
                                 )
                             ) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             slope3.text = v
@@ -560,9 +532,7 @@ class PhCalibFragmentNew : Fragment() {
                                 )
                             ) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             phAfterCalib3.text = v
@@ -582,11 +552,9 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataFive(calibDatClass)
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("pHAC3", pHAC3)
                             myEdit.commit()
@@ -599,9 +567,7 @@ class PhCalibFragmentNew : Fragment() {
                                 )
                             ) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             slope4.text = v
@@ -629,9 +595,7 @@ class PhCalibFragmentNew : Fragment() {
                                 )
                             ) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             phAfterCalib4.text = v
@@ -651,11 +615,9 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataFive(calibDatClass)
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("pHAC4", pHAC4)
                             myEdit.commit()
@@ -668,9 +630,7 @@ class PhCalibFragmentNew : Fragment() {
                                 )
                             ) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             slope5.text = v
@@ -695,9 +655,7 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             phAfterCalib5.text = v
@@ -717,11 +675,9 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataFive(calibDatClass)
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("pHAC5", pHAC5)
                             myEdit.commit()
@@ -730,11 +686,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("DT_1")
                             dt1.text = `val`
                             DT1 = dt1.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("DT1", DT1)
                             myEdit.commit()
@@ -743,11 +697,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("DT_2")
                             dt2.text = `val`
                             DT2 = dt2.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("DT2", DT2)
                             myEdit.commit()
@@ -756,11 +708,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("DT_3")
                             dt3.text = `val`
                             DT3 = dt3.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("DT3", DT3)
                             myEdit.commit()
@@ -769,11 +719,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("DT_4")
                             dt4.text = `val`
                             DT4 = dt4.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("DT4", DT4)
                             myEdit.commit()
@@ -782,11 +730,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("DT_5")
                             dt5.text = `val`
                             DT5 = dt5.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("DT5", DT5)
                             myEdit.commit()
@@ -795,11 +741,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("B_1")
                             ph1.text = `val`
                             PH1 = ph1.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("PH1", PH1)
                             myEdit.commit()
@@ -808,11 +752,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("B_2")
                             ph2.text = `val`
                             PH2 = ph2.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("PH2", PH2)
                             myEdit.commit()
@@ -821,11 +763,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("B_3")
                             ph3.text = `val`
                             PH3 = ph3.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("PH3", PH3)
                             myEdit.commit()
@@ -834,11 +774,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("B_4")
                             ph4.text = `val`
                             PH4 = ph4.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("PH4", PH4)
                             myEdit.commit()
@@ -847,11 +785,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("B_5")
                             ph5.text = `val`
                             PH5 = ph5.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("PH5", PH5)
                             myEdit.commit()
@@ -861,11 +797,9 @@ class PhCalibFragmentNew : Fragment() {
                             val ec = `val`.toInt()
                             Log.d("ECVal", "onDataChange: $ec")
                             //                            stateChangeModeFive();
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             if (jsonData.getString("CAL") == "11" && jsonData.has("POST_VAL_1")) {
                                 val d = jsonData.getString("POST_VAL_1")
@@ -879,16 +813,14 @@ class PhCalibFragmentNew : Fragment() {
                                     bufferD1.text.toString(),
                                     phAfterCalib1.text.toString(),
                                     tvTempCurr.text.toString(),
-                                    if (dt1.text.toString().length >= 15) dt1.text
-                                        .toString().substring(0, 10) else "--",
-                                    if (dt1.text.toString().length >= 15) dt1.text
-                                        .toString().substring(11, 16) else "--"
+                                    if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                        .substring(11, 16) else "--"
                                 )
                                 databaseHelper.updateClbOffDataFive(calibDatClass)
                                 SharedPref.saveData(
-                                    requireContext(),
-                                    "tem1",
-                                    tvTempCurr.text.toString()
+                                    requireContext(), "tem1", tvTempCurr.text.toString()
                                 )
                                 SharedPref.saveData(requireContext(), "pHAC1", d)
                                 //                                deviceRef.child("Data").child("CALIBRATION_STAT").setValue("incomplete");
@@ -905,16 +837,14 @@ class PhCalibFragmentNew : Fragment() {
                                     bufferD2.text.toString(),
                                     phAfterCalib2.text.toString(),
                                     tvTempCurr.text.toString(),
-                                    if (dt2.text.toString().length >= 15) dt2.text
-                                        .toString().substring(0, 10) else "--",
-                                    if (dt2.text.toString().length >= 15) dt2.text
-                                        .toString().substring(11, 16) else "--"
+                                    if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                        .substring(11, 16) else "--"
                                 )
                                 databaseHelper.updateClbOffDataFive(calibDatClass)
                                 SharedPref.saveData(
-                                    requireContext(),
-                                    "tem2",
-                                    tvTempCurr.text.toString()
+                                    requireContext(), "tem2", tvTempCurr.text.toString()
                                 )
                                 SharedPref.saveData(requireContext(), "pHAC2", d)
 
@@ -931,17 +861,15 @@ class PhCalibFragmentNew : Fragment() {
                                     bufferD3.text.toString(),
                                     phAfterCalib3.text.toString(),
                                     tvTempCurr.text.toString(),
-                                    if (dt3.text.toString().length >= 15) dt3.text
-                                        .toString().substring(0, 10) else "--",
-                                    if (dt3.text.toString().length >= 15) dt3.text
-                                        .toString().substring(11, 16) else "--"
+                                    if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                        .substring(11, 16) else "--"
                                 )
                                 databaseHelper.updateClbOffDataFive(calibDatClass)
 
                                 SharedPref.saveData(
-                                    requireContext(),
-                                    "tem3",
-                                    tvTempCurr.text.toString()
+                                    requireContext(), "tem3", tvTempCurr.text.toString()
                                 )
                                 SharedPref.saveData(requireContext(), "pHAC3", d)
 
@@ -958,17 +886,15 @@ class PhCalibFragmentNew : Fragment() {
                                     bufferD4.text.toString(),
                                     phAfterCalib4.text.toString(),
                                     tvTempCurr.text.toString(),
-                                    if (dt4.text.toString().length >= 15) dt4.text
-                                        .toString().substring(0, 10) else "--",
-                                    if (dt4.text.toString().length >= 15) dt4.text
-                                        .toString().substring(11, 16) else "--"
+                                    if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                        .substring(11, 16) else "--"
                                 )
                                 databaseHelper.updateClbOffDataFive(calibDatClass)
 
                                 SharedPref.saveData(
-                                    requireContext(),
-                                    "tem4",
-                                    tvTempCurr.text.toString()
+                                    requireContext(), "tem4", tvTempCurr.text.toString()
                                 )
                                 SharedPref.saveData(requireContext(), "pHAC4", d.toString())
 
@@ -986,18 +912,16 @@ class PhCalibFragmentNew : Fragment() {
                                     bufferD5.text.toString(),
                                     phAfterCalib5.text.toString(),
                                     tvTempCurr.text.toString(),
-                                    if (dt5.text.toString().length >= 15) dt5.text
-                                        .toString().substring(0, 10) else "--",
-                                    if (dt5.text.toString().length >= 15) dt5.text
-                                        .toString().substring(11, 16) else "--"
+                                    if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                        .substring(11, 16) else "--"
                                 )
                                 databaseHelper.updateClbOffDataFive(calibDatClass)
 
 
                                 SharedPref.saveData(
-                                    requireContext(),
-                                    "tem5",
-                                    tvTempCurr.text.toString()
+                                    requireContext(), "tem5", tvTempCurr.text.toString()
                                 )
                                 SharedPref.saveData(requireContext(), "pHAC5", d.toString())
 
@@ -1012,9 +936,7 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             phAfterCalib1_3.text = v
@@ -1028,10 +950,10 @@ class PhCalibFragmentNew : Fragment() {
                                 bufferD1_3.text.toString(),
                                 phAfterCalib1_3.text.toString(),
                                 tvTempCurr.text.toString(),
-                                if (dt1_3.text.toString().length >= 15) dt1_3.text
-                                    .toString().substring(0, 10) else "--",
-                                if (dt1_3.text.toString().length >= 15) dt1_3.text
-                                    .toString().substring(11, 16) else "--"
+                                if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                    .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataThree(calibDatClass1)
 
@@ -1044,9 +966,7 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             phAfterCalib2_3.text = v
@@ -1060,10 +980,10 @@ class PhCalibFragmentNew : Fragment() {
                                 bufferD2_3.text.toString(),
                                 phAfterCalib2_3.text.toString(),
                                 tvTempCurr.text.toString(),
-                                if (dt2_3.text.toString().length >= 15) dt2_3.text
-                                    .toString().substring(0, 10) else "--",
-                                if (dt2_3.text.toString().length >= 15) dt2_3.text
-                                    .toString().substring(11, 16) else "--"
+                                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                    .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataThree(calibDatClass2)
 
@@ -1075,9 +995,7 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             phAfterCalib3_3.text = v
@@ -1091,10 +1009,10 @@ class PhCalibFragmentNew : Fragment() {
                                 bufferD3_3.text.toString(),
                                 phAfterCalib3_3.text.toString(),
                                 tvTempCurr.text.toString(),
-                                if (dt3_3.text.toString().length >= 15) dt3_3.text
-                                    .toString().substring(0, 10) else "--",
-                                if (dt3_3.text.toString().length >= 15) dt3_3.text
-                                    .toString().substring(11, 16) else "--"
+                                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                    .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataThree(calibDatClass3)
 
@@ -1107,9 +1025,7 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             slope2_3.text = v
@@ -1122,10 +1038,10 @@ class PhCalibFragmentNew : Fragment() {
                                 bufferD2_3.text.toString(),
                                 phAfterCalib2_3.text.toString(),
                                 tvTempCurr.text.toString(),
-                                if (dt2_3.text.toString().length >= 15) dt2_3.text
-                                    .toString().substring(0, 10) else "--",
-                                if (dt2_3.text.toString().length >= 15) dt2_3.text
-                                    .toString().substring(11, 16) else "--"
+                                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                    .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataThree(calibDatClass2)
                         }
@@ -1134,9 +1050,7 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             slope3_3.text = v
@@ -1150,10 +1064,10 @@ class PhCalibFragmentNew : Fragment() {
                                 bufferD3_3.text.toString(),
                                 phAfterCalib3_3.text.toString(),
                                 tvTempCurr.text.toString(),
-                                if (dt3_3.text.toString().length >= 15) dt3_3.text
-                                    .toString().substring(0, 10) else "--",
-                                if (dt3_3.text.toString().length >= 15) dt3_3.text
-                                    .toString().substring(11, 16) else "--"
+                                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                    .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataThree(calibDatClass3)
                         }
@@ -1162,9 +1076,7 @@ class PhCalibFragmentNew : Fragment() {
                             var v = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 v = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                                 phView.moveTo(v.toFloat())
                             }
@@ -1172,8 +1084,7 @@ class PhCalibFragmentNew : Fragment() {
                         }
                         if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                             val ph = jsonData.getString("TEMP_VAL").toFloat()
-                            val tempForm =
-                                String.format(Locale.UK, "%.1f", ph)
+                            val tempForm = String.format(Locale.UK, "%.1f", ph)
                             tvTempCurr.text = "$tempForm°C"
                             if (ph <= -127.0) {
                                 tvTempCurr.text = "NA"
@@ -1182,8 +1093,7 @@ class PhCalibFragmentNew : Fragment() {
                         if (jsonData.has("EC_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                             val ph = jsonData.getString("EC_VAL")
                             SharedPref.saveData(
-                                requireContext(),
-                                "ecValue" + PhActivity.DEVICE_ID, ph
+                                requireContext(), "ecValue" + PhActivity.DEVICE_ID, ph
                             )
                             tvEcCurr.text = ph
                         }
@@ -1192,9 +1102,7 @@ class PhCalibFragmentNew : Fragment() {
                             var e = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 e = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             mv1_3.text = e
@@ -1203,11 +1111,9 @@ class PhCalibFragmentNew : Fragment() {
 //                            SharedPref.saveData(requireContext(),)
 
 
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("MV1_3", mV1_3)
                             myEdit.commit()
@@ -1217,18 +1123,14 @@ class PhCalibFragmentNew : Fragment() {
                             var e = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 e = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             mv2_3.text = e
                             mV2_3 = mv2_3.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("MV2_3", mV2_3)
                             myEdit.commit()
@@ -1238,18 +1140,14 @@ class PhCalibFragmentNew : Fragment() {
                             var e = `val`
                             if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
                                 e = String.format(
-                                    Locale.UK,
-                                    "%.2f",
-                                    `val`.toFloat()
+                                    Locale.UK, "%.2f", `val`.toFloat()
                                 )
                             }
                             mv3_3.text = e
                             mV3_3 = mv3_3.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("MV3_3", mV3_3)
                             myEdit.commit()
@@ -1258,11 +1156,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("DT_2")
                             dt1_3.text = `val`
                             DT1_3 = dt1_3.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("DT1_3", DT1_3)
                             myEdit.commit()
@@ -1271,11 +1167,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("DT_3")
                             dt2_3.text = `val`
                             DT2_3 = dt2_3.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("DT2_3", DT2_3)
                             myEdit.commit()
@@ -1284,11 +1178,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("DT_4")
                             dt3_3.text = `val`
                             DT3_3 = dt3_3.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("DT3_3", DT3_3)
                             myEdit.commit()
@@ -1297,11 +1189,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("B_2")
                             ph1_3.text = `val`
                             PH1_3 = ph1_3.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("PH1_3", PH1_3)
                             myEdit.commit()
@@ -1310,11 +1200,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("B_3")
                             ph2_3.text = `val`
                             PH2_3 = ph2_3.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("PH2_3", PH2_3)
                             myEdit.commit()
@@ -1323,11 +1211,9 @@ class PhCalibFragmentNew : Fragment() {
                             val `val` = jsonData.getString("B_4")
                             ph3_3.text = `val`
                             PH3_3 = ph3_3.text.toString()
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             myEdit.putString("PH3_3", PH3_3)
                             myEdit.commit()
@@ -1337,11 +1223,9 @@ class PhCalibFragmentNew : Fragment() {
                             val ec = `val`.toInt()
                             Log.d("ECVal", "onDataChange: $ec")
                             //                            stateChangeModeFive();
-                            val sharedPreferences =
-                                fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
-                                )
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
                             val myEdit = sharedPreferences.edit()
                             if (jsonData.getString("CAL") == "21" && jsonData.has("POST_VAL_2")) {
                                 val d = jsonData.getString("POST_VAL_2")
@@ -1355,10 +1239,10 @@ class PhCalibFragmentNew : Fragment() {
                                     bufferD1_3.text.toString(),
                                     phAfterCalib1_3.text.toString(),
                                     tvTempCurr.text.toString(),
-                                    if (dt1_3.text.toString().length >= 15) dt1_3.text
-                                        .toString().substring(0, 10) else "--",
-                                    if (dt1_3.text.toString().length >= 15) dt1_3.text
-                                        .toString().substring(11, 16) else "--"
+                                    if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                        .substring(11, 16) else "--"
                                 )
                                 databaseHelper.updateClbOffDataThree(calibDatClass1)
                                 myEdit.putString("tem1_3", tvTempCurr.text.toString())
@@ -1377,10 +1261,10 @@ class PhCalibFragmentNew : Fragment() {
                                     bufferD2_3.text.toString(),
                                     phAfterCalib2_3.text.toString(),
                                     tvTempCurr.text.toString(),
-                                    if (dt2_3.text.toString().length >= 15) dt2_3.text
-                                        .toString().substring(0, 10) else "--",
-                                    if (dt2_3.text.toString().length >= 15) dt2_3.text
-                                        .toString().substring(11, 16) else "--"
+                                    if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                        .substring(11, 16) else "--"
                                 )
                                 databaseHelper.updateClbOffDataThree(calibDatClass2)
                                 myEdit.putString("tem2_3", tvTempCurr.text.toString())
@@ -1399,10 +1283,10 @@ class PhCalibFragmentNew : Fragment() {
                                     bufferD3_3.text.toString(),
                                     phAfterCalib3_3.text.toString(),
                                     tvTempCurr.text.toString(),
-                                    if (dt3_3.text.toString().length >= 15) dt3_3.text
-                                        .toString().substring(0, 10) else "--",
-                                    if (dt3_3.text.toString().length >= 15) dt3_3.text
-                                        .toString().substring(11, 16) else "--"
+                                    if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                        .substring(11, 16) else "--"
                                 )
                                 databaseHelper.updateClbOffDataThree(calibDatClass3)
                                 myEdit.putString("tem3_3", tvTempCurr.text.toString())
@@ -1595,8 +1479,7 @@ class PhCalibFragmentNew : Fragment() {
     private fun generatePDF() {
 
         if (SharedPref.getSavedData(
-                getContext(),
-                "COMPANY_NAME"
+                getContext(), "COMPANY_NAME"
             ) != null && SharedPref.getSavedData(
                 getContext(), "COMPANY_NAME"
             ) != "N/A"
@@ -1605,9 +1488,13 @@ class PhCalibFragmentNew : Fragment() {
         } else {
             companyName = "N/A";
         }
+        var company_name = ""
+            company_name = "Company: $companyName"
+        var user_name = ""
+        if (Source.cfr_mode) {
 
-        val company_name = "Company: $companyName"
-        val user_name = "Report generated by: " + Source.logUserName
+            user_name = "Report generated by: " + Source.userName
+        }
         val device_id = "DeviceID: $deviceID"
         val calib_by = "Calibrated by: " + Source.calib_completed_by
         reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
@@ -1616,11 +1503,9 @@ class PhCalibFragmentNew : Fragment() {
         offset = "Offset: " + shp.getString("offset", "")
         if (Constants.OFFLINE_DATA) {
             if (SharedPref.getSavedData(
-                    requireContext(),
-                    "OFFSET_" + PhActivity.DEVICE_ID
+                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
-                    requireContext(),
-                    "OFFSET_" + PhActivity.DEVICE_ID
+                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
                 val data =
@@ -1635,11 +1520,9 @@ class PhCalibFragmentNew : Fragment() {
         battery = "Battery: " + shp.getString("battery", "")
         if (Constants.OFFLINE_DATA) {
             if (SharedPref.getSavedData(
-                    requireContext(),
-                    "SLOPE_" + PhActivity.DEVICE_ID
+                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
-                    requireContext(),
-                    "SLOPE_" + PhActivity.DEVICE_ID
+                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
                 val data =
@@ -1649,11 +1532,9 @@ class PhCalibFragmentNew : Fragment() {
                 slope = "Slope: " + "null"
             }
             if (SharedPref.getSavedData(
-                    requireContext(),
-                    "tempValue" + PhActivity.DEVICE_ID
+                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
-                    requireContext(),
-                    "tempValue" + PhActivity.DEVICE_ID
+                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
                 val data =
@@ -1683,9 +1564,9 @@ class PhCalibFragmentNew : Fragment() {
         val tempRoot = File(tempPath)
         fileNotWrite(tempRoot)
         val tempFilesAndFolders = tempRoot.listFiles()
-        val fileName = ContextWrapper(requireContext()).externalMediaDirs[0].toString() +
-                File.separator + "/LabApp/CalibrationData/CD_" + currentDateandTime + "_" +
-                ((tempFilesAndFolders?.size ?: 0) - 1) + ".pdf"
+        val fileName =
+            ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData/CD_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
+                ?: 0) - 1) + ".pdf"
         val file = File(fileName)
         val outputStream: OutputStream = FileOutputStream(file)
         val writer = PdfWriter(file)
@@ -1729,9 +1610,7 @@ class PhCalibFragmentNew : Fragment() {
         document.add(Paragraph(""))
         document.add(
             Paragraph(
-                reportDate
-                        + "  |  " + reportTime + "\n" +
-                        offset + "  |  " + battery + "\n" + slope + "  |  " + temp
+                reportDate + "  |  " + reportTime + "\n" + offset + "  |  " + battery + "\n" + slope + "  |  " + temp
             )
         )
         document.add(Paragraph(""))
@@ -1857,13 +1736,18 @@ class PhCalibFragmentNew : Fragment() {
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         calibrateBtn.setBackgroundColor(
             ContextCompat.getColor(
-                requireContext(),
-                R.color.colorPrimaryAlpha
+                requireContext(), R.color.colorPrimaryAlpha
             )
         )
         calibrateBtn.isEnabled = false
         tvTimer.visibility = View.VISIBLE
         isCalibrating = true
+
+        addUserAction(
+            "username: " + Source.userName + ", Role: " + Source.userRole +
+                    ", started calibration mode 5, of buffer " + currentBuf, "", "", "", ""
+        )
+
         timer5 = object : CountDownTimer(50000, 1000) {
             //45000
             //        timer5 = new CountDownTimer(5000, 1000) { //45000
@@ -2139,8 +2023,7 @@ class PhCalibFragmentNew : Fragment() {
                                 calibrateBtn.isEnabled = true
                                 tvTimer.visibility = View.INVISIBLE
                                 val currentTime = SimpleDateFormat(
-                                    "yyyy-MM-dd HH:mm",
-                                    Locale.getDefault()
+                                    "yyyy-MM-dd HH:mm", Locale.getDefault()
                                 ).format(
                                     Date()
                                 )
@@ -2163,8 +2046,7 @@ class PhCalibFragmentNew : Fragment() {
 //                                deviceRef.child("UI").child("PH").child("PH_CAL").child(postCoeffLabels[b]).get().addOnSuccessListener(dataSnapshot2 -> {
 //                                    Float postCoeff = dataSnapshot2.getValue(Float.class);
                                 val sharedPreferences = fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
+                                    "CalibPrefs", Context.MODE_PRIVATE
                                 )
                                 val myEdit = sharedPreferences.edit()
                                 if (b == 0) {
@@ -2530,15 +2412,7 @@ class PhCalibFragmentNew : Fragment() {
                             .substring(11, 16) else "--"
                     )
                     databaseHelper.insertCalibrationAllDataOffline(
-                        "-",
-                        "-",
-                        "-",
-                        "-",
-                        "-",
-                        "-",
-                        "-",
-                        "-",
-                        "-"
+                        "-", "-", "-", "-", "-", "-", "-", "-", "-"
                     )
 //                    deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(0)
                     tvTimer.text = "00:45"
@@ -2560,11 +2434,9 @@ class PhCalibFragmentNew : Fragment() {
         // Create an alert builder
         val builder = AlertDialog.Builder(requireContext())
         // set the custom layout
-        val customLayout: View = layoutInflater
-            .inflate(
-                R.layout.fault_dialog,
-                null
-            )
+        val customLayout: View = layoutInflater.inflate(
+            R.layout.fault_dialog, null
+        )
         builder.setView(customLayout)
 
         // add a button
@@ -2611,13 +2483,17 @@ class PhCalibFragmentNew : Fragment() {
         val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         calibrateBtnThree.setBackgroundColor(
             ContextCompat.getColor(
-                requireContext(),
-                R.color.colorPrimaryAlpha
+                requireContext(), R.color.colorPrimaryAlpha
             )
         )
         calibrateBtnThree.isEnabled = false
         tvTimerThree.visibility = View.VISIBLE
         isCalibrating = true
+
+        addUserAction(
+            "username: " + Source.userName + ", Role: " + Source.userRole +
+                    ", started calibration mode 3, of buffer " + currentBufThree, "", "", "", ""
+        )
 
 //        startTimer();
         timer3 = object : CountDownTimer(45000, 1000) {
@@ -2786,8 +2662,7 @@ class PhCalibFragmentNew : Fragment() {
                                 calibrateBtnThree.isEnabled = true
                                 tvTimerThree.visibility = View.INVISIBLE
                                 val currentTime = SimpleDateFormat(
-                                    "yyyy-MM-dd HH:mm",
-                                    Locale.getDefault()
+                                    "yyyy-MM-dd HH:mm", Locale.getDefault()
                                 ).format(
                                     Date()
                                 )
@@ -2795,8 +2670,7 @@ class PhCalibFragmentNew : Fragment() {
                                 //                        bufferListThree.add(new BufferData(null, null, currentTime));
                                 jsonData = JSONObject()
                                 jsonData.put(
-                                    "CAL",
-                                    (calValuesThree[currentBufThree] + 1).toString()
+                                    "CAL", (calValuesThree[currentBufThree] + 1).toString()
                                 )
                                 jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                                 WebSocketManager.sendMessage(jsonData.toString())
@@ -2809,8 +2683,7 @@ class PhCalibFragmentNew : Fragment() {
                                 Log.e("cValue2", currentBufThree.toString() + "")
                                 Log.e("bValue", b.toString() + "")
                                 val sharedPreferences = fragmentContext.getSharedPreferences(
-                                    "CalibPrefs",
-                                    Context.MODE_PRIVATE
+                                    "CalibPrefs", Context.MODE_PRIVATE
                                 )
                                 val myEdit = sharedPreferences.edit()
                                 if (b == 0) {
@@ -3033,8 +2906,7 @@ class PhCalibFragmentNew : Fragment() {
                     Log.d("Runnable", "ok")
                 } else { // post again
                     --LOG_INTERVAL_3
-                    tvTimerThree.text =
-                        "00:0" + LOG_INTERVAL_3.toString().substring(0, 1)
+                    tvTimerThree.text = "00:0" + LOG_INTERVAL_3.toString().substring(0, 1)
                     handler2.postDelayed(this, 1000)
                 }
             }
@@ -3058,9 +2930,7 @@ class PhCalibFragmentNew : Fragment() {
 
     private fun phGraphOnClick() {
         phGraph.setOnClickListener { v: View? ->
-            if (PH1 != "" || PH2 != "" || PH3 != "" || PH4 != "" || PH5 != ""
-                || MV1 != "" || MV2 != "" || MV3 != "" || MV4 != "" || MV5 != ""
-            ) {
+            if (PH1 != "" || PH2 != "" || PH3 != "" || PH4 != "" || PH5 != "" || MV1 != "" || MV2 != "" || MV3 != "" || MV4 != "" || MV5 != "") {
                 val i = Intent(fragmentContext, PHCalibGraph::class.java)
                 i.putExtra("PH1", PH1)
                 i.putExtra("PH2", PH2)
@@ -3118,8 +2988,53 @@ class PhCalibFragmentNew : Fragment() {
 
     }
 
+    fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
+        if (Source.cfr_mode) {
+            lifecycleScope.launch(Dispatchers.IO) {
+
+                userActionDao.insertUserAction(
+                    UserActionEntity(
+                        0, Source.getCurrentTime(), Source.getPresentDate(),
+                        action, ph, temp, mv, compound, PhActivity.DEVICE_ID.toString()
+                    )
+                )
+            }
+        }
+    }
+
+    lateinit var userDao: UserDao
+    lateinit var userActionDao: UserActionDao
+
     override fun onResume() {
         super.onResume()
+
+        userDao = Room.databaseBuilder(
+            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+        ).build().userDao()
+
+        userActionDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userActionDao()
+
+        if (Source.cfr_mode) {
+            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
+            userAuthDialog.showLoginDialog { isValidCredentials ->
+                if (isValidCredentials) {
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", entered ph calib fragment", "", "", "", ""
+                    )
+                } else {
+                    requireActivity().runOnUiThread {
+                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+            }
+        }
+
         offlineDataFeeding()
 
 
@@ -3177,10 +3092,7 @@ class PhCalibFragmentNew : Fragment() {
 
             spin.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long
+                    parent: AdapterView<*>?, view: View?, position: Int, id: Long
                 ) {
                     Log.d("SpinnerSelection", "Parent: $parent")
                     Log.d("SpinnerSelection", "View: $view")
@@ -3221,7 +3133,10 @@ class PhCalibFragmentNew : Fragment() {
                             log3.setBackgroundColor(Color.WHITE)
                             log4.setBackgroundColor(Color.WHITE)
                             log5.setBackgroundColor(Color.WHITE)
-
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", switched ph calib mode to 5", "", "", "", ""
+                            )
 
                         }
 
@@ -3256,6 +3171,10 @@ class PhCalibFragmentNew : Fragment() {
                             log3.setBackgroundColor(Color.WHITE)
                             log4.setBackgroundColor(Color.WHITE)
                             log5.setBackgroundColor(Color.WHITE)
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", switched ph calib mode to 3", "", "", "", ""
+                            )
 
                         }
                     }
@@ -3263,11 +3182,8 @@ class PhCalibFragmentNew : Fragment() {
 
                 override fun onNothingSelected(parent: AdapterView<*>?) {
                     Toast.makeText(
-                        requireContext(),
-                        "Select a mode of Calibration",
-                        Toast.LENGTH_SHORT
-                    )
-                        .show()
+                        requireContext(), "Select a mode of Calibration", Toast.LENGTH_SHORT
+                    ).show()
                 }
             }
         } catch (e: Exception) {
@@ -3329,45 +3245,70 @@ class PhCalibFragmentNew : Fragment() {
         }
         if (calibCSV5.count == 0) {
             databaseHelper.insertCalibrationOfflineDataFive(
-                1, ph1.text.toString(),
-                mv1.text.toString(), slope1.text.toString(), dt1.text.toString(),
-                bufferD1.text.toString(), phAfterCalib1.text.toString(), tvTempCurr.text.toString(),
+                1,
+                ph1.text.toString(),
+                mv1.text.toString(),
+                slope1.text.toString(),
+                dt1.text.toString(),
+                bufferD1.text.toString(),
+                phAfterCalib1.text.toString(),
+                tvTempCurr.text.toString(),
                 if (dt1.text.toString().length >= 15) dt1.text.toString()
                     .substring(0, 10) else "--",
                 if (dt1.text.toString().length >= 15) dt1.text.toString()
                     .substring(11, 16) else "--"
             )
             databaseHelper.insertCalibrationOfflineDataFive(
-                2, ph2.text.toString(),
-                mv2.text.toString(), slope2.text.toString(), dt2.text.toString(),
-                bufferD2.text.toString(), phAfterCalib2.text.toString(), tvTempCurr.text.toString(),
+                2,
+                ph2.text.toString(),
+                mv2.text.toString(),
+                slope2.text.toString(),
+                dt2.text.toString(),
+                bufferD2.text.toString(),
+                phAfterCalib2.text.toString(),
+                tvTempCurr.text.toString(),
                 if (dt2.text.toString().length >= 15) dt2.text.toString()
                     .substring(0, 10) else "--",
                 if (dt2.text.toString().length >= 15) dt2.text.toString()
                     .substring(11, 16) else "--"
             )
             databaseHelper.insertCalibrationOfflineDataFive(
-                3, ph3.text.toString(),
-                mv3.text.toString(), slope3.text.toString(), dt3.text.toString(),
-                bufferD3.text.toString(), phAfterCalib3.text.toString(), tvTempCurr.text.toString(),
+                3,
+                ph3.text.toString(),
+                mv3.text.toString(),
+                slope3.text.toString(),
+                dt3.text.toString(),
+                bufferD3.text.toString(),
+                phAfterCalib3.text.toString(),
+                tvTempCurr.text.toString(),
                 if (dt3.text.toString().length >= 15) dt3.text.toString()
                     .substring(0, 10) else "--",
                 if (dt3.text.toString().length >= 15) dt3.text.toString()
                     .substring(11, 16) else "--"
             )
             databaseHelper.insertCalibrationOfflineDataFive(
-                4, ph4.text.toString(),
-                mv4.text.toString(), slope4.text.toString(), dt4.text.toString(),
-                bufferD4.text.toString(), phAfterCalib4.text.toString(), tvTempCurr.text.toString(),
+                4,
+                ph4.text.toString(),
+                mv4.text.toString(),
+                slope4.text.toString(),
+                dt4.text.toString(),
+                bufferD4.text.toString(),
+                phAfterCalib4.text.toString(),
+                tvTempCurr.text.toString(),
                 if (dt4.text.toString().length >= 15) dt4.text.toString()
                     .substring(0, 10) else "--",
                 if (dt4.text.toString().length >= 15) dt4.text.toString()
                     .substring(11, 16) else "--"
             )
             databaseHelper.insertCalibrationOfflineDataFive(
-                5, ph5.text.toString(),
-                mv5.text.toString(), slope5.text.toString(), dt5.text.toString(),
-                bufferD5.text.toString(), phAfterCalib5.text.toString(), tvTempCurr.text.toString(),
+                5,
+                ph5.text.toString(),
+                mv5.text.toString(),
+                slope5.text.toString(),
+                dt5.text.toString(),
+                bufferD5.text.toString(),
+                phAfterCalib5.text.toString(),
+                tvTempCurr.text.toString(),
                 if (dt5.text.toString().length >= 15) dt5.text.toString()
                     .substring(0, 10) else "--",
                 if (dt5.text.toString().length >= 15) dt5.text.toString()
@@ -3557,6 +3498,15 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataFive(calibDatClass)
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_1 value to " + ph + ", in calibmode 5",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
+
                         } catch (e: JSONException) {
                             throw RuntimeException(e)
                         }
@@ -3598,6 +3548,15 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataFive(calibDatClass)
+
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_2 value to " + ph + ", in calibmode 5",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
                         } catch (e: JSONException) {
                             throw RuntimeException(e)
                         }
@@ -3639,6 +3598,15 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataFive(calibDatClass)
+
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_3 value to " + ph + ", in calibmode 5",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
                         } catch (e: JSONException) {
                             throw RuntimeException(e)
                         }
@@ -3680,6 +3648,15 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataFive(calibDatClass)
+
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_4 value to " + ph + ", in calibmode 5",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
                         } catch (e: JSONException) {
                             throw RuntimeException(e)
                         }
@@ -3721,6 +3698,15 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataFive(calibDatClass)
+
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_5 value to " + ph + ", in calibmode 5",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
                         } catch (e: JSONException) {
                             throw RuntimeException(e)
                         }
@@ -3763,6 +3749,15 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataThree(calibDatClass1)
+
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_1 value to " + ph + ", in calibmode 3",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
                         } catch (e: JSONException) {
                             throw RuntimeException(e)
                         }
@@ -3805,6 +3800,15 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataThree(calibDatClass2)
+
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_2 value to " + ph + ", in calibmode 3",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
                         } catch (e: JSONException) {
                             throw RuntimeException(e)
                         }
@@ -3847,6 +3851,15 @@ class PhCalibFragmentNew : Fragment() {
                                     .substring(11, 16) else "--"
                             )
                             databaseHelper.updateClbOffDataThree(calibDatClass3)
+
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_3 value to " + ph + ", in calibmode 3",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
                         } catch (e: JSONException) {
                             throw RuntimeException(e)
                         }

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="5dp"
+    app:cardCornerRadius="5dp"
+    app:cardElevation="4dp">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:padding="6dp">
+
+        <TextView
+            android:id="@+id/userNumber"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="10dp"
+            android:layout_marginEnd="10dp"
+            android:text="User 1"
+            android:textColor="@color/black"
+            android:textSize="18dp"
+            android:textStyle="bold" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="7dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Username : "
+                android:textColor="@color/black"
+                android:textSize="@dimen/all_user_txt_size"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/user_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Vishal Anand"
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="@dimen/all_user_txt_size"
+                android:textStyle="normal" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Role : "
+                android:textColor="@color/black"
+                android:textSize="@dimen/all_user_txt_size"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/user_role"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Supervisor"
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="@dimen/all_user_txt_size"
+                android:textStyle="normal" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Date Created : "
+                android:textColor="@color/black"
+                android:textSize="@dimen/all_user_txt_size"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/dateCreated"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Supervisor"
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="@dimen/all_user_txt_size"
+                android:textStyle="normal" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="5dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Expiry Date : "
+                android:textColor="@color/black"
+                android:textSize="@dimen/all_user_txt_size"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/expiry_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                android:text="Supervisor"
+                android:textColor="@color/colorPrimaryDark"
+                android:textSize="@dimen/all_user_txt_size"
+                android:textStyle="normal" />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:gravity="end">
+
+
+            <ImageView
+                android:id="@+id/editBtn"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_margin="2.5dp"
+                android:src="@drawable/ic_edit"
+                app:tint="@color/black" />
+
+            <ImageView
+                android:id="@+id/deleteBtn"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_margin="2.5dp"
+                android:src="@drawable/ic_delete"
+                app:tint="@color/black" />
+
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+</androidx.cardview.widget.CardView>
+
+
+
