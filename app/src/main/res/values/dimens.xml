@@ -3,4 +3,17 @@
     <dimen name="dateAndTime">10.5dp</dimen>
     <dimen name="textDim">10.5dp</dimen>
     <dimen name="textsDim">10.5dp</dimen>
+
+    <dimen name="drwr_dim_ham">40dp</dimen>
+    <dimen name="cntr_text_size">10dp</dimen>
+    <dimen name="pad">10pt</dimen>
+    <dimen name="pad2">15dp</dimen>
+    <dimen name="your_line_width">2dp</dimen>
+    <dimen name="table_item_size">10sp</dimen>
+    <dimen name="all_user_txt_size">16sp</dimen>
+    <dimen name="focus_indicator_size">48dp</dimen>
+    <dimen name="accInfo">12dp</dimen>
+    <dimen name="intensity_graph_height">300dp</dimen>
+    <dimen name="font_size_small">10sp</dimen>
+    <dimen name="font_size_medium">12sp</dimen>
 </resources>

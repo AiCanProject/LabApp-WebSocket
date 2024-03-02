@@ -31,17 +31,24 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.room.Room
 import com.aican.aicanapp.R
 import com.aican.aicanapp.adapters.LogAdapter
 import com.aican.aicanapp.adapters.PrintLogAdapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.dataClasses.phData
 import com.aican.aicanapp.databinding.FragmentPhLogBinding
+import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.Export
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.ph.phAnim.PhView
+import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
+import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
+import com.aican.aicanapp.roomDatabase.database.AppDatabase
+import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
@@ -58,7 +65,8 @@ import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
-import org.java_websocket.WebSocket
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
@@ -87,7 +95,7 @@ class PhLogFragment : Fragment() {
         var LOG_INTERVAL: Float = 0F
     }
 
-    private  var handler1: Handler? = null
+    private var handler1: Handler? = null
     private lateinit var runnable1: Runnable
     private lateinit var jsonData: JSONObject
 
@@ -96,36 +104,36 @@ class PhLogFragment : Fragment() {
     private lateinit var phView: PhView
     private lateinit var tvPhCurr: TextView
     private lateinit var tvPhNext: TextView
-    private  var ph: String = "0.0"
-    private  var temp: String = "0.0"
-    private  var mv: String = "0.0"
-    private  var date: String = ""
-    private  var time: String = ""
-    private  var batchnum: String = ""
-    private  var arnum: String = ""
-    private  var compound_name: String = ""
-    private  var ph_fetched: String = ""
-    private  var m_fetched: String = ""
-    private  var currentDate_fetched: String = ""
-    private  var currentTime_fetched: String = ""
-    private  var batchnum_fetched: String = ""
-    private  var arnum_fetched: String = ""
-    private  var compound_name_fetched: String = ""
-    private  var ph1: String = "0.0"
-    private  var mv1: String = "0.0"
-    private  var ph2: String = "0.0"
-    private  var mv2: String = "0.0"
-    private  var ph3: String = "0.0"
-    private  var mv3: String = "0.0"
-    private  var ph4: String = "0.0"
-    private  var mv4: String = "0.0"
-    private  var ph5: String = "0.0"
-    private  var mv5: String = "0.0"
-    private  var dt1: String = ""
-    private  var dt2: String = ""
-    private  var dt3: String = ""
-    private  var dt4: String = ""
-    private  var dt5: String = ""
+    private var ph: String = "0.0"
+    private var temp: String = "0.0"
+    private var mv: String = "0.0"
+    private var date: String = ""
+    private var time: String = ""
+    private var batchnum: String = ""
+    private var arnum: String = ""
+    private var compound_name: String = ""
+    private var ph_fetched: String = ""
+    private var m_fetched: String = ""
+    private var currentDate_fetched: String = ""
+    private var currentTime_fetched: String = ""
+    private var batchnum_fetched: String = ""
+    private var arnum_fetched: String = ""
+    private var compound_name_fetched: String = ""
+    private var ph1: String = "0.0"
+    private var mv1: String = "0.0"
+    private var ph2: String = "0.0"
+    private var mv2: String = "0.0"
+    private var ph3: String = "0.0"
+    private var mv3: String = "0.0"
+    private var ph4: String = "0.0"
+    private var mv4: String = "0.0"
+    private var ph5: String = "0.0"
+    private var mv5: String = "0.0"
+    private var dt1: String = ""
+    private var dt2: String = ""
+    private var dt3: String = ""
+    private var dt4: String = ""
+    private var dt5: String = ""
     private lateinit var mode: String
     private lateinit var reportDate: String
     private lateinit var reportTime: String
@@ -155,7 +163,7 @@ class PhLogFragment : Fragment() {
     private lateinit var enterTime: EditText
     private lateinit var TABLE_NAME: String
     private lateinit var recyclerView: RecyclerView
-    private  var handler: Handler? = null
+    private var handler: Handler? = null
     private lateinit var runnable: Runnable
     private lateinit var switchHold: SwitchCompat
     private lateinit var switchInterval: SwitchCompat
@@ -181,6 +189,7 @@ class PhLogFragment : Fragment() {
     private fun updateError(error: String) {
         sharedViewModel.errorLiveData.value = error
     }
+
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -272,15 +281,10 @@ class PhLogFragment : Fragment() {
                 SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
             val date: String =
                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-            databaseHelper.insert_action_data(
-                time,
-                date,
-                "Exported by " + Source.logUserName,
-                ph,
-                temp,
-                mv,
-                "",
-                PhActivity.DEVICE_ID
+
+            addUserAction(
+                "username: " + Source.userName + ", Role: " + Source.userRole +
+                        ", Moved to export activity", ph, temp, mv, compound_name
             )
             val sh =
                 requireContext().getSharedPreferences("RolePref", MODE_PRIVATE)
@@ -318,6 +322,10 @@ class PhLogFragment : Fragment() {
                 if (ph == null || temp == null || mv == null) {
 //                    Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
                 }
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", Log pressed", ph, temp, mv, compound_name
+                )
                 databaseHelper.print_insert_log_data(
                     date,
                     time,
@@ -338,16 +346,7 @@ class PhLogFragment : Fragment() {
                     compound_name,
                     PhActivity.DEVICE_ID
                 )
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "Log pressed : " + Source.logUserName,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name,
-                    PhActivity.DEVICE_ID
-                )
+
                 adapter = LogAdapter(context, getList())
                 recyclerView.adapter = adapter
             }
@@ -501,6 +500,14 @@ class PhLogFragment : Fragment() {
                         jsonData.put("AUTOLOG", "2")
                         jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                         WebSocketManager.sendMessage(jsonData.toString())
+                        addUserAction(
+                            "username: " + Source.userName + ", Role: " + Source.userRole +
+                                    ", AUTOLOG = 2",
+                            ph,
+                            temp,
+                            mv,
+                            compound_name
+                        )
                         Toast.makeText(
                             requireContext(),
                             "C " + Constants.timeInSec,
@@ -531,6 +538,15 @@ class PhLogFragment : Fragment() {
                         jsonData.put("AUTOLOG", "0")
                         jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                         WebSocketManager.sendMessage(jsonData.toString())
+
+                        addUserAction(
+                            "username: " + Source.userName + ", Role: " + Source.userRole +
+                                    ", AUTOLOG = 0",
+                            ph,
+                            temp,
+                            mv,
+                            compound_name
+                        )
                         isAlertShow = true
                         if (handler != null) {
                             handler!!.removeCallbacks(runnable)
@@ -805,10 +821,10 @@ class PhLogFragment : Fragment() {
             sharedViewModel.openConnectionLiveData.value = ""
         }
 
-        WebSocketManager.setErrorListener {error ->
+        WebSocketManager.setErrorListener { error ->
             requireActivity().runOnUiThread {
 
-            updateError(error.toString())
+                updateError(error.toString())
             }
         }
         WebSocketManager.setMessageListener { message ->
@@ -1041,10 +1057,10 @@ class PhLogFragment : Fragment() {
 
         val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
         if (companyname != null) {
-             company_name = "Company: $companyname"
+            company_name = "Company: $companyname"
 
-        }else{
-             company_name = "Company: N/A"
+        } else {
+            company_name = "Company: N/A"
 
         }
 
@@ -1103,10 +1119,11 @@ class PhLogFragment : Fragment() {
                 "Temperature: " + "null"
             }
 
-            val batteryVal = SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
+            val batteryVal =
+                SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
             if (batteryVal != null) {
                 if (batteryVal != "") {
-                    battery= "$batteryVal %"
+                    battery = "$batteryVal %"
                 }
             }
 
@@ -1339,87 +1356,78 @@ $slope  |  $tempe"""
                 compound_name = compound_name_txt.text.toString()
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "Compound name changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", Compound name changed to " + compound_name,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             } else {
                 compound_name = "NA"
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "Compound name changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", Compound name changed to " + compound_name,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             }
             if (!batch_number.text.toString().isEmpty()) {
                 batchnum = batch_number.text.toString()
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "Batchnum changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", Batchnum changed to " + batchnum,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             } else {
                 batchnum = "NA"
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "Batchnum changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", Batchnum changed to " + batchnum,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             }
             if (!ar_number.text.toString().isEmpty()) {
                 arnum = ar_number.text.toString()
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "AR_NUMBER changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", AR_NUMBER changed to " + arnum,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             } else {
                 arnum = "NA"
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "AR_NUMBER changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", AR_NUMBER changed to " + arnum,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             }
         } else {
@@ -1427,32 +1435,27 @@ $slope  |  $tempe"""
                 compound_name = compound_name_txt.text.toString()
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "Compound name changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", Compound name changed to " + compound_name,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             } else {
                 compound_name = "NA"
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "Compound name changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", Compound name changed to " + compound_name,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             }
-            deviceRef.child("Data").child("COMPOUND_NAME").setValue(compound_name)
 
 
             //saving batch number
@@ -1470,19 +1473,25 @@ $slope  |  $tempe"""
                     "",
                     PhActivity.DEVICE_ID
                 )
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", Batchnum changed to " + batchnum,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
+                )
             } else {
                 batchnum = "NA"
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "Batchnum changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", Batchnum changed to " + batchnum,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             }
             deviceRef.child("Data").child("BATCH_NUMBER").setValue(batchnum)
@@ -1490,29 +1499,25 @@ $slope  |  $tempe"""
                 arnum = ar_number.text.toString()
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "AR_NUMBER changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", AR_NUMBER changed to " + arnum,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             } else {
                 arnum = "NA"
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "AR_NUMBER changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", AR_NUMBER changed to " + arnum,
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
             }
             deviceRef.child("Data").child("AR_NUMBER").setValue(arnum)
@@ -1683,11 +1688,11 @@ $slope  |  $tempe"""
         )
     }
 
-   override fun onRequestPermissionsResult(
-       requestCode: Int,
-       permissions: Array<out String>,
-       grantResults: IntArray
-   ) {
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty()) {
                 val writeStorage = grantResults[0] == PackageManager.PERMISSION_GRANTED
@@ -1712,9 +1717,53 @@ $slope  |  $tempe"""
         return if (fileArray.isNotEmpty()) fileArray else null
     }
 
+    fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+
+            userActionDao.insertUserAction(
+                UserActionEntity(
+                    0, Source.getCurrentTime(), Source.getPresentDate(),
+                    action, ph, temp, mv, compound, PhActivity.DEVICE_ID.toString()
+                )
+            )
+        }
+    }
+
+    lateinit var userDao: UserDao
+    lateinit var userActionDao: UserActionDao
 
     override fun onResume() {
         super.onResume()
+
+        userDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userDao()
+
+        userActionDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userActionDao()
+
+        if (Source.cfr_mode) {
+            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
+            userAuthDialog.showLoginDialog { isValidCredentials ->
+                if (isValidCredentials) {
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", entered ph log fragment", "", "", "", ""
+                    )
+                } else {
+                    requireActivity().runOnUiThread {
+                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+            }
+        }
+
         Source.activeFragment = 2
         if (handler != null && runnable != null) {
             handler!!.removeCallbacks(runnable)

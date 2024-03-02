@@ -16,13 +16,23 @@ import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.lifecycleScope
+import androidx.room.Room
 import com.aican.aicanapp.R
 import com.aican.aicanapp.databinding.FragmentPhAlarmFragmentBinding
+import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.PhActivity
+import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
+import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
+import com.aican.aicanapp.roomDatabase.database.AppDatabase
+import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
+import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.google.firebase.database.DatabaseReference
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
 import java.util.Locale
@@ -89,6 +99,10 @@ class PhAlarmFragment : Fragment() {
                 Toast.makeText(context, "Please enter all values", Toast.LENGTH_SHORT).show()
             } else {
                 Log.d("Alarm", "Start alarm clicked")
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", started alarm", "", "", "", ""
+                )
                 stopAlarm.isEnabled = true
                 AlarmConstants.maxPh = minPH.toFloat()
                 AlarmConstants.minPh = maxPH.toFloat()
@@ -104,6 +118,10 @@ class PhAlarmFragment : Fragment() {
             if (AlarmConstants.ringtone.isPlaying || AlarmConstants.ringtone != null) {
                 AlarmConstants.ringtone.stop()
             }
+            addUserAction(
+                "username: " + Source.userName + ", Role: " + Source.userRole +
+                        ", stopped alarm", "", "", "", ""
+            )
             AlarmConstants.isServiceAvailable = false
             stopAlarm.isEnabled = false
             alarm.isEnabled = true
@@ -112,6 +130,55 @@ class PhAlarmFragment : Fragment() {
         webSocketInit()
 
 
+    }
+
+    fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+
+            userActionDao.insertUserAction(
+                UserActionEntity(
+                    0, Source.getCurrentTime(), Source.getPresentDate(),
+                    action, ph, temp, mv, compound, PhActivity.DEVICE_ID.toString()
+                )
+            )
+        }
+    }
+
+    lateinit var userDao: UserDao
+    lateinit var userActionDao: UserActionDao
+
+    override fun onResume() {
+        super.onResume()
+
+        userDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userDao()
+
+        userActionDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userActionDao()
+
+
+        if (Source.cfr_mode) {
+            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
+            userAuthDialog.showLoginDialog { isValidCredentials ->
+                if (isValidCredentials) {
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", entered ph alarm fragment", "", "", "", ""
+                    )
+                } else {
+                    requireActivity().runOnUiThread {
+                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+            }
+        }
     }
 
     private fun webSocketInit() {

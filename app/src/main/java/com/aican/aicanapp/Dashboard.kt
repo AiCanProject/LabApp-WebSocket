@@ -73,18 +73,6 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         const val DEVICE_TYPE_COOLING = "PELTIER"
         const val DEVICE_TYPE_EC = "ECMETER"
     }
-//    lateinit var phDevices: ArrayList<PhDevice>
-//    lateinit var pumpDevices: ArrayList<PumpDevice>
-//    lateinit var tempDevices: ArrayList<TempDevice>
-//    lateinit var coolingDevices: ArrayList<CoolingDevice>
-//    lateinit var ecDevices: ArrayList<EcDevice>
-//
-//    lateinit var tempAdapter: TempAdapter
-//    lateinit var coolingAdapter: CoolingAdapter
-//    lateinit var phAdapter: PhAdapter
-//    lateinit var ecAdapter: EcAdapter
-//    lateinit var pumpAdapter: PumpAdapter
-//    lateinit var databaseHelper: DatabaseHelper
 
     lateinit var phDev: CardView
     lateinit var tempDev: CardView
@@ -213,8 +201,8 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
         WebSocketManager.setMessageListener {
             runOnUiThread {
-                Toast.makeText(this@Dashboard, "Message " + it, Toast.LENGTH_SHORT).show()
-                binding.monitorText.text = it.toString()
+                Toast.makeText(this@Dashboard, "Message $it", Toast.LENGTH_SHORT).show()
+                binding.monitorText.text = it
             }
         }
 
@@ -234,7 +222,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
         }
 
-        WebSocketManager.setCloseListener { code, reason, remote ->
+        WebSocketManager.setCloseListener { _, _, _ ->
             runOnUiThread {
 
                 binding.socketConnected.visibility = View.GONE
@@ -477,6 +465,10 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
     }
 
     //Cooling RC------------------------------------------------------------------------------------------------------
+
+    fun setUpNewPh(){
+
+    }
     fun setUpPh() {
         phRecyclerView.layoutManager =
             LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)

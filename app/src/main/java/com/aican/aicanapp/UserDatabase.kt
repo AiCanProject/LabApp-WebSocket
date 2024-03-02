@@ -2,7 +2,6 @@ package com.aican.aicanapp
 
 import android.content.Intent
 import android.os.Bundle
-import android.os.Environment
 import android.util.Log
 import android.view.View
 import android.widget.Button
@@ -10,16 +9,10 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.aican.aicanapp.adapters.UserAdapter
 import com.aican.aicanapp.adapters.UserDatabaseAdapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.dataClasses.userDatabase.UserDatabaseModel
 import java.io.File
-import java.io.FileWriter
-import java.io.PrintWriter
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 class UserDatabase : AppCompatActivity() {
 
@@ -41,63 +34,7 @@ class UserDatabase : AppCompatActivity() {
         recyclerView.adapter = adapter
 
         printBtn.setOnClickListener(View.OnClickListener { view: View? ->
-//            exportCsv()
-//            try {
-//                val workbook = Workbook(
-//                    Environment.getExternalStorageDirectory()
-//                        .absolutePath + File.separator + "/LabApp/UserData/UserData.xlsx"
-//                )
-//                val options = PdfSaveOptions()
-//                val sdf =
-//                    SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault())
-//                val currentDateandTime = sdf.format(Date())
-//                options.setCompliance(PdfCompliance.PDF_A_1_B)
-//                workbook.save(
-//                    Environment.getExternalStorageDirectory()
-//                        .absolutePath + File.separator + "/LabApp/UserData/UserData" + currentDateandTime + ".pdf",
-//                    options
-//                )
-//                val path1 = Environment.getExternalStorageDirectory()
-//                    .absolutePath + File.separator + "/LabApp/UserData"
-//                val root1 = File(path1)
-//                fileNotWrite(root1)
-//                val filesAndFolders1 = root1.listFiles()
-//                if (filesAndFolders1 == null || filesAndFolders1.size == 0) {
-//                    return@setOnClickListener
-//                } else {
-//                    for (i in filesAndFolders1.indices) {
-//                        if (filesAndFolders1[i].name
-//                                .endsWith(".csv") || filesAndFolders1[i].name
-//                                .endsWith(".xlsx")
-//                        ) {
-//                            filesAndFolders1[i].delete()
-//                        }
-//                    }
-//                }
-//                val pathPDF = Environment.getExternalStorageDirectory()
-//                    .absolutePath + File.separator + "/LabApp/UserData/"
-//                val rootPDF = File(pathPDF)
-//                fileNotWrite(rootPDF)
-//                val filesAndFoldersPDF = rootPDF.listFiles()
-//                val filesAndFoldersNewPDF =
-//                    arrayOfNulls<File>(1)
-//                if (filesAndFoldersPDF == null || filesAndFoldersPDF.size == 0) {
-//                    return@setOnClickListener
-//                } else {
-//                    for (i in filesAndFoldersPDF.indices) {
-//                        if (filesAndFoldersPDF[i].name.endsWith(".pdf")) {
-//                            filesAndFoldersNewPDF[0] = filesAndFoldersPDF[i]
-//                        }
-//                    }
-//                }
-//                val pdfRecyclerView = findViewById<RecyclerView>(R.id.userDataPDF)
-//                val plAdapter = UserAdapter(this, filesAndFoldersPDF)
-//                pdfRecyclerView.adapter = plAdapter
-//                plAdapter.notifyDataSetChanged()
-//                pdfRecyclerView.layoutManager = LinearLayoutManager(this)
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//            }
+            Toast.makeText(this@UserDatabase, "Available Soon", Toast.LENGTH_SHORT).show()
         })
 
 
