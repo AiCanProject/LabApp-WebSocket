@@ -24,13 +24,6 @@ import com.aican.aicanapp.ph.phFragment.PhLogFragment
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
-import com.google.firebase.FirebaseApp
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
-import com.google.firebase.database.annotations.NotNull
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -51,11 +44,9 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
     lateinit var offlineMode: TextView
     lateinit var onlineMode: TextView
-    lateinit var notice: TextView
+    lateinit var deviceIDTxt: TextView
     lateinit var offlineModeSwitch: Switch
 
-
-    lateinit var deviceRef: DatabaseReference
 
     var phFragment: PhFragment = PhFragment()
     var phLogFragment: PhLogFragment = PhLogFragment()
@@ -77,6 +68,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         if (DEVICE_ID == null) {
             throw RuntimeException()
         }
+
+        binding.deviceIDTxt.text = "Device ID: $DEVICE_ID"
 
 //        WebSocketManager.setMessageListener {
 //
@@ -120,22 +113,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 //            }
 //        }
 
-        deviceRef =
-            FirebaseDatabase.getInstance(FirebaseApp.getInstance(DEVICE_ID!!)).reference.child("PHMETER")
-                .child(
-                    DEVICE_ID!!
-                )
 
-        deviceRef.child("Data").child("AUTOLOG").setValue(0)
-
-        deviceRef.child("Data").child("AUTOLOG")
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(@NotNull snapshot: DataSnapshot) {
-                    Source.auto_log = snapshot.getValue<Int>(Int::class.java)!!
-                }
-
-                override fun onCancelled(@NotNull error: DatabaseError) {}
-            })
         databaseHelper = DatabaseHelper(this@PhActivity)
 
         offlineModeSwitch = findViewById<Switch>(R.id.offlineModeSwitch)
@@ -146,7 +124,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         alarm = binding.item5
         offlineMode = binding.socketConnected
         onlineMode = binding.socketDisconnected
-        notice = binding.notice
         tabItemPh = binding.tabItemP
         tabItemCalib = binding.select2
 
@@ -158,7 +135,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
         onlineMode.visibility = View.VISIBLE
         offlineMode.visibility = View.GONE
-        notice.visibility = View.GONE
 
         if (Constants.OFFLINE_DATA && Constants.OFFLINE_MODE) {
             onlineMode.visibility = View.GONE
@@ -167,11 +143,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
             onlineMode.visibility = View.VISIBLE
             offlineMode.visibility = View.GONE
             if (Constants.OFFLINE_MODE) {
-                notice.visibility = View.GONE
             }
             if (Constants.OFFLINE_DATA) {
-                notice.visibility = View.VISIBLE
-                notice.text = "Device is not connected"
                 onlineMode.visibility = View.GONE
                 offlineMode.visibility = View.VISIBLE
             }
@@ -200,24 +173,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         }
 
 
-        deviceRef =
-            FirebaseDatabase.getInstance(FirebaseApp.getInstance(DEVICE_ID!!)).reference.child("PHMETER")
-                .child(
-                    DEVICE_ID!!
-                )
-        deviceRef.child("PH_MODE").addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(@NotNull snapshot: DataSnapshot) {
-                if (snapshot.exists()) {
-                    PhCalibFragmentNew.PH_MODE =
-                        snapshot.getValue<String>(String::class.java).toString()
-                } else {
-                    deviceRef.child("PH_MODE").setValue("both")
-                    PhCalibFragmentNew.PH_MODE = "both"
-                }
-            }
 
-            override fun onCancelled(@NotNull error: DatabaseError) {}
-        })
 
         if (Constants.OFFLINE_DATA) {
             offlineModeSwitch.isChecked = true
@@ -254,7 +210,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 .replace(R.id.fragmentContainerView, fragment)
                 .addToBackStack(null)
                 .commit()
-            deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(0)
             return true
         }
         return false

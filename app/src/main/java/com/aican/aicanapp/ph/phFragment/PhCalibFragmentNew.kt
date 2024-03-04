@@ -1489,7 +1489,7 @@ class PhCalibFragmentNew : Fragment() {
             companyName = "N/A";
         }
         var company_name = ""
-            company_name = "Company: $companyName"
+        company_name = "Company: $companyName"
         var user_name = ""
         if (Source.cfr_mode) {
 
@@ -1548,7 +1548,7 @@ class PhCalibFragmentNew : Fragment() {
                 SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
             if (batteryVal != null) {
                 if (batteryVal != "") {
-                    battery = "$batteryVal %"
+                    battery = "Battery: $batteryVal %"
                 }
             }
 
@@ -1597,16 +1597,27 @@ class PhCalibFragmentNew : Fragment() {
                 e.printStackTrace()
             }
         }
-        document.add(
-            Paragraph(
-                """
+        if (Source.cfr_mode) {
+            document.add(
+                Paragraph(
+                    """
             $company_name
             $calib_by
             $user_name
             $device_id
             """.trimIndent()
+                )
             )
-        )
+        } else {
+            document.add(
+                Paragraph(
+                    """
+            $company_name
+            $device_id
+            """.trimIndent()
+                )
+            )
+        }
         document.add(Paragraph(""))
         document.add(
             Paragraph(
@@ -2705,6 +2716,7 @@ class PhCalibFragmentNew : Fragment() {
                                         dt1_3.text.toString(),
                                         bufferD1_3.text.toString(),
                                         phAfterCalib1_3.text.toString(),
+
                                         tvTempCurr.text.toString(),
                                         if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
                                             .substring(0, 10) else "--",
@@ -2901,7 +2913,6 @@ class PhCalibFragmentNew : Fragment() {
                     log1_3.setBackgroundColor(Color.GRAY)
                     log2_3.setBackgroundColor(Color.WHITE)
                     log3_3.setBackgroundColor(Color.WHITE)
-                    deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(0)
                     tvTimerThree.text = "00:45"
                     Log.d("Runnable", "ok")
                 } else { // post again
@@ -3515,8 +3526,7 @@ class PhCalibFragmentNew : Fragment() {
                             Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
                                 .show()
                         } else {
-                            deviceRef.child("UI").child("PH").child("PH_CAL").child("B_1")
-                                .setValue(java.lang.String.valueOf(ph))
+
                         }
                     }
                 }
@@ -3565,8 +3575,7 @@ class PhCalibFragmentNew : Fragment() {
                             Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
                                 .show()
                         } else {
-                            deviceRef.child("UI").child("PH").child("PH_CAL").child("B_2")
-                                .setValue(java.lang.String.valueOf(ph))
+
                         }
                     }
                 }
@@ -3615,8 +3624,7 @@ class PhCalibFragmentNew : Fragment() {
                             Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
                                 .show()
                         } else {
-                            deviceRef.child("UI").child("PH").child("PH_CAL").child("B_3")
-                                .setValue(java.lang.String.valueOf(ph))
+
                         }
                     }
                 }
@@ -3665,8 +3673,7 @@ class PhCalibFragmentNew : Fragment() {
                             Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
                                 .show()
                         } else {
-                            deviceRef.child("UI").child("PH").child("PH_CAL").child("B_4")
-                                .setValue(java.lang.String.valueOf(ph))
+
                         }
                     }
                 }
@@ -3715,8 +3722,7 @@ class PhCalibFragmentNew : Fragment() {
                             Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
                                 .show()
                         } else {
-                            deviceRef.child("UI").child("PH").child("PH_CAL").child("B_5")
-                                .setValue(java.lang.String.valueOf(ph))
+
                         }
                     }
                 }
@@ -3766,8 +3772,7 @@ class PhCalibFragmentNew : Fragment() {
                             Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
                                 .show()
                         } else {
-                            deviceRef.child("UI").child("PH").child("PH_CAL").child("B_2")
-                                .setValue(java.lang.String.valueOf(ph))
+
                         }
                     }
                 }
@@ -3817,8 +3822,7 @@ class PhCalibFragmentNew : Fragment() {
                             Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
                                 .show()
                         } else {
-                            deviceRef.child("UI").child("PH").child("PH_CAL").child("B_3")
-                                .setValue(java.lang.String.valueOf(ph))
+
                         }
                     }
                 }
@@ -3868,8 +3872,7 @@ class PhCalibFragmentNew : Fragment() {
                             Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
                                 .show()
                         } else {
-                            deviceRef.child("UI").child("PH").child("PH_CAL").child("B_4")
-                                .setValue(java.lang.String.valueOf(ph))
+
                         }
                     }
                 }
@@ -4283,7 +4286,6 @@ class PhCalibFragmentNew : Fragment() {
     private lateinit var fivePointCalib: CardView
     private lateinit var threePointCalib: CardView
 
-    private lateinit var deviceRef: DatabaseReference
 
     private val bufferLabels = arrayOf("B_1", "B_2", "B_3", "B_4", "B_5")
     private val bufferLabelsThree = arrayOf("B_2", "B_3", "B_4")

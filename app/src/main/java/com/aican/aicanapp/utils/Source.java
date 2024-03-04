@@ -50,11 +50,13 @@ public class Source {
         DateFormat timeFormat = new SimpleDateFormat("HH:mm");
         return timeFormat.format(date);
     }
+
     public static String getPresentDate() {
         Date date = Calendar.getInstance().getTime();
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         return dateFormat.format(date);
     }
+
     public static void showLoading(Activity context, boolean cancelable, boolean cancelOnTouchOutside, String message) {
         if (!context.isFinishing()) {
             if (loadingDialog != null && loadingDialog.isShowing()) {

@@ -37,12 +37,14 @@ import com.aican.aicanapp.Authentication.AdminLoginActivity
 import com.aican.aicanapp.FirebaseAccounts.DeviceAccount
 import com.aican.aicanapp.FirebaseAccounts.PrimaryAccount
 import com.aican.aicanapp.FirebaseAccounts.SecondaryAccount
+import com.aican.aicanapp.adapters.NewPhAdapter
 import com.aican.aicanapp.adapters.PhAdapter
 import com.aican.aicanapp.dataClasses.PhDevice
 import com.aican.aicanapp.databinding.ActivityDashboardBinding
 import com.aican.aicanapp.dialogs.EditNameDialog
 import com.aican.aicanapp.dialogs.EditNameDialog.OnNameChangedListener
 import com.aican.aicanapp.interfaces.DashboardListsOptionsClickListener
+import com.aican.aicanapp.ph.phFragment.PhFragment
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.websocket.WebSocketManager
@@ -51,9 +53,10 @@ import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.tubesock.WebSocket
+import com.google.firebase.database.ValueEventListener
 import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import org.json.JSONObject
@@ -82,13 +85,16 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
     lateinit var file: File
     lateinit var fileDestination: File
     lateinit var primaryDatabase: DatabaseReference
-    lateinit var databaseReference: DatabaseReference
+
+    private val databaseReference: DatabaseReference by lazy {
+        FirebaseDatabase.getInstance().getReference("NEW_USERS")
+    }
     lateinit var deviceRef: DatabaseReference
     lateinit var offlineMode: Switch
     lateinit var offlineModeSwitch: Switch
-    lateinit var webSocket1: WebSocket
     lateinit var jsonData: JSONObject
     lateinit var connectedDeviceSSID: TextView
+    lateinit var uid: String
 
     //    lateinit var device: PhDevice
     lateinit var refreshWifi: ImageView
@@ -100,6 +106,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
     lateinit var weather: TextView
     lateinit var batteryPercentage: TextView
     lateinit var phAdapter: PhAdapter
+    lateinit var newPhAdapter: NewPhAdapter
 
     lateinit var deviceIds: ArrayList<String>
     lateinit var deviceIdIds: HashMap<String, String>
@@ -131,12 +138,15 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
     lateinit var binding: ActivityDashboardBinding
     private var webSocketConnected = false
     lateinit var phDevices: java.util.ArrayList<PhDevice>
+    lateinit var newPhDevices: ArrayList<PhDevice>
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityDashboardBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        newPhDevices = ArrayList()
         phRecyclerView = binding.phRecyclerview
         setting = binding.settings
         tempRecyclerView = binding.tempRecyclerview
@@ -170,6 +180,67 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
                             binding.socketConnected.visibility = View.VISIBLE
                             binding.socketDisconnected.visibility = View.GONE
                         }
+
+                        WebSocketManager.setMessageListener { message ->
+                            val jsonData = JSONObject(message)
+
+                            Toast.makeText(this@Dashboard, "" + message, Toast.LENGTH_SHORT).show()
+
+                            if (jsonData.has("PH_VAL") && jsonData.has("DEVICE_ID")) {
+                                var ph = 0.0f
+                                if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
+                                        jsonData.getString(
+                                            "PH_VAL"
+                                        )
+                                    )
+                                ) {
+                                    ph = jsonData.getString("PH_VAL").toFloat()
+                                }
+                                val devID = jsonData.getString("DEVICE_ID")
+
+                                Log.e("ThisPHVAL", "PH $ph")
+                                newPhAdapter.refreshPh(ph, devID)
+
+                            }
+
+                            if (jsonData.has("TEMP_VAL") && jsonData.has("DEVICE_ID")) {
+                                var tem = 0.0f
+                                if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
+                                        jsonData.getString(
+                                            "TEMP_VAL"
+                                        )
+                                    )
+                                ) {
+                                    tem = jsonData.getString("TEMP_VAL").toFloat()
+                                }
+                                val devID = jsonData.getString("DEVICE_ID")
+                                if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
+                                    newPhAdapter.refreshTemp(Math.round(tem), devID)
+                                }
+                            }
+                            if (jsonData.has("EC_VAL") && jsonData.has("DEVICE_ID")) {
+                                var ecVal = 0.0f
+                                if (jsonData.getString("EC_VAL") != "nan" && PhFragment.validateNumber(
+                                        jsonData.getString(
+                                            "EC_VAL"
+                                        )
+                                    )
+                                ) {
+                                    ecVal = jsonData.getString("EC_VAL").toFloat()
+                                }
+                                val devID = jsonData.getString("DEVICE_ID")
+
+
+
+                                if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
+                                    phAdapter.refreshMv(ecVal, devID)
+                                }
+                            }
+
+
+                        }
+
+
                     },
                     // Close listener
                     { code, reason, remote ->
@@ -339,8 +410,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
             binding.batteryPercent.text = "$tabBatteryPer%"
         }
 
-        setUpPh()
-        refresh()
+        setUpNewPh()
         //showNetworkDialog();
         binding.phRecyclerview.visibility = View.VISIBLE
         binding.phDev.setCardBackgroundColor(Color.GRAY)
@@ -397,6 +467,59 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
 
     }
+
+    fun setUpNewPh() {
+
+//        Toast.makeText(this@Dashboard, "" + uid, Toast.LENGTH_SHORT).show()
+
+        databaseReference.child(uid).addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    newPhDevices.clear()
+
+                    for (data in snapshot.child("DEVICES").children) {
+
+
+                        newPhDevices.add(
+                            PhDevice(
+                                data.getValue(String::class.java).toString(),
+                                "", 0f, 0f, 0, 0L, 0
+                            )
+                        )
+                    }
+
+                    if (newPhDevices.size <= 0) {
+                        Toast.makeText(this@Dashboard, "No device added", Toast.LENGTH_SHORT).show()
+                    }
+                    Source.cancelLoading()
+
+
+                    phRecyclerView.layoutManager =
+                        LinearLayoutManager(this@Dashboard, LinearLayoutManager.HORIZONTAL, false)
+                    newPhAdapter = NewPhAdapter(
+                        this@Dashboard,
+                        newPhDevices,
+                        this@Dashboard
+                    )
+
+//        Toast.makeText(this, "Size " + phDevices.size(), Toast.LENGTH_SHORT).show();
+                    phRecyclerView.adapter = newPhAdapter
+                    phRecyclerView.itemAnimator = Dashboard.NoAnimationItemAnimator()
+
+                    // Update the existing adapter's data and notify the changes
+                }
+
+//                Toast.makeText(this@Dashboard, "" + newPhDevices.size, Toast.LENGTH_SHORT).show()
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("AllVideosFragment", "Firebase data retrieval canceled: ${error.message}")
+            }
+        })
+
+
+    }
+
 
     override fun onStart() {
         super.onStart()
@@ -464,24 +587,6 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         actionBarDrawerToggle.syncState()
     }
 
-    //Cooling RC------------------------------------------------------------------------------------------------------
-
-    fun setUpNewPh(){
-
-    }
-    fun setUpPh() {
-        phRecyclerView.layoutManager =
-            LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        phAdapter = PhAdapter(
-            this@Dashboard,
-            phDevices,
-
-            ) { view: View?, deviceId: String? -> this.onOptionsIconClicked(view, deviceId) }
-
-//        Toast.makeText(this, "Size " + phDevices.size(), Toast.LENGTH_SHORT).show();
-        phRecyclerView.adapter = phAdapter
-        phRecyclerView.itemAnimator = Dashboard.NoAnimationItemAnimator()
-    }
 
     class NoAnimationItemAnimator : DefaultItemAnimator() {
         override fun animateChange(
@@ -500,6 +605,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
     private fun setUpNavDrawer() {
         val uid = FirebaseAuth.getInstance(PrimaryAccount.getInstance(this)).uid
+        this.uid = uid.toString()
         FirebaseFirestore.getInstance(PrimaryAccount.getInstance(this))
             .collection("NAMES").document(uid!!).get()
             .addOnSuccessListener { documentSnapshot: DocumentSnapshot ->
@@ -539,7 +645,6 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
                                 ).delete()
                                 .addOnSuccessListener {
                                     Log.e("CallingTwMKTLKK", "CAA")
-                                    refresh()
                                 }.addOnFailureListener { e ->
                                     Log.w(
                                         TAG,
@@ -569,37 +674,10 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
             .child(type!!).child(deviceId!!).child("NAME").setValue(newName)
         Log.e("CallingTwMKTLKKRes", "CAA")
 
-        refresh()
     }
 
     //Pump RC------------------------------------------------------------------------------------------------------
-    private fun refresh() {
-        deviceIds.clear()
-        phDevices.clear()
-        deviceIdIds.clear()
-        getDeviceIds()
-    }
 
-    private fun getDeviceIds() {
-        primaryDatabase.child("DEVICES").get().addOnSuccessListener { dataSnapshot: DataSnapshot ->
-//            Toast.makeText(this, "Hello", Toast.LENGTH_SHORT).show();
-            if (dataSnapshot.hasChildren()) {
-                for (deviceSnapshot in dataSnapshot.children) {
-                    val deviceId =
-                        deviceSnapshot.getValue(String::class.java)
-                    if (!deviceIds.contains(deviceId)) {
-//                        Toast.makeText(this, "Set", Toast.LENGTH_SHORT).show();
-                        deviceIds.add(deviceId!!)
-                        deviceIdIds[deviceId] = deviceSnapshot.key!!
-                    }
-                    //                    deviceIds.add(deviceId);
-//                    deviceIdIds.put(deviceId, deviceSnapshot.getKey());
-                }
-                //                Log.e("CallingTwMK","CAA");
-                getDeviceAccounts()
-            }
-        }
-    }
 
     private fun getDeviceAccounts() {
         val accountsLoaded = AtomicInteger()
@@ -616,7 +694,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
                 if (accountsLoaded.get() == deviceIds.size) {
                     Log.e("CallingTw", "C")
                     //                    Toast.makeText(Dashboard.this, "Loaded : " + deviceAccount, Toast.LENGTH_SHORT).show();
-                    getDevices()
+//                    getDevices() // commented
                 }
             }.addOnFailureListener { exception: Exception -> exception.printStackTrace() }
                 .addOnCanceledListener {
@@ -644,67 +722,10 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
     }
 
     lateinit var device: PhDevice
-    private fun getDevices() {
-        phDevices.clear()
-        Log.d(TAG, "Device IDs: $deviceIds")
-        Log.d(TAG, "Device IDs: " + deviceIdIds.toString() + " Sii " + deviceIdIds.size)
-        val devicesLoaded = AtomicInteger()
-        for (id in deviceIds) {
-            val app = FirebaseApp.getInstance(id)
-            FirebaseDatabase.getInstance(app).reference.child(deviceTypes[id]!!).child(id).get()
-                .addOnSuccessListener { dataSnapshot: DataSnapshot ->
-                    devicesLoaded.incrementAndGet()
-                    val data = dataSnapshot.child("Data")
-                    val ui = dataSnapshot.child("UI")
-                    val name =
-                        dataSnapshot.child("NAME").getValue(String::class.java)
-                    var offline = 0
-                    offline = if (dataSnapshot.child("offline").exists()) {
-                        dataSnapshot.child("offline").getValue(Int::class.java)!!
-                    } else {
-                        0
-                    }
-                    deviceNames[id] = name!!
-                    when (deviceTypes[id]) {
-                        "PHMETER" -> {
-                            device = PhDevice(
-                                id,
-                                name,
-                                data.child("PH_VAL")
-                                    .getValue<Float>(Float::class.java)!!,
-                                data.child("EC_VAL")
-                                    .getValue<Float>(Float::class.java)!!,
-                                data.child("TEMP_VAL").getValue<Int>(Int::class.java)!!,
-                                data.child("TDS_VAL")
-                                    .getValue<Long>(Long::class.java)!!, offline
-                            )
-                            Source.cancelLoading()
 
-//                        Toast.makeText(Dashboard.this, "Loaded : " + data.child("PH_VAL").getValue(Float.class), Toast.LENGTH_SHORT).show();
-                            phDevices.add(device)
-                        }
-                    }
-                    if (devicesLoaded.get() == deviceIds.size) {
-
-                        phAdapter.notifyDataSetChanged()
-
-                        if (phDevices.size != 0) {
-                            phRecyclerView.visibility = View.VISIBLE
-                            phDev.setCardBackgroundColor(Color.GRAY)
-                        } else {
-                            phRecyclerView.visibility = View.GONE
-                        }
-                        tempRecyclerView.visibility = View.GONE
-                        coolingRecyclerView.visibility = View.GONE
-                        pumpRecyclerView.visibility = View.GONE
-                        //                    ecRecyclerView.setVisibility(View.GONE);
-                        phDev.setCardBackgroundColor(Color.GRAY)
-                        tempDev.setCardBackgroundColor(Color.WHITE)
-                        peristalticDev.setCardBackgroundColor(Color.WHITE)
-                        IndusDev.setCardBackgroundColor(Color.WHITE)
-                    }
-                }
-        }
+    override fun onBackPressed() {
+        super.onBackPressed()
+        finishAffinity()
     }
 
 }

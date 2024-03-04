@@ -137,7 +137,6 @@ class PhLogFragment : Fragment() {
     private lateinit var mode: String
     private lateinit var reportDate: String
     private lateinit var reportTime: String
-    private lateinit var deviceRef: DatabaseReference
     private lateinit var phDataModelList: ArrayList<phData>
     private lateinit var adapter: LogAdapter
     private lateinit var offset: String
@@ -641,7 +640,6 @@ class PhLogFragment : Fragment() {
                             Constants.timeInSec = d.toInt()
                             val a = Constants.timeInSec.toDouble() / 60000
                             Log.d("TimerVal", "" + a)
-                            deviceRef.child("Data").child("LOG_INTERVAL").setValue(a)
                             LOG_INTERVAL = enterTime.text.toString().toFloat() * 60
                             log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
 
@@ -1123,7 +1121,7 @@ class PhLogFragment : Fragment() {
                 SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
             if (batteryVal != null) {
                 if (batteryVal != "") {
-                    battery = "$batteryVal %"
+                    battery = "Battery: $batteryVal %"
                 }
             }
 
@@ -1181,23 +1179,38 @@ class PhLogFragment : Fragment() {
             if (Constants.OFFLINE_MODE) {
 //                document.add(new Paragraph("Offline Mode"));
             }
-            document.add(
-                Paragraph(
-                    """
+            if (Source.cfr_mode) {
+
+                document.add(
+                    Paragraph(
+                        """
                 $company_name
                 $user_name
                 $device_id
                 """.trimIndent()
+                    )
                 )
-            )
+            }else{
+                document.add(
+                    Paragraph(
+                        """
+                $company_name
+                $device_id
+                """.trimIndent()
+                    )
+                )
+            }
             document.add(Paragraph(""))
-            document.add(
-                Paragraph(
-                    """$reportDate  |  $reportTime
-$offset  |  $battery
-$slope  |  $tempe"""
+
+                document.add(
+                    Paragraph(
+                        """$reportDate  |  $reportTime
+                                 $offset  |  $battery
+                                 $slope  |  $tempe"""
+                    )
                 )
-            )
+
+
             document.add(Paragraph(""))
             document.add(Paragraph("Calibration Table"))
             val columnWidth = floatArrayOf(200f, 210f, 190f, 170f, 340f, 170f)
@@ -1430,97 +1443,6 @@ $slope  |  $tempe"""
                     compound_name
                 )
             }
-        } else {
-            if (!compound_name_txt.text.toString().isEmpty()) {
-                compound_name = compound_name_txt.text.toString()
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", Compound name changed to " + compound_name,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            } else {
-                compound_name = "NA"
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", Compound name changed to " + compound_name,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            }
-
-
-            //saving batch number
-            if (!batch_number.text.toString().isEmpty()) {
-                batchnum = batch_number.text.toString()
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                databaseHelper.insert_action_data(
-                    time,
-                    date,
-                    "Batchnum changed : " + Source.logUserName,
-                    "",
-                    "",
-                    "",
-                    "",
-                    PhActivity.DEVICE_ID
-                )
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", Batchnum changed to " + batchnum,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            } else {
-                batchnum = "NA"
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", Batchnum changed to " + batchnum,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            }
-            deviceRef.child("Data").child("BATCH_NUMBER").setValue(batchnum)
-            if (!ar_number.text.toString().isEmpty()) {
-                arnum = ar_number.text.toString()
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", AR_NUMBER changed to " + arnum,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            } else {
-                arnum = "NA"
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", AR_NUMBER changed to " + arnum,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            }
-            deviceRef.child("Data").child("AR_NUMBER").setValue(arnum)
         }
     }
 
