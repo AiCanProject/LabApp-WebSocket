@@ -1489,7 +1489,7 @@ class PhCalibFragmentNew : Fragment() {
             companyName = "N/A";
         }
         var company_name = ""
-            company_name = "Company: $companyName"
+        company_name = "Company: $companyName"
         var user_name = ""
         if (Source.cfr_mode) {
 
@@ -1548,7 +1548,7 @@ class PhCalibFragmentNew : Fragment() {
                 SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
             if (batteryVal != null) {
                 if (batteryVal != "") {
-                    battery = "$batteryVal %"
+                    battery = "Battery: $batteryVal %"
                 }
             }
 
@@ -2705,6 +2705,7 @@ class PhCalibFragmentNew : Fragment() {
                                         dt1_3.text.toString(),
                                         bufferD1_3.text.toString(),
                                         phAfterCalib1_3.text.toString(),
+
                                         tvTempCurr.text.toString(),
                                         if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
                                             .substring(0, 10) else "--",

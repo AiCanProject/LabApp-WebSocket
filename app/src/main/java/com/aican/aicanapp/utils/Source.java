@@ -18,8 +18,7 @@ import java.util.Date;
 
 public class Source {
 
-    public static boolean cfr_mode = true;
-
+    public static boolean cfr_mode = false;
     public static boolean SOCKET_CONNECTED = false;
     public static int calibMode = 0;
     public static int activeFragment = 0;
@@ -50,11 +49,13 @@ public class Source {
         DateFormat timeFormat = new SimpleDateFormat("HH:mm");
         return timeFormat.format(date);
     }
+
     public static String getPresentDate() {
         Date date = Calendar.getInstance().getTime();
         DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
         return dateFormat.format(date);
     }
+
     public static void showLoading(Activity context, boolean cancelable, boolean cancelOnTouchOutside, String message) {
         if (!context.isFinishing()) {
             if (loadingDialog != null && loadingDialog.isShowing()) {

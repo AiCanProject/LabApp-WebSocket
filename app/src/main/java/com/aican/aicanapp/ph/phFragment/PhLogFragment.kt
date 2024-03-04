@@ -1123,7 +1123,7 @@ class PhLogFragment : Fragment() {
                 SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
             if (batteryVal != null) {
                 if (batteryVal != "") {
-                    battery = "$batteryVal %"
+                    battery = "Battery: $batteryVal %"
                 }
             }
 
@@ -1181,23 +1181,38 @@ class PhLogFragment : Fragment() {
             if (Constants.OFFLINE_MODE) {
 //                document.add(new Paragraph("Offline Mode"));
             }
-            document.add(
-                Paragraph(
-                    """
+            if (Source.cfr_mode) {
+
+                document.add(
+                    Paragraph(
+                        """
                 $company_name
                 $user_name
                 $device_id
                 """.trimIndent()
+                    )
                 )
-            )
+            }else{
+                document.add(
+                    Paragraph(
+                        """
+                $company_name
+                $device_id
+                """.trimIndent()
+                    )
+                )
+            }
             document.add(Paragraph(""))
-            document.add(
-                Paragraph(
-                    """$reportDate  |  $reportTime
-$offset  |  $battery
-$slope  |  $tempe"""
+
+                document.add(
+                    Paragraph(
+                        """$reportDate  |  $reportTime
+                                 $offset  |  $battery
+                                 $slope  |  $tempe"""
+                    )
                 )
-            )
+
+
             document.add(Paragraph(""))
             document.add(Paragraph("Calibration Table"))
             val columnWidth = floatArrayOf(200f, 210f, 190f, 170f, 340f, 170f)

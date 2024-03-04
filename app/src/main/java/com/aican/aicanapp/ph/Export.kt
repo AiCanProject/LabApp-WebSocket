@@ -131,7 +131,6 @@ class Export : AppCompatActivity() {
     lateinit var batchNumEditText: EditText
     lateinit var compoundNameEditText: EditText
     lateinit var databaseHelper: DatabaseHelper
-    lateinit var deviceRef: DatabaseReference
     lateinit var month: String
     lateinit var year: String
     lateinit var binding: ActivityExportBinding
@@ -162,12 +161,6 @@ class Export : AppCompatActivity() {
         compoundNameEditText = findViewById<EditText>(R.id.compound_num_sort)
         convertToXls = findViewById<Button>(R.id.convertToXls)
         tvUserLog = findViewById<TextView>(R.id.tvUserLog)
-        deviceRef =
-            FirebaseDatabase.getInstance(FirebaseApp.getInstance(PhActivity.DEVICE_ID!!)).reference.child(
-                "PHMETER"
-            ).child(
-                PhActivity.DEVICE_ID!!
-            )
 
 
         deviceID = PhActivity.DEVICE_ID!!
@@ -332,8 +325,7 @@ class Export : AppCompatActivity() {
                     editT.putString("COMPANY_NAME", companyName)
                     editT.commit()
                 } else {
-                    deviceRef.child("UI").child("PH").child("PH_CAL").child("COMPANY_NAME")
-                        .setValue(companyName)
+
                 }
             }
             try {
@@ -582,16 +574,28 @@ class Export : AppCompatActivity() {
 //
 //
 //        document.add(new Paragraph(text).add(text1).add(text2));
-        document.add(
-            Paragraph(
-                """
+        if (Source.cfr_mode) {
+
+            document.add(
+                Paragraph(
+                    """
             $company_name
             $calib_by
             $user_name
             $device_id
             """.trimIndent()
+                )
             )
-        )
+        }else{
+            document.add(
+                Paragraph(
+                    """
+            $company_name
+            $device_id
+            """.trimIndent()
+                )
+            )
+        }
         document.add(Paragraph(""))
         document.add(
             Paragraph(
@@ -895,7 +899,7 @@ $slope  |  $temp"""
             val batteryVal = SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
             if (batteryVal != null) {
                 if (batteryVal != "") {
-                    battery = "$batteryVal %"
+                    battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
                 }
             }
@@ -949,7 +953,13 @@ $slope  |  $temp"""
         if (Constants.OFFLINE_MODE) {
 //            document.add(new Paragraph("Offline Mode"));
         }
-        document.add(Paragraph(companyName + "\n" + roleExport + "\n" + device_id))
+        if (Source.cfr_mode) {
+
+            document.add(Paragraph(companyName + "\n" + roleExport + "\n" + device_id))
+        } else {
+            document.add(Paragraph(companyName + "\n" + device_id))
+
+        }
         document.add(Paragraph(""))
         document.add(
             Paragraph(
@@ -1253,7 +1263,7 @@ $slope  |  $temp"""
             val batteryVal = SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
             if (batteryVal != null) {
                 if (batteryVal != "") {
-                    battery = "$batteryVal %"
+                    battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
                 }
             }

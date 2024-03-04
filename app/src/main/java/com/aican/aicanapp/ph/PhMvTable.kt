@@ -14,6 +14,7 @@ import com.aican.aicanapp.R
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.ActivityPhMvTableBinding
 import com.aican.aicanapp.dialogs.EditPhBufferDialog
+import com.aican.aicanapp.ph.phFragment.PhFragment
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
@@ -316,6 +317,56 @@ class PhMvTable : AppCompatActivity() {
                 Toast.makeText(this@PhMvTable, "Check at least one", Toast.LENGTH_SHORT).show()
             }
         }
+
+        val tempVal = SharedPref.getSavedData(this@PhMvTable, "tempValue" + PhActivity.DEVICE_ID)
+
+        if (tempVal != null) {
+            binding.setManualTempEdit.setText(tempVal.toString())
+        }
+
+        binding.setManualTempBtn.setOnClickListener {
+            if (binding.setManualTempEdit.text.toString() != "") {
+                if (PhFragment.validateNumber(binding.setManualTempEdit.text.toString())) {
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        "tempValue" + PhActivity.DEVICE_ID,
+                        binding.setManualTempEdit.text.toString()
+                    )
+                }
+            }
+        }
+
+
+        val tempToggleSharedPref =
+            SharedPref.getSavedData(this@PhMvTable, "setTempToggle" + PhActivity.DEVICE_ID)
+
+        if (tempToggleSharedPref != null) {
+            if (tempToggleSharedPref == "true") {
+                binding.tempratureStateToggle.text = "Auto"
+                binding.tempratureStateToggle.isChecked = true
+                binding.setTempLayout.visibility = View.GONE
+
+            } else {
+                binding.tempratureStateToggle.text = "Manual"
+                binding.tempratureStateToggle.isChecked = false
+                binding.setTempLayout.visibility = View.VISIBLE
+            }
+        }
+
+        binding.tempratureStateToggle.setOnClickListener {
+            if (binding.tempratureStateToggle.isChecked) {
+                SharedPref.saveData(this@PhMvTable, "setTempToggle" + PhActivity.DEVICE_ID, "true")
+                binding.tempratureStateToggle.text = "Auto"
+                binding.setTempLayout.visibility = View.GONE
+
+            } else {
+                SharedPref.saveData(this@PhMvTable, "setTempToggle" + PhActivity.DEVICE_ID, "false")
+                binding.tempratureStateToggle.text = "Manual"
+                binding.setTempLayout.visibility = View.VISIBLE
+
+            }
+        }
+
 
         webSocketInit()
 
