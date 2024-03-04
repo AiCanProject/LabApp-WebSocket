@@ -3069,7 +3069,7 @@ class PhCalibFragmentNew : Fragment() {
 
 
         if (Constants.OFFLINE_DATA) {
-            PH_MODE = "5"
+            PH_MODE = "both"
         }
         threePointCalib.visibility = View.GONE
 

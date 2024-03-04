@@ -1,5 +1,6 @@
 package com.aican.aicanapp.ph.phFragment
 
+import android.app.Activity
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
@@ -33,6 +34,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.regex.Pattern
+
 
 class PhFragment : Fragment() {
 
@@ -381,10 +383,12 @@ class PhFragment : Fragment() {
         }
 
         WebSocketManager.setErrorListener {
-            requireActivity().runOnUiThread {
+            val activity: Activity? = requireActivity()
+            activity?.runOnUiThread {
                 updateError(it.message.toString())
                 Log.e("WebSocketErrorAican", it.message + "")
             }
+
 
         }
 

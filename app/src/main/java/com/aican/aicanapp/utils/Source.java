@@ -19,6 +19,7 @@ import java.util.Date;
 public class Source {
 
     public static boolean cfr_mode = false;
+
     public static boolean SOCKET_CONNECTED = false;
     public static int calibMode = 0;
     public static int activeFragment = 0;
