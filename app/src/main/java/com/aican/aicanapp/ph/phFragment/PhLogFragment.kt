@@ -739,9 +739,9 @@ class PhLogFragment : Fragment() {
 
         updateAutoLog()
 
-        webSocketConnection()
+//        webSocketConnection()
 
-        setPreviousData()
+//        setPreviousData()
 
     }
 
@@ -784,6 +784,9 @@ class PhLogFragment : Fragment() {
 
 
     private fun webSocketConnection() {
+
+
+
 
         WebSocketManager.setCloseListener { i, s, b ->
             sharedViewModel.closeConnectionLiveData.value = s + ""
@@ -834,16 +837,33 @@ class PhLogFragment : Fragment() {
 
                         }
                         val temp1 = Math.round(tempval).toString()
-                        temp = if (temp1.toInt() <= -127) {
 
-                            "NA"
-                        } else {
-                            temp1
-                        }
+                        if (tempToggleSharedPref != null){
+                            if (tempToggleSharedPref == "true"){
+
+                                temp = if (temp1.toInt() <= -127) {
+
+                                    "NA"
+                                } else {
+                                    temp1
+                                }
 
                         SharedPref.saveData(
                             requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
                         )
+                            }
+                        }else{
+                            temp = if (temp1.toInt() <= -127) {
+
+                                "NA"
+                            } else {
+                                temp1
+                            }
+
+                            SharedPref.saveData(
+                                requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
+                            )
+                        }
                     }
                     if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
                             "DEVICE_ID"
@@ -1068,15 +1088,16 @@ class PhLogFragment : Fragment() {
             } else {
                 "Slope: " + "null"
             }
-            temp = if (SharedPref.getSavedData(
+            val tempData =
+                SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
+            tempe = if (SharedPref.getSavedData(
                     requireContext(), "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
                     requireContext(), "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data =
-                    SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
-                "Temperature: $data"
+
+                "Temperature: $tempData"
             } else {
                 "Temperature: " + "null"
             }
@@ -1657,9 +1678,17 @@ class PhLogFragment : Fragment() {
     lateinit var userDao: UserDao
     lateinit var userActionDao: UserActionDao
     lateinit var allLogsDataDao: AllLogsDataDao
+    var tempToggleSharedPref: String? = null
 
     override fun onResume() {
         super.onResume()
+
+        webSocketConnection()
+
+        tempToggleSharedPref =
+            SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
+
+        setPreviousData()
 
         userDao = Room.databaseBuilder(
             requireContext().applicationContext, AppDatabase::class.java, "aican-database"

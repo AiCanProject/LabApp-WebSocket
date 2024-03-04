@@ -74,9 +74,16 @@ class PhFragment : Fragment() {
 
     private lateinit var userDao: UserDao
     lateinit var userActionDao: UserActionDao
-
+    var tempToggleSharedPref: String? = null
     override fun onResume() {
         super.onResume()
+
+
+         tempToggleSharedPref =
+            SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
+
+        getPreviousData()
+
 
         userDao = Room.databaseBuilder(
             requireContext().applicationContext,
@@ -106,13 +113,14 @@ class PhFragment : Fragment() {
                 }
             }
         }
-        getPreviousData()
 
 
         webSocketInit()
         turnAtcSwitch()
 
     }
+
+
 
     private fun turnAtcSwitch() {
         binding.switchAtc.setOnCheckedChangeListener(CompoundButton.OnCheckedChangeListener { v: CompoundButton?, isChecked: Boolean ->
@@ -202,7 +210,7 @@ class PhFragment : Fragment() {
         }
 
         val offsetVal =
-            SharedPref.getSavedData(requireContext(), "offsetVal" + PhActivity.DEVICE_ID)
+            SharedPref.getSavedData(requireContext(), "OFFSET_" + PhActivity.DEVICE_ID)
         if (offsetVal != null) {
             binding.offsetVal.text = offsetVal
         }
@@ -235,6 +243,7 @@ class PhFragment : Fragment() {
 
 
     private fun webSocketInit() {
+
 
         if (Source.SOCKET_CONNECTED) {
             sharedViewModel.openConnectionLiveData.value = ""
@@ -317,19 +326,40 @@ class PhFragment : Fragment() {
                         ) {
                             tempval = jsonData.getString("TEMP_VAL").toFloat()
                             temp = Math.round(tempval).toString()
-                            binding.tvTempCurr.setText("$temp°C")
-                            SharedPref.saveData(
-                                requireContext(),
-                                "tempValue" + PhActivity.DEVICE_ID,
-                                temp
-                            )
+                            Log.e("NullCheck", "" + tempToggleSharedPref)
 
-                            if (temp.toInt() <= -127) {
-                                binding.tvTempCurr.setText("NA")
+                            if (tempToggleSharedPref != null) {
+                                if (tempToggleSharedPref == "true") {
+                                    binding.tvTempCurr.setText("$temp°C")
+                                    SharedPref.saveData(
+                                        requireContext(),
+                                        "tempValue" + PhActivity.DEVICE_ID,
+                                        temp
+                                    )
 
-                                binding.switchAtc.setEnabled(false)
-                            } else {
-                                binding.switchAtc.setEnabled(true)
+                                    if (temp.toInt() <= -127) {
+                                        binding.tvTempCurr.setText("NA")
+
+                                        binding.switchAtc.setEnabled(false)
+                                    } else {
+                                        binding.switchAtc.setEnabled(true)
+                                    }
+                                }
+                            }else{
+                                binding.tvTempCurr.setText("$temp°C")
+                                SharedPref.saveData(
+                                    requireContext(),
+                                    "tempValue" + PhActivity.DEVICE_ID,
+                                    temp
+                                )
+
+                                if (temp.toInt() <= -127) {
+                                    binding.tvTempCurr.setText("NA")
+
+                                    binding.switchAtc.setEnabled(false)
+                                } else {
+                                    binding.switchAtc.setEnabled(true)
+                                }
                             }
                         }
 

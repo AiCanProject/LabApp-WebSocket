@@ -139,7 +139,7 @@ class PhGraphFragment : Fragment() {
             refresh.isEnabled = true
         }
 
-        webSocketInit()
+//        webSocketInit()
         setPreviousData()
     }
 
@@ -157,8 +157,16 @@ class PhGraphFragment : Fragment() {
 
     lateinit var userDao: UserDao
     lateinit var userActionDao: UserActionDao
+    var tempToggleSharedPref: String? = null
+
     override fun onResume() {
         super.onResume()
+
+        tempToggleSharedPref =
+            SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
+
+        setPreviousData()
+        webSocketInit()
 
         userDao = Room.databaseBuilder(
             requireContext().applicationContext,
@@ -235,15 +243,64 @@ class PhGraphFragment : Fragment() {
                     jsonData = JSONObject(message.toString())
                     Log.d("JSONReceived:PHFragment", "onMessage: $message")
                     if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val ph = jsonData.getString("PH_VAL").toFloat()
+                        var ph = jsonData.getString("PH_VAL").toFloat()
                         val phForm = String.format(Locale.UK, "%.2f", ph)
                         ec_val_offline = ph
                         tvGraphPH.text = phForm
                         AlarmConstants.PH = ph
+
+                        if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
+                                jsonData.getString("PH_VAL")
+                            )
+                        ) {
+                            ph = jsonData.getString("PH_VAL").toFloat()
+                        }
+                        tvGraphPH.text = ph.toString()
+                        SharedPref.saveData(
+                            requireContext(), "phValue" + PhActivity.DEVICE_ID, ph.toString()
+                        )
+                        AlarmConstants.PH = ph
                     }
                     if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val temp = jsonData.getString("TEMP_VAL")
-                        tvGraphTemp.text = "$temp°C"
+                        var temp = jsonData.getString("TEMP_VAL")
+                            var tempval = 0.0f
+                            if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
+                                    jsonData.getString("TEMP_VAL")
+                                )
+                            ) {
+                                tempval = jsonData.getString("TEMP_VAL").toFloat()
+
+                            }
+                            val temp1 = Math.round(tempval).toString()
+
+                        if (tempToggleSharedPref != null) {
+                            if (tempToggleSharedPref == "true") {
+                                temp = if (temp1.toInt() <= -127) {
+
+                                    "NA"
+                                } else {
+                                    temp1
+                                }
+
+                                SharedPref.saveData(
+                                    requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
+                                )
+                                tvGraphTemp.text = "$temp°C"
+
+                            }
+                        }else{
+                            temp = if (temp1.toInt() <= -127) {
+
+                                "NA"
+                            } else {
+                                temp1
+                            }
+
+                            SharedPref.saveData(
+                                requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
+                            )
+                            tvGraphTemp.text = "$temp°C"
+                        }
                     }
                 } catch (e: JSONException) {
                     e.printStackTrace()

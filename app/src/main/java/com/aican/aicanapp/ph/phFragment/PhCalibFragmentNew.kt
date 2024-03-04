@@ -139,7 +139,6 @@ class PhCalibFragmentNew : Fragment() {
             exportDir.mkdirs()
         }
 
-        setPreviousData()
 
         phGraphOnClick()
 
@@ -197,7 +196,6 @@ class PhCalibFragmentNew : Fragment() {
 
         /////
 
-        websocketData()
 
 
     }
@@ -211,6 +209,7 @@ class PhCalibFragmentNew : Fragment() {
     }
 
     private fun websocketData() {
+
 
         WebSocketManager.setCloseListener { i, s, b ->
             sharedViewModel.closeConnectionLiveData.value = s + ""
@@ -260,7 +259,7 @@ class PhCalibFragmentNew : Fragment() {
                             SharedPref.saveData(
                                 requireContext(), "OFFSET_" + PhActivity.DEVICE_ID, finalSlopes
                             )
-                            finalSlope.text = finalSlopes
+//                            finalSlope.text = finalSlopes
                         }
                     }
                     if (spin.selectedItemPosition == 0) {
@@ -290,21 +289,50 @@ class PhCalibFragmentNew : Fragment() {
                             ) {
                                 tempVal = jsonData.getString("TEMP_VAL").toFloat()
                                 val tempForm = String.format(Locale.UK, "%.1f", tempVal)
-                                tvTempCurr.text = "$tempForm°C"
-                                SharedPref.saveData(
-                                    requireContext(), "tempValueu" + PhActivity.DEVICE_ID, tempForm
-                                )
-                                if (tempVal <= -127.0) {
-                                    tvTempCurr.text = "NA"
+                                Log.e("NullCheck", "" + tempToggleSharedPref)
+
+                                requireActivity().runOnUiThread {
+                                    Toast.makeText(requireContext(), "" + tempForm, Toast.LENGTH_SHORT).show()
+                                }
+
+                                if (tempToggleSharedPref != null){
+                                    if (tempToggleSharedPref == "true") {
+                                        tvTempCurr.text = "$tempForm°C"
+                                        SharedPref.saveData(
+                                            requireContext(),
+                                            "tempValue" + PhActivity.DEVICE_ID,
+                                            tempForm
+                                        )
+                                        if (tempVal <= -127.0) {
+                                            tvTempCurr.text = "NA"
+                                            SharedPref.saveData(
+                                                requireContext(),
+                                                "tempValue" + PhActivity.DEVICE_ID,
+                                                "NA"
+                                            )
+                                        }
+                                    }
+                                }else{
+                                    tvTempCurr.text = "$tempForm°C"
                                     SharedPref.saveData(
-                                        requireContext(), "tempValue" + PhActivity.DEVICE_ID, "NA"
+                                        requireContext(),
+                                        "tempValue" + PhActivity.DEVICE_ID,
+                                        tempForm
                                     )
+                                    if (tempVal <= -127.0) {
+                                        tvTempCurr.text = "NA"
+                                        SharedPref.saveData(
+                                            requireContext(),
+                                            "tempValue" + PhActivity.DEVICE_ID,
+                                            "NA"
+                                        )
+                                    }
                                 }
                             } else {
                                 tvTempCurr.text = "nan"
-                                SharedPref.saveData(
-                                    requireContext(), "tempValue" + PhActivity.DEVICE_ID, "nan"
-                                )
+//                                SharedPref.saveData(
+//                                    requireContext(), "tempValue" + PhActivity.DEVICE_ID, "nan"
+//                                )
                             }
                         }
                         if (jsonData.has("EC_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
@@ -1081,14 +1109,14 @@ class PhCalibFragmentNew : Fragment() {
                             }
                             tvPhCurr.text = v
                         }
-                        if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val ph = jsonData.getString("TEMP_VAL").toFloat()
-                            val tempForm = String.format(Locale.UK, "%.1f", ph)
-                            tvTempCurr.text = "$tempForm°C"
-                            if (ph <= -127.0) {
-                                tvTempCurr.text = "NA"
-                            }
-                        }
+//                        if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+//                            val ph = jsonData.getString("TEMP_VAL").toFloat()
+//                            val tempForm = String.format(Locale.UK, "%.1f", ph)
+//                            tvTempCurr.text = "$tempForm°C"
+//                            if (ph <= -127.0) {
+//                                tvTempCurr.text = "NA"
+//                            }
+//                        }
                         if (jsonData.has("EC_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                             val ph = jsonData.getString("EC_VAL")
                             SharedPref.saveData(
@@ -3021,9 +3049,17 @@ class PhCalibFragmentNew : Fragment() {
 
     lateinit var userDao: UserDao
     lateinit var userActionDao: UserActionDao
+    var tempToggleSharedPref: String? = null
 
     override fun onResume() {
         super.onResume()
+        tempToggleSharedPref =
+            SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
+
+        setPreviousData()
+
+        websocketData()
+
 
         userDao = Room.databaseBuilder(
             requireContext().applicationContext, AppDatabase::class.java, "aican-database"

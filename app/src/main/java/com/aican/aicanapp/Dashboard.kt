@@ -87,8 +87,11 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
     lateinit var primaryDatabase: DatabaseReference
 
     private val databaseReference: DatabaseReference by lazy {
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
+
         FirebaseDatabase.getInstance().getReference("NEW_USERS")
     }
+
     lateinit var deviceRef: DatabaseReference
     lateinit var offlineMode: Switch
     lateinit var offlineModeSwitch: Switch
@@ -167,8 +170,8 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         binding.offlineModeSwitch.setOnCheckedChangeListener { _, isChecked ->
             webSocketConnected = if (isChecked) {
                 //                val uri = URI("ws://localhost:3000")
-//                val uri = URI("wss://socketsbay.com/wss/v2/1/demo/")
-                val uri = URI("ws://192.168.4.1:81")
+                val uri = URI("wss://socketsbay.com/wss/v2/1/demo/")
+//                val uri = URI("ws://192.168.4.1:81")
 //
 //                WebSocketManager.disconnect()
                 WebSocketManager.initializeWebSocket(uri,
@@ -472,7 +475,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
 //        Toast.makeText(this@Dashboard, "" + uid, Toast.LENGTH_SHORT).show()
 
-        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
+//        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
 
 
         databaseReference.child(uid).addValueEventListener(object : ValueEventListener {
