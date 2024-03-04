@@ -45,9 +45,11 @@ import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.Export
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.ph.phAnim.PhView
+import com.aican.aicanapp.roomDatabase.daoObjects.AllLogsDataDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
+import com.aican.aicanapp.roomDatabase.entities.AllLogsEntity
 import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
 import com.aican.aicanapp.utils.Constants
@@ -57,7 +59,6 @@ import com.aican.aicanapp.utils.Source.deviceID
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.google.common.base.Splitter
-import com.google.firebase.database.DatabaseReference
 import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
@@ -190,8 +191,7 @@ class PhLogFragment : Fragment() {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?,
-        savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
     ): View? {
         binding = FragmentPhLogBinding.inflate(inflater, container, false);
         return binding.root;
@@ -250,8 +250,7 @@ class PhLogFragment : Fragment() {
         if (Constants.OFFLINE_DATA) {
 
             if (SharedPref.getSavedData(
-                    getContext(),
-                    "COMPANY_NAME"
+                    getContext(), "COMPANY_NAME"
                 ) != null && SharedPref.getSavedData(
                     getContext(), "COMPANY_NAME"
                 ) != "N/A"
@@ -276,17 +275,17 @@ class PhLogFragment : Fragment() {
 
         exportBtn.setOnClickListener {
             Source.status_export = true
-            val time: String =
-                SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-            val date: String =
-                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val time: String = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+            val date: String = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
 
             addUserAction(
-                "username: " + Source.userName + ", Role: " + Source.userRole +
-                        ", Moved to export activity", ph, temp, mv, compound_name
+                "username: " + Source.userName + ", Role: " + Source.userRole + ", Moved to export activity",
+                ph,
+                temp,
+                mv,
+                compound_name
             )
-            val sh =
-                requireContext().getSharedPreferences("RolePref", MODE_PRIVATE)
+            val sh = requireContext().getSharedPreferences("RolePref", MODE_PRIVATE)
             val roleE = sh.edit()
             val roleSuper = Source.logUserName
             roleE.putString("roleSuper", roleSuper)
@@ -322,28 +321,21 @@ class PhLogFragment : Fragment() {
 //                    Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
                 }
                 addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", Log pressed", ph, temp, mv, compound_name
+                    "username: " + Source.userName + ", Role: " + Source.userRole + ", Log pressed",
+                    ph,
+                    temp,
+                    mv,
+                    compound_name
                 )
                 databaseHelper.print_insert_log_data(
-                    date,
-                    time,
-                    ph,
-                    temp,
-                    batchnum,
-                    arnum,
-                    compound_name,
-                    PhActivity.DEVICE_ID
+                    date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
                 )
-                databaseHelper.insert_log_data(
-                    date,
-                    time,
-                    ph,
-                    temp,
-                    batchnum,
-                    arnum,
-                    compound_name,
-                    PhActivity.DEVICE_ID
+//                databaseHelper.insert_log_data(
+//                    date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
+//                )
+
+                addLogData(
+                    ph, temp, batchnum, arnum, compound_name
                 )
 
                 adapter = LogAdapter(context, getList())
@@ -447,11 +439,9 @@ class PhLogFragment : Fragment() {
                     }
                 }
             }
-            plAdapter =
-                PrintLogAdapter(
-                    requireContext().applicationContext,
-                    reverseFileArray(filesAndFoldersPDF)
-                )
+            plAdapter = PrintLogAdapter(
+                requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF)
+            )
             csvRecyclerView.adapter = plAdapter
             plAdapter.notifyDataSetChanged()
             csvRecyclerView.layoutManager = LinearLayoutManager(requireContext().applicationContext)
@@ -475,11 +465,8 @@ class PhLogFragment : Fragment() {
         csvRecyclerView.layoutManager = LinearLayoutManager(requireContext().applicationContext)
         if (checkPermission()) {
             Toast.makeText(
-                requireContext().applicationContext,
-                "Permission Granted",
-                Toast.LENGTH_SHORT
-            )
-                .show()
+                requireContext().applicationContext, "Permission Granted", Toast.LENGTH_SHORT
+            ).show()
         } else {
             requestPermission()
         }
@@ -500,17 +487,14 @@ class PhLogFragment : Fragment() {
                         jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                         WebSocketManager.sendMessage(jsonData.toString())
                         addUserAction(
-                            "username: " + Source.userName + ", Role: " + Source.userRole +
-                                    ", AUTOLOG = 2",
+                            "username: " + Source.userName + ", Role: " + Source.userRole + ", AUTOLOG = 2",
                             ph,
                             temp,
                             mv,
                             compound_name
                         )
                         Toast.makeText(
-                            requireContext(),
-                            "C " + Constants.timeInSec,
-                            Toast.LENGTH_SHORT
+                            requireContext(), "C " + Constants.timeInSec, Toast.LENGTH_SHORT
                         ).show()
                         if (Constants.timeInSec == 0) {
                         } else {
@@ -539,8 +523,7 @@ class PhLogFragment : Fragment() {
                         WebSocketManager.sendMessage(jsonData.toString())
 
                         addUserAction(
-                            "username: " + Source.userName + ", Role: " + Source.userRole +
-                                    ", AUTOLOG = 0",
+                            "username: " + Source.userName + ", Role: " + Source.userRole + ", AUTOLOG = 0",
                             ph,
                             temp,
                             mv,
@@ -567,8 +550,7 @@ class PhLogFragment : Fragment() {
         }
 
         if (SharedPref.getSavedData(
-                requireContext(),
-                "LOG_INTERVAL_A"
+                requireContext(), "LOG_INTERVAL_A"
             ) != null && SharedPref.getSavedData(requireContext(), "LOG_INTERVAL_A") !== ""
         ) {
             val d = SharedPref.getSavedData(requireContext(), "LOG_INTERVAL_A").toDouble() * 60000
@@ -592,20 +574,16 @@ class PhLogFragment : Fragment() {
                     val db1 = enteredValue * 60000
                     Constants.timeInSec = db1.toInt()
                     Toast.makeText(
-                        requireContext(),
-                        "A " + Constants.timeInSec,
-                        Toast.LENGTH_SHORT
+                        requireContext(), "A " + Constants.timeInSec, Toast.LENGTH_SHORT
                     ).show()
-                    log_interval_text.text =
-                        (Constants.timeInSec / 60000).toString() + ""
+                    log_interval_text.text = (Constants.timeInSec / 60000).toString() + ""
                     if (switchInterval.isChecked) {
                         if (Constants.OFFLINE_MODE) {
                             if (!Constants.logIntervalActive) {
                                 try {
                                     val d = enterTime.text.toString().toDouble() * 60000
                                     Constants.timeInSec = d.toInt()
-                                    val a =
-                                        Constants.timeInSec.toDouble() / 60000
+                                    val a = Constants.timeInSec.toDouble() / 60000
                                     Log.d("TimerVal", "" + a)
                                     SharedPref.saveData(
                                         requireContext(),
@@ -630,9 +608,7 @@ class PhLogFragment : Fragment() {
                                 }
                             } else {
                                 Toast.makeText(
-                                    requireContext(),
-                                    "Already running",
-                                    Toast.LENGTH_SHORT
+                                    requireContext(), "Already running", Toast.LENGTH_SHORT
                                 ).show()
                             }
                         } else {
@@ -651,9 +627,7 @@ class PhLogFragment : Fragment() {
                 } catch (e: NumberFormatException) {
                     // Show an error message for invalid input
                     Toast.makeText(
-                        requireContext(),
-                        "Please enter a valid number",
-                        Toast.LENGTH_SHORT
+                        requireContext(), "Please enter a valid number", Toast.LENGTH_SHORT
                     ).show()
                 }
             }
@@ -845,9 +819,7 @@ class PhLogFragment : Fragment() {
                         tvPhCurr.text = phk.toString()
                         phView.moveTo(phk)
                         SharedPref.saveData(
-                            requireContext(),
-                            "phValue" + PhActivity.DEVICE_ID,
-                            phk.toString()
+                            requireContext(), "phValue" + PhActivity.DEVICE_ID, phk.toString()
                         )
                         ph = phk.toString()
                         AlarmConstants.PH = phk
@@ -870,9 +842,7 @@ class PhLogFragment : Fragment() {
                         }
 
                         SharedPref.saveData(
-                            requireContext(),
-                            "tempValue" + PhActivity.DEVICE_ID,
-                            temp
+                            requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
                         )
                     }
                     if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
@@ -881,12 +851,9 @@ class PhLogFragment : Fragment() {
                     ) {
                         if (switchBtnClick.isChecked) {
                             date = SimpleDateFormat(
-                                "yyyy-MM-dd",
-                                Locale.getDefault()
+                                "yyyy-MM-dd", Locale.getDefault()
                             ).format(Date())
-                            time =
-                                SimpleDateFormat("HH:mm", Locale.getDefault())
-                                    .format(Date())
+                            time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                             //                        fetch_logs();
                             if (ph == null || temp == null || mv == null) {
 //                                Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
@@ -914,12 +881,10 @@ class PhLogFragment : Fragment() {
                             if (jsonData.getString("HOLD") == "1") {
                                 holdFlag++
                                 date = SimpleDateFormat(
-                                    "yyyy-MM-dd",
-                                    Locale.getDefault()
+                                    "yyyy-MM-dd", Locale.getDefault()
                                 ).format(Date())
                                 time = SimpleDateFormat(
-                                    "HH:mm",
-                                    Locale.getDefault()
+                                    "HH:mm", Locale.getDefault()
                                 ).format(Date())
                                 //                            fetch_logs();
 //                                Toast.makeText(getContext(), "HOLD " + jsonData.getString("HOLD"), Toast.LENGTH_SHORT).show();
@@ -951,16 +916,21 @@ class PhLogFragment : Fragment() {
                                             compound_name,
                                             PhActivity.DEVICE_ID
                                         )
-                                        databaseHelper.insert_log_data(
-                                            date,
-                                            time,
-                                            ph,
-                                            temp,
-                                            batchnum,
-                                            arnum,
-                                            compound_name,
-                                            PhActivity.DEVICE_ID
+//                                        databaseHelper.insert_log_data(
+//                                            date,
+//                                            time,
+//                                            ph,
+//                                            temp,
+//                                            batchnum,
+//                                            arnum,
+//                                            compound_name,
+//                                            PhActivity.DEVICE_ID
+//                                        )
+
+                                        addLogData(
+                                            ph, temp, batchnum, arnum, compound_name
                                         )
+
                                     }
                                 }
                             }
@@ -1063,18 +1033,16 @@ class PhLogFragment : Fragment() {
         }
 
         val user_name = "Username: " + Source.logUserName
-        val device_id = "DeviceID: " + deviceID
+        val device_id = "DeviceID: " + PhActivity.DEVICE_ID
         reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         reportTime = "Time: " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val shp = requireContext().getSharedPreferences("Extras", MODE_PRIVATE)
         offset = "Offset: " + shp.getString("offset", "")
         if (Constants.OFFLINE_DATA) {
             offset = if (SharedPref.getSavedData(
-                    requireContext(),
-                    "OFFSET_" + PhActivity.DEVICE_ID
+                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
-                    requireContext(),
-                    "OFFSET_" + PhActivity.DEVICE_ID
+                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
                 val data =
@@ -1089,11 +1057,9 @@ class PhLogFragment : Fragment() {
         battery = "Battery: " + shp.getString("battery", "")
         if (Constants.OFFLINE_DATA) {
             slope = if (SharedPref.getSavedData(
-                    requireContext(),
-                    "SLOPE_" + PhActivity.DEVICE_ID
+                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
-                    requireContext(),
-                    "SLOPE_" + PhActivity.DEVICE_ID
+                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
                 val data =
@@ -1103,11 +1069,9 @@ class PhLogFragment : Fragment() {
                 "Slope: " + "null"
             }
             temp = if (SharedPref.getSavedData(
-                    requireContext(),
-                    "tempValue" + PhActivity.DEVICE_ID
+                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
                 ) != null && SharedPref.getSavedData(
-                    requireContext(),
-                    "tempValue" + PhActivity.DEVICE_ID
+                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
                 val data =
@@ -1149,8 +1113,7 @@ class PhLogFragment : Fragment() {
 //                + ".pdf");
         val filePath = ("" //                requireContext().getExternalFilesDir(null)
                 + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
-            ?: 0) - 1)
-                + ".pdf")
+            ?: 0) - 1) + ".pdf")
 
 
 //        File file = new File(requireContext().getExternalFilesDir(null).getAbsolutePath(), filePath);
@@ -1163,19 +1126,38 @@ class PhLogFragment : Fragment() {
         val document = Document(pdfDocument)
         try {
             val imgBit = getCompanyLogo()
+//            if (imgBit != null) {
+//                val uri: Uri? = getImageUri(requireContext(), imgBit)
+//                try {
+//                    val add: String? = getPath(uri)
+//                    val imageData = ImageDataFactory.create(add)
+//                    val image: Image = Image(imageData).setHeight(80f).setWidth(80f)
+//                    //                table12.addCell(new Cell(2, 1).add(image));
+//                    // Adding image to the document
+//                    document.add(image)
+//                } catch (e: MalformedURLException) {
+//                    e.printStackTrace()
+//                }
+//            }
+            //
+
             if (imgBit != null) {
-                val uri: Uri? = getImageUri(requireContext(), imgBit)
-                try {
-                    val add: String? = getPath(uri)
-                    val imageData = ImageDataFactory.create(add)
-                    val image: Image = Image(imageData).setHeight(80f).setWidth(80f)
-                    //                table12.addCell(new Cell(2, 1).add(image));
-                    // Adding image to the document
-                    document.add(image)
-                } catch (e: MalformedURLException) {
-                    e.printStackTrace()
-                }
+
+                val byteArrayOutputStream = ByteArrayOutputStream()
+                imgBit.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+                val byteArray = byteArrayOutputStream.toByteArray()
+
+// Create ImageData from byte array
+                val imageData = ImageDataFactory.create(byteArray)
+
+// Create an Image element
+                val image = Image(imageData).setHeight(80f).setWidth(80f)
+                document.add(image)
+
+            }else{
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
             }
+            ///
             if (Constants.OFFLINE_MODE) {
 //                document.add(new Paragraph("Offline Mode"));
             }
@@ -1190,7 +1172,7 @@ class PhLogFragment : Fragment() {
                 """.trimIndent()
                     )
                 )
-            }else{
+            } else {
                 document.add(
                     Paragraph(
                         """
@@ -1202,13 +1184,13 @@ class PhLogFragment : Fragment() {
             }
             document.add(Paragraph(""))
 
-                document.add(
-                    Paragraph(
-                        """$reportDate  |  $reportTime
+            document.add(
+                Paragraph(
+                    """$reportDate  |  $reportTime
                                  $offset  |  $battery
                                  $slope  |  $tempe"""
-                    )
                 )
+            )
 
 
             document.add(Paragraph(""))
@@ -1304,18 +1286,22 @@ class PhLogFragment : Fragment() {
             document.add(table1)
             document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
             val imgBit1: Bitmap? = getSignImage()
+
             if (imgBit1 != null) {
-                val uri1: Uri? = getImageUri(requireContext(), imgBit1)
-                try {
-                    val add: String? = getPath(uri1)
-                    val imageData1 = ImageDataFactory.create(add)
-                    val image1: Image = Image(imageData1).setHeight(80f).setWidth(80f)
-                    //                table12.addCell(new Cell(2, 1).add(image));
-                    // Adding image to the document
-                    document.add(image1)
-                } catch (e: MalformedURLException) {
-                    e.printStackTrace()
-                }
+
+                val byteArrayOutputStream = ByteArrayOutputStream()
+                imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+                val byteArray = byteArrayOutputStream.toByteArray()
+
+// Create ImageData from byte array
+                val imageData = ImageDataFactory.create(byteArray)
+
+// Create an Image element
+                val image = Image(imageData).setHeight(80f).setWidth(80f)
+                document.add(image)
+
+            }else{
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             Toast.makeText(
@@ -1371,8 +1357,7 @@ class PhLogFragment : Fragment() {
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 
                 addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", Compound name changed to " + compound_name,
+                    "username: " + Source.userName + ", Role: " + Source.userRole + ", Compound name changed to " + compound_name,
                     ph,
                     temp,
                     mv,
@@ -1382,8 +1367,7 @@ class PhLogFragment : Fragment() {
                 compound_name = "NA"
 
                 addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", Compound name changed to " + compound_name,
+                    "username: " + Source.userName + ", Role: " + Source.userRole + ", Compound name changed to " + compound_name,
                     ph,
                     temp,
                     mv,
@@ -1396,8 +1380,7 @@ class PhLogFragment : Fragment() {
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 
                 addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", Batchnum changed to " + batchnum,
+                    "username: " + Source.userName + ", Role: " + Source.userRole + ", Batchnum changed to " + batchnum,
                     ph,
                     temp,
                     mv,
@@ -1409,8 +1392,7 @@ class PhLogFragment : Fragment() {
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 
                 addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", Batchnum changed to " + batchnum,
+                    "username: " + Source.userName + ", Role: " + Source.userRole + ", Batchnum changed to " + batchnum,
                     ph,
                     temp,
                     mv,
@@ -1423,8 +1405,7 @@ class PhLogFragment : Fragment() {
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
 
                 addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", AR_NUMBER changed to " + arnum,
+                    "username: " + Source.userName + ", Role: " + Source.userRole + ", AR_NUMBER changed to " + arnum,
                     ph,
                     temp,
                     mv,
@@ -1435,8 +1416,7 @@ class PhLogFragment : Fragment() {
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                 addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", AR_NUMBER changed to " + arnum,
+                    "username: " + Source.userName + ", Role: " + Source.userRole + ", AR_NUMBER changed to " + arnum,
                     ph,
                     temp,
                     mv,
@@ -1491,24 +1471,13 @@ class PhLogFragment : Fragment() {
         time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         if (Constants.OFFLINE_MODE) {
             databaseHelper.print_insert_log_data(
-                date,
-                time,
-                ph,
-                temp,
-                batchnum,
-                arnum,
-                compound_name,
-                PhActivity.DEVICE_ID
+                date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
             )
-            databaseHelper.insert_log_data(
-                date,
-                time,
-                ph,
-                temp,
-                batchnum,
-                arnum,
-                compound_name,
-                PhActivity.DEVICE_ID
+//            databaseHelper.insert_log_data(
+//                date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
+//            )
+            addLogData(
+                ph, temp, batchnum, arnum, compound_name
             )
             databaseHelper.insert_action_data(
                 time,
@@ -1577,8 +1546,13 @@ class PhLogFragment : Fragment() {
             if (date == currentDate_fetched && time == currentTime_fetched) {
                 phDataModelList.add(
                     0, phData(
-                        ph_fetched, m_fetched, currentDate_fetched,
-                        currentTime_fetched, batchnum_fetched, arnum_fetched, compound_name_fetched
+                        ph_fetched,
+                        m_fetched,
+                        currentDate_fetched,
+                        currentTime_fetched,
+                        batchnum_fetched,
+                        arnum_fetched,
+                        compound_name_fetched
                     )
                 )
             }
@@ -1611,9 +1585,7 @@ class PhLogFragment : Fragment() {
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int,
-        permissions: Array<out String>,
-        grantResults: IntArray
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
     ) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty()) {
@@ -1644,8 +1616,39 @@ class PhLogFragment : Fragment() {
 
             userActionDao.insertUserAction(
                 UserActionEntity(
-                    0, Source.getCurrentTime(), Source.getPresentDate(),
-                    action, ph, temp, mv, compound, PhActivity.DEVICE_ID.toString()
+                    0,
+                    Source.getCurrentTime(),
+                    Source.getPresentDate(),
+                    action,
+                    ph,
+                    temp,
+                    mv,
+                    compound,
+                    PhActivity.DEVICE_ID.toString()
+                )
+            )
+        }
+    }
+
+    fun addLogData(
+        ph: String,
+        temperature: String,
+        batchnum: String,
+        arnum: String,
+        compound: String,
+    ) {
+        lifecycleScope.launch(Dispatchers.IO) {
+            allLogsDataDao.insertLogData(
+                AllLogsEntity(
+                    0,
+                    Source.getPresentDate(),
+                    Source.getCurrentTime(),
+                    ph,
+                    temperature,
+                    batchnum,
+                    arnum,
+                    compound,
+                    PhActivity.DEVICE_ID.toString()
                 )
             )
         }
@@ -1653,20 +1656,21 @@ class PhLogFragment : Fragment() {
 
     lateinit var userDao: UserDao
     lateinit var userActionDao: UserActionDao
+    lateinit var allLogsDataDao: AllLogsDataDao
 
     override fun onResume() {
         super.onResume()
 
         userDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
+            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
         ).build().userDao()
 
+        allLogsDataDao = Room.databaseBuilder(
+            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+        ).build().allLogsDao()
+
         userActionDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
+            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
         ).build().userActionDao()
 
         if (Source.cfr_mode) {
@@ -1674,8 +1678,11 @@ class PhLogFragment : Fragment() {
             userAuthDialog.showLoginDialog { isValidCredentials ->
                 if (isValidCredentials) {
                     addUserAction(
-                        "username: " + Source.userName + ", Role: " + Source.userRole +
-                                ", entered ph log fragment", "", "", "", ""
+                        "username: " + Source.userName + ", Role: " + Source.userRole + ", entered ph log fragment",
+                        "",
+                        "",
+                        "",
+                        ""
                     )
                 } else {
                     requireActivity().runOnUiThread {
