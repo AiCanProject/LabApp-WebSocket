@@ -34,11 +34,14 @@ import androidx.core.content.ContextCompat
 import androidx.core.util.Pair
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import androidx.room.Room
 import com.aican.aicanapp.R
 import com.aican.aicanapp.adapters.FileAdapter
 import com.aican.aicanapp.adapters.UserDataAdapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.ActivityExportBinding
+import com.aican.aicanapp.roomDatabase.daoObjects.AllLogsDataDao
+import com.aican.aicanapp.roomDatabase.database.AppDatabase
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
@@ -47,9 +50,6 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.timepicker.MaterialTimePicker
 import com.google.android.material.timepicker.TimeFormat
 import com.google.common.base.Splitter
-import com.google.firebase.FirebaseApp
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
 import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
@@ -57,13 +57,16 @@ import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.IOException
 import java.io.OutputStream
-import java.net.MalformedURLException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -495,6 +498,8 @@ class Export : AppCompatActivity() {
         temp = "Temperature: " + shp.getString("temp", "")
         battery = "Battery: " + shp.getString("battery", "")
         if (Constants.OFFLINE_DATA) {
+            val slopeData = SharedPref.getSavedData(this@Export, "SLOPE_" + PhActivity.DEVICE_ID)
+
             slope = if (SharedPref.getSavedData(
                     this@Export,
                     "SLOPE_" + PhActivity.DEVICE_ID
@@ -503,11 +508,12 @@ class Export : AppCompatActivity() {
                     "SLOPE_" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "SLOPE_" + PhActivity.DEVICE_ID)
-                "Slope: $data"
+                "Slope: $slopeData"
             } else {
                 "Slope: " + "null"
             }
+            val tempData = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
+
             temp = if (SharedPref.getSavedData(
                     this@Export,
                     "tempValue" + PhActivity.DEVICE_ID
@@ -516,8 +522,7 @@ class Export : AppCompatActivity() {
                     "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
-                "Temperature: $data"
+                "Temperature: $tempData"
             } else {
                 "Temperature: " + "null"
             }
@@ -554,17 +559,20 @@ class Export : AppCompatActivity() {
         val document = Document(pdfDocument)
         val imgBit = getCompanyLogo()
         if (imgBit != null) {
-            val uri: Uri = getImageUri(this@Export, imgBit)
-            try {
-                val add: String = getPath(uri)
-                val imageData = ImageDataFactory.create(add)
-                val image = Image(imageData).setHeight(80f).setWidth(80f)
-                //                table12.addCell(new Cell(2, 1).add(image));
-                // Adding image to the document
-                document.add(image)
-            } catch (e: MalformedURLException) {
-                e.printStackTrace()
-            }
+
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            imgBit.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
+
+// Create ImageData from byte array
+            val imageData = ImageDataFactory.create(byteArray)
+
+// Create an Image element
+            val image = Image(imageData).setHeight(80f).setWidth(80f)
+            document.add(image)
+
+        } else {
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
         }
 
 //        Text text = new Text(company_name);
@@ -586,7 +594,7 @@ class Export : AppCompatActivity() {
             """.trimIndent()
                 )
             )
-        }else{
+        } else {
             document.add(
                 Paragraph(
                     """
@@ -705,18 +713,22 @@ $slope  |  $temp"""
 
 //        document.add(new Paragraph("Operator Sign                                                                                      Supervisor Sign"));
         val imgBit1 = getSignImage()
+
         if (imgBit1 != null) {
-            val uri1: Uri = getImageUri(this, imgBit1)
-            try {
-                val add: String = getPath(uri1)
-                val imageData1 = ImageDataFactory.create(add)
-                val image1 = Image(imageData1).setHeight(80f).setWidth(80f)
-                //                table12.addCell(new Cell(2, 1).add(image));
-                // Adding image to the document
-                document.add(image1)
-            } catch (e: MalformedURLException) {
-                e.printStackTrace()
-            }
+
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
+
+// Create ImageData from byte array
+            val imageData = ImageDataFactory.create(byteArray)
+
+// Create an Image element
+            val image = Image(imageData).setHeight(80f).setWidth(80f)
+            document.add(image)
+
+        } else {
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
         }
         document.close()
         Toast.makeText(this, "Pdf generated", Toast.LENGTH_SHORT).show()
@@ -843,15 +855,27 @@ $slope  |  $temp"""
         return cursor.getString(column_index)
     }
 
+    lateinit var allLogsDataDao: AllLogsDataDao
+
+    override fun onResume() {
+        super.onResume()
+        allLogsDataDao = Room.databaseBuilder(
+            this@Export.applicationContext, AppDatabase::class.java, "aican-database"
+        ).build().allLogsDao()
+
+    }
+
     @Throws(FileNotFoundException::class)
     fun generatePDF1() {
-        val device_id = "DeviceID: $deviceID"
+        val device_id = "DeviceID: ${PhActivity.DEVICE_ID}"
         companyName = "" + companyNameEditText.text.toString()
         reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         reportTime = "Time: " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val shp = getSharedPreferences("Extras", MODE_PRIVATE)
         offset = "Offset: " + shp.getString("offset", "")
         if (Constants.OFFLINE_DATA) {
+            val offsetData = SharedPref.getSavedData(this@Export, "OFFSET_" + PhActivity.DEVICE_ID)
+
             if (SharedPref.getSavedData(
                     this@Export,
                     "OFFSET_" + PhActivity.DEVICE_ID
@@ -860,8 +884,7 @@ $slope  |  $temp"""
                     "OFFSET_" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "OFFSET_" + PhActivity.DEVICE_ID)
-                offset = "Offset: $data"
+                offset = "Offset: $offsetData"
             } else {
                 offset = "Offset: " + "null"
             }
@@ -870,6 +893,8 @@ $slope  |  $temp"""
         temp = "Temperature: " + shp.getString("temp", "")
         battery = "Battery: " + shp.getString("battery", "")
         if (Constants.OFFLINE_DATA) {
+            val slopeData = SharedPref.getSavedData(this@Export, "SLOPE_" + PhActivity.DEVICE_ID)
+
             if (SharedPref.getSavedData(
                     this@Export,
                     "SLOPE_" + PhActivity.DEVICE_ID
@@ -878,11 +903,12 @@ $slope  |  $temp"""
                     "SLOPE_" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "SLOPE_" + PhActivity.DEVICE_ID)
-                slope = "Slope: $data"
+                slope = "Slope: $slopeData"
             } else {
                 slope = "Slope: " + "null"
             }
+            val tempData = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
+
             if (SharedPref.getSavedData(
                     this@Export,
                     "tempValue" + PhActivity.DEVICE_ID
@@ -891,8 +917,7 @@ $slope  |  $temp"""
                     "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
-                temp = "Temperature: $data"
+                temp = "Temperature: $tempData"
             } else {
                 temp = "Temperature: " + "null"
             }
@@ -933,17 +958,20 @@ $slope  |  $temp"""
 //        Table table12 = new Table(columnWidth12);
         val imgBit = getCompanyLogo()
         if (imgBit != null) {
-            val uri = getImageUri(this@Export, imgBit)
-            try {
-                val add = getPath(uri)
-                val imageData = ImageDataFactory.create(add)
-                val image = Image(imageData).setHeight(80f).setWidth(80f)
-                //                table12.addCell(new Cell(2, 1).add(image));
-                // Adding image to the document
-                document.add(image)
-            } catch (e: MalformedURLException) {
-                e.printStackTrace()
-            }
+
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            imgBit.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
+
+// Create ImageData from byte array
+            val imageData = ImageDataFactory.create(byteArray)
+
+// Create an Image element
+            val image = Image(imageData).setHeight(80f).setWidth(80f)
+            document.add(image)
+
+        } else {
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
         }
         //
 //        table12.addCell(new Paragraph(companyName));
@@ -1116,51 +1144,101 @@ $slope  |  $temp"""
         } else {
             curCSV = db.rawQuery("SELECT * FROM LogUserdetails", null)
         }
-        while (curCSV.moveToNext()) {
-            val date = curCSV.getString(curCSV.getColumnIndex("date"))
-            val time = curCSV.getString(curCSV.getColumnIndex("time"))
-            val device = curCSV.getString(curCSV.getColumnIndex("deviceID"))
-            val pH = curCSV.getString(curCSV.getColumnIndex("ph"))
-            val temp = curCSV.getString(curCSV.getColumnIndex("temperature"))
-            var batchnum = curCSV.getString(curCSV.getColumnIndex("batchnum"))
-            var arnum = curCSV.getString(curCSV.getColumnIndex("arnum"))
-            var comp = curCSV.getString(curCSV.getColumnIndex("compound"))
-            table1.addCell(date)
-            table1.addCell(time)
-            table1.addCell(pH ?: "--")
-            table1.addCell(temp ?: "--")
-            if (batchnum == null) {
-                batchnum = "--"
+
+
+        GlobalScope.launch(Dispatchers.Main) {
+            val allLogsArrayList = withContext(Dispatchers.IO) {
+                allLogsDataDao.getAllLogs()
             }
-            table1.addCell(if (batchnum != null && batchnum.length >= 8) stringSplitter(batchnum) else batchnum)
-            if (arnum == null) {
-                arnum = "--"
+            Toast.makeText(this@Export, "" + allLogsArrayList.size, Toast.LENGTH_SHORT).show()
+            if (allLogsArrayList != null) {
+                for (logs in allLogsArrayList) {
+                    val date = logs.date
+                    val time = logs.time
+                    val device = logs.deviceID
+                    val pH = logs.ph
+                    val temp = logs.temperature
+                    var batchnum = logs.batchnum
+                    var arnum = logs.arnum
+                    var comp = logs.compound
+                    table1.addCell(date)
+                    table1.addCell(time)
+                    table1.addCell(pH ?: "--")
+                    table1.addCell(temp ?: "--")
+                    if (batchnum == null) {
+                        batchnum = "--"
+                    }
+                    table1.addCell(
+                        if (batchnum != null && batchnum.length >= 8) stringSplitter(
+                            batchnum
+                        ) else batchnum
+                    )
+                    if (arnum == null) {
+                        arnum = "--"
+                    }
+                    table1.addCell(if (arnum != null && arnum.length >= 8) stringSplitter(arnum) else arnum)
+                    if (comp == null) {
+                        comp = "--"
+                    }
+                    table1.addCell(if (comp != null && comp.length >= 8) stringSplitter(comp) else comp)
+
+
+                }
+
+                document.add(table1)
+
+                document.add(Paragraph(""))
+                document.add(Paragraph("Operator Sign                                                                                          Supervisor Sign"))
+                val imgBit1 = getSignImage()
+
+                if (imgBit1 != null) {
+
+                    val byteArrayOutputStream = ByteArrayOutputStream()
+                    imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+                    val byteArray = byteArrayOutputStream.toByteArray()
+
+                    val imageData = ImageDataFactory.create(byteArray)
+                    val image = Image(imageData).setHeight(80f).setWidth(80f)
+                    document.add(image)
+
+                } else {
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
+                }
+                document.close()
+                Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
+
             }
-            table1.addCell(if (arnum != null && arnum.length >= 8) stringSplitter(arnum) else arnum)
-            if (comp == null) {
-                comp = "--"
-            }
-            table1.addCell(if (comp != null && comp.length >= 8) stringSplitter(comp) else comp)
+
         }
-        document.add(table1)
-        document.add(Paragraph(""))
-        document.add(Paragraph("Operator Sign                                                                                          Supervisor Sign"))
-        val imgBit1 = getSignImage()
-        if (imgBit1 != null) {
-            val uri1 = getImageUri(this@Export, imgBit1)
-            try {
-                val add = getPath(uri1)
-                val imageData1 = ImageDataFactory.create(add)
-                val image1 = Image(imageData1).setHeight(80f).setWidth(80f)
-                //                table12.addCell(new Cell(2, 1).add(image));
-                // Adding image to the document
-                document.add(image1)
-            } catch (e: MalformedURLException) {
-                e.printStackTrace()
-            }
-        }
-        document.close()
-        Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
+
+
+//        while (curCSV.moveToNext()) {
+//            val date = curCSV.getString(curCSV.getColumnIndex("date"))
+//            val time = curCSV.getString(curCSV.getColumnIndex("time"))
+//            val device = curCSV.getString(curCSV.getColumnIndex("deviceID"))
+//            val pH = curCSV.getString(curCSV.getColumnIndex("ph"))
+//            val temp = curCSV.getString(curCSV.getColumnIndex("temperature"))
+//            var batchnum = curCSV.getString(curCSV.getColumnIndex("batchnum"))
+//            var arnum = curCSV.getString(curCSV.getColumnIndex("arnum"))
+//            var comp = curCSV.getString(curCSV.getColumnIndex("compound"))
+//            table1.addCell(date)
+//            table1.addCell(time)
+//            table1.addCell(pH ?: "--")
+//            table1.addCell(temp ?: "--")
+//            if (batchnum == null) {
+//                batchnum = "--"
+//            }
+//            table1.addCell(if (batchnum != null && batchnum.length >= 8) stringSplitter(batchnum) else batchnum)
+//            if (arnum == null) {
+//                arnum = "--"
+//            }
+//            table1.addCell(if (arnum != null && arnum.length >= 8) stringSplitter(arnum) else arnum)
+//            if (comp == null) {
+//                comp = "--"
+//            }
+//            table1.addCell(if (comp != null && comp.length >= 8) stringSplitter(comp) else comp)
+//        }
+
     }
 
     fun getImageUri(inContext: Context, inImage: Bitmap): Uri {
@@ -1216,6 +1294,8 @@ $slope  |  $temp"""
         val shp = getSharedPreferences("Extras", MODE_PRIVATE)
         offset = "Offset: " + shp.getString("offset", "")
         if (Constants.OFFLINE_DATA) {
+            val offsetData = SharedPref.getSavedData(this@Export, "OFFSET_" + PhActivity.DEVICE_ID)
+
             offset = if (SharedPref.getSavedData(
                     this@Export,
                     "OFFSET_" + PhActivity.DEVICE_ID
@@ -1224,8 +1304,7 @@ $slope  |  $temp"""
                     "OFFSET_" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "OFFSET_" + PhActivity.DEVICE_ID)
-                "Offset: $data"
+                "Offset: $offsetData"
             } else {
                 "Offset: " + "null"
             }
@@ -1234,6 +1313,8 @@ $slope  |  $temp"""
         var tempe = "Temperature: " + shp.getString("temp", "")
         battery = "Battery: " + shp.getString("battery", "")
         if (Constants.OFFLINE_DATA) {
+            val slopeData = SharedPref.getSavedData(this@Export, "SLOPE_" + PhActivity.DEVICE_ID)
+
             slope = if (SharedPref.getSavedData(
                     this@Export,
                     "SLOPE_" + PhActivity.DEVICE_ID
@@ -1242,11 +1323,12 @@ $slope  |  $temp"""
                     "SLOPE_" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "SLOPE_" + PhActivity.DEVICE_ID)
-                "Slope: $data"
+                "Slope: $slopeData"
             } else {
                 "Slope: " + "null"
             }
+            val tempData = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
+
             tempe = if (SharedPref.getSavedData(
                     this@Export,
                     "tempValue" + PhActivity.DEVICE_ID
@@ -1255,8 +1337,7 @@ $slope  |  $temp"""
                     "tempValue" + PhActivity.DEVICE_ID
                 ) !== ""
             ) {
-                val data = SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
-                "Temperature: $data"
+                "Temperature: $tempData"
             } else {
                 "Temperature: " + "null"
             }
@@ -1291,17 +1372,20 @@ $slope  |  $temp"""
         val document = Document(pdfDocument)
         val imgBit = getCompanyLogo()
         if (imgBit != null) {
-            val uri = getImageUri(this@Export, imgBit)
-            try {
-                val add = getPath(uri)
-                val imageData = ImageDataFactory.create(add)
-                val image = Image(imageData).setHeight(80f).setWidth(80f)
-                //                table12.addCell(new Cell(2, 1).add(image));
-                // Adding image to the document
-                document.add(image)
-            } catch (e: MalformedURLException) {
-                e.printStackTrace()
-            }
+
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            imgBit.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
+
+// Create ImageData from byte array
+            val imageData = ImageDataFactory.create(byteArray)
+
+// Create an Image element
+            val image = Image(imageData).setHeight(80f).setWidth(80f)
+            document.add(image)
+
+        } else {
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
         }
         document.add(
             Paragraph(
@@ -1362,18 +1446,22 @@ $slope  |  $tempe"""
         document.add(table1)
         document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
         val imgBit1 = getSignImage()
+
         if (imgBit1 != null) {
-            val uri1 = getImageUri(this@Export, imgBit1)
-            try {
-                val add = getPath(uri1)
-                val imageData1 = ImageDataFactory.create(add)
-                val image1 = Image(imageData1).setHeight(80f).setWidth(80f)
-                //                table12.addCell(new Cell(2, 1).add(image));
-                // Adding image to the document
-                document.add(image1)
-            } catch (e: MalformedURLException) {
-                e.printStackTrace()
-            }
+
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
+
+// Create ImageData from byte array
+            val imageData = ImageDataFactory.create(byteArray)
+
+// Create an Image element
+            val image = Image(imageData).setHeight(80f).setWidth(80f)
+            document.add(image)
+
+        } else {
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
         }
         document.close()
         Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()

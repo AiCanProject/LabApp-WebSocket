@@ -472,6 +472,9 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
 //        Toast.makeText(this@Dashboard, "" + uid, Toast.LENGTH_SHORT).show()
 
+        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
+
+
         databaseReference.child(uid).addValueEventListener(object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
