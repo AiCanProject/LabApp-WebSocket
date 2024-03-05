@@ -79,15 +79,13 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 //            }
 //        }
 
-        sharedViewModel.closeConnectionLiveData.observe(this) {
-            binding.socketConnected.visibility = View.GONE
-            binding.socketDisconnected.visibility = View.VISIBLE
-        }
+
 
         sharedViewModel.openConnectionLiveData.observe(this) {
-
+             runOnUiThread {
             binding.socketConnected.visibility = View.VISIBLE
             binding.socketDisconnected.visibility = View.GONE
+              }
         }
 
         sharedViewModel.messageLiveData.observe(this) { message ->
@@ -96,6 +94,13 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 binding.socketConnected.visibility = View.VISIBLE
                 binding.socketDisconnected.visibility = View.GONE
                 binding.monitorText.setTextColor(resources.getColor(R.color.normalColor))
+            }
+        }
+
+        sharedViewModel.closeConnectionLiveData.observe(this){
+            runOnUiThread {
+                binding.socketConnected.visibility = View.GONE
+                binding.socketDisconnected.visibility = View.VISIBLE
             }
         }
 
@@ -187,7 +192,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     override fun onBackPressed() {
-        super.onBackPressed()
         val count = supportFragmentManager.backStackEntryCount
         if (Source.auto_log == 0 && !Source.calibratingNow) {
 //            Intent intent = new Intent(PhActivity.this, Dashboard.class);

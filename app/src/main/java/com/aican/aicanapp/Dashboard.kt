@@ -1,10 +1,12 @@
 package com.aican.aicanapp
 
 import android.Manifest
+import android.app.Dialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.location.LocationManager
 import android.net.wifi.SupplicantState
 import android.net.wifi.WifiInfo
@@ -24,11 +26,13 @@ import android.widget.PopupMenu
 import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.viewModels
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -47,6 +51,7 @@ import com.aican.aicanapp.interfaces.DashboardListsOptionsClickListener
 import com.aican.aicanapp.ph.phFragment.PhFragment
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.Source
+import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.FirebaseApp
@@ -63,6 +68,7 @@ import org.json.JSONObject
 import java.io.File
 import java.net.URI
 import java.util.concurrent.atomic.AtomicInteger
+
 
 class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNameChangedListener {
 
@@ -142,6 +148,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
     private var webSocketConnected = false
     lateinit var phDevices: java.util.ArrayList<PhDevice>
     lateinit var newPhDevices: ArrayList<PhDevice>
+    private val sharedViewModel: SharedViewModel by viewModels()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -169,9 +176,12 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
         binding.offlineModeSwitch.setOnCheckedChangeListener { _, isChecked ->
             webSocketConnected = if (isChecked) {
-                //                val uri = URI("ws://localhost:3000")
-                val uri = URI("wss://socketsbay.com/wss/v2/1/demo/")
-//                val uri = URI("ws://192.168.4.1:81")
+//                                val uri = URI("ws://localhost:3000")
+//                val uri = URI("wss://socketsbay.com/wss/v2/1/demo/")
+                val uri = URI("ws://192.168.4.1:81")
+
+                //{"DEVICE_ID": "EPT2020", "CAL_MODE": "1"}
+
 //
 //                WebSocketManager.disconnect()
                 WebSocketManager.initializeWebSocket(uri,
@@ -184,64 +194,64 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
                             binding.socketDisconnected.visibility = View.GONE
                         }
 
-                        WebSocketManager.setMessageListener { message ->
-                            val jsonData = JSONObject(message)
-
-                            Toast.makeText(this@Dashboard, "" + message, Toast.LENGTH_SHORT).show()
-
-                            if (jsonData.has("PH_VAL") && jsonData.has("DEVICE_ID")) {
-                                var ph = 0.0f
-                                if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
-                                        jsonData.getString(
-                                            "PH_VAL"
-                                        )
-                                    )
-                                ) {
-                                    ph = jsonData.getString("PH_VAL").toFloat()
-                                }
-                                val devID = jsonData.getString("DEVICE_ID")
-
-                                Log.e("ThisPHVAL", "PH $ph")
-                                newPhAdapter.refreshPh(ph, devID)
-
-                            }
-
-                            if (jsonData.has("TEMP_VAL") && jsonData.has("DEVICE_ID")) {
-                                var tem = 0.0f
-                                if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
-                                        jsonData.getString(
-                                            "TEMP_VAL"
-                                        )
-                                    )
-                                ) {
-                                    tem = jsonData.getString("TEMP_VAL").toFloat()
-                                }
-                                val devID = jsonData.getString("DEVICE_ID")
-                                if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
-                                    newPhAdapter.refreshTemp(Math.round(tem), devID)
-                                }
-                            }
-                            if (jsonData.has("EC_VAL") && jsonData.has("DEVICE_ID")) {
-                                var ecVal = 0.0f
-                                if (jsonData.getString("EC_VAL") != "nan" && PhFragment.validateNumber(
-                                        jsonData.getString(
-                                            "EC_VAL"
-                                        )
-                                    )
-                                ) {
-                                    ecVal = jsonData.getString("EC_VAL").toFloat()
-                                }
-                                val devID = jsonData.getString("DEVICE_ID")
-
-
-
-                                if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
-                                    phAdapter.refreshMv(ecVal, devID)
-                                }
-                            }
-
-
-                        }
+//                        WebSocketManager.setMessageListener { message ->
+//                            val jsonData = JSONObject(message)
+//
+//                            Toast.makeText(this@Dashboard, "" + message, Toast.LENGTH_SHORT).show()
+//
+//                            if (jsonData.has("PH_VAL") && jsonData.has("DEVICE_ID")) {
+//                                var ph = 0.0f
+//                                if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
+//                                        jsonData.getString(
+//                                            "PH_VAL"
+//                                        )
+//                                    )
+//                                ) {
+//                                    ph = jsonData.getString("PH_VAL").toFloat()
+//                                }
+//                                val devID = jsonData.getString("DEVICE_ID")
+//
+//                                Log.e("ThisPHVAL", "PH $ph")
+//                                newPhAdapter.refreshPh(ph, devID)
+//
+//                            }
+//
+//                            if (jsonData.has("TEMP_VAL") && jsonData.has("DEVICE_ID")) {
+//                                var tem = 0.0f
+//                                if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
+//                                        jsonData.getString(
+//                                            "TEMP_VAL"
+//                                        )
+//                                    )
+//                                ) {
+//                                    tem = jsonData.getString("TEMP_VAL").toFloat()
+//                                }
+//                                val devID = jsonData.getString("DEVICE_ID")
+//                                if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
+//                                    newPhAdapter.refreshTemp(Math.round(tem), devID)
+//                                }
+//                            }
+//                            if (jsonData.has("EC_VAL") && jsonData.has("DEVICE_ID")) {
+//                                var ecVal = 0.0f
+//                                if (jsonData.getString("EC_VAL") != "nan" && PhFragment.validateNumber(
+//                                        jsonData.getString(
+//                                            "EC_VAL"
+//                                        )
+//                                    )
+//                                ) {
+//                                    ecVal = jsonData.getString("EC_VAL").toFloat()
+//                                }
+//                                val devID = jsonData.getString("DEVICE_ID")
+//
+//
+//
+//                                if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
+//                                    phAdapter.refreshMv(ecVal, devID)
+//                                }
+//                            }
+//
+//
+//                        }
 
 
                     },
@@ -251,6 +261,9 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
                         // Handle UI or other actions as needed
                         runOnUiThread {
                             Source.SOCKET_CONNECTED = false
+                            binding.offlineModeSwitch.isChecked = false
+                            sharedViewModel.closeConnectionLiveData.value = "" + ""
+
                             binding.socketConnected.visibility = View.GONE
                             binding.socketDisconnected.visibility = View.VISIBLE
                         }
@@ -482,6 +495,33 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
             override fun onDataChange(snapshot: DataSnapshot) {
                 if (snapshot.exists()) {
                     newPhDevices.clear()
+
+                    val cfr = snapshot.child("subscription").value as String
+                    if (cfr == "na") {
+                        setting.visibility = View.GONE
+
+                        Source.cfr_mode = false
+                        val dialog = Dialog(this@Dashboard)
+                        dialog.setContentView(R.layout.no_subscription)
+                        dialog.window!!.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+                        dialog.setCanceledOnTouchOutside(false)
+                        dialog.setCancelable(false)
+                        dialog.findViewById<View>(R.id.contactWith)
+                            .setOnClickListener { finishAffinity() }
+                        dialog.show()
+                    }
+                    if ((cfr == "non cfr" )|| (cfr == "non_cfr")
+                        || (cfr == "nonCfr") || cfr ==
+                            "noncfr"
+                        ||(cfr == "Non Cfr") || (cfr == "Non cfr")) {
+                        Source.cfr_mode = false
+                        setting.visibility = View.GONE
+                    }
+                    if (cfr == "cfr") {
+                        Source.cfr_mode =true
+                        setting.visibility = View.VISIBLE
+
+                    }
 
                     for (data in snapshot.child("DEVICES").children) {
 

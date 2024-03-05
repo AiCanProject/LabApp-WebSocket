@@ -35,6 +35,7 @@ object WebSocketManager {
 
                 override fun onClose(code: Int, reason: String?, remote: Boolean) {
                     closeListener.invoke(code, reason, remote)
+                    setCloseListener(closeListener)
 //                    disconnect(false)
                     clearListeners()
                 }

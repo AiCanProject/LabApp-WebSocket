@@ -1,5 +1,6 @@
 package com.aican.aicanapp.ph
 
+import android.database.Cursor
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -16,6 +17,7 @@ import com.aican.aicanapp.databinding.ActivityPhMvTableBinding
 import com.aican.aicanapp.dialogs.EditPhBufferDialog
 import com.aican.aicanapp.ph.phFragment.PhFragment
 import com.aican.aicanapp.utils.Constants
+import com.aican.aicanapp.utils.SharedKeys
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.websocket.WebSocketManager
@@ -31,7 +33,6 @@ class PhMvTable : AppCompatActivity() {
 
     lateinit var binding: ActivityPhMvTableBinding
 
-    private lateinit var offlineModeSwitch: Switch
 
     private lateinit var ph1: TextView
     private lateinit var minMV1: TextView
@@ -105,7 +106,6 @@ class PhMvTable : AppCompatActivity() {
         setNTC = findViewById<CheckBox>(R.id.setNTC)
         setThermistor = findViewById<Button>(R.id.setThermistor)
         monitorValTxt = findViewById<TextView>(R.id.monitorValTxt)
-        offlineModeSwitch = findViewById<Switch>(R.id.offlineModeSwitch)
         maxMVEdit1 = findViewById<TextView>(R.id.maxMVEdit1)
         maxMVEdit2 = findViewById<TextView>(R.id.maxMVEdit2)
         maxMVEdit3 = findViewById<TextView>(R.id.maxMVEdit3)
@@ -369,6 +369,100 @@ class PhMvTable : AppCompatActivity() {
 
 
         webSocketInit()
+        updateBufferMinMaxValues()
+    }
+
+    private fun updateBufferMinMaxValues() {
+
+        binding.phEdit1.visibility = View.INVISIBLE
+
+        binding.phEdit2.visibility = View.INVISIBLE
+        binding.phEdit3.visibility = View.INVISIBLE
+        binding.phEdit4.visibility = View.INVISIBLE
+        binding.phEdit5.visibility = View.INVISIBLE
+
+        val mMinMV1 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV1 + PhActivity.DEVICE_ID)
+        if (mMinMV1 != null){
+            minMV1.text = mMinMV1
+        }
+        val mMinMV2 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV2 + PhActivity.DEVICE_ID)
+        if (mMinMV2 != null) {
+            minMV2.text = mMinMV2
+        }
+
+        val mMinMV3 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV3 + PhActivity.DEVICE_ID)
+        if (mMinMV3 != null) {
+            minMV3.text = mMinMV3
+        }
+
+        val mMinMV4 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV4 + PhActivity.DEVICE_ID)
+        if (mMinMV4 != null) {
+            minMV4.text = mMinMV4
+        }
+
+        val mMinMV5 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV5 + PhActivity.DEVICE_ID)
+        if (mMinMV5 != null) {
+            minMV5.text = mMinMV5
+        }
+        val mMaxMV1 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV1 + PhActivity.DEVICE_ID)
+        if (mMaxMV1 != null) {
+            maxMV1.text = mMaxMV1
+        }
+
+        val mMaxMV2 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV2 + PhActivity.DEVICE_ID)
+        if (mMaxMV2 != null) {
+            maxMV2.text = mMaxMV2
+        }
+
+        val mMaxMV3 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV3 + PhActivity.DEVICE_ID)
+        if (mMaxMV3 != null) {
+            maxMV3.text = mMaxMV3
+        }
+
+        val mMaxMV4 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV4 + PhActivity.DEVICE_ID)
+        if (mMaxMV4 != null) {
+            maxMV4.text = mMaxMV4
+        }
+
+        val mMaxMV5 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV5 + PhActivity.DEVICE_ID)
+        if (mMaxMV5 != null) {
+            maxMV5.text = mMaxMV5
+        }
+
+        val db = databaseHelper.writableDatabase
+        val calibCSV5: Cursor = db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
+
+        var index5 = 0
+        while (calibCSV5.moveToNext()) {
+            val ph = calibCSV5.getString(calibCSV5.getColumnIndex("PH"))
+            val mv = calibCSV5.getString(calibCSV5.getColumnIndex("MV"))
+            val date = calibCSV5.getString(calibCSV5.getColumnIndex("DT"))
+            val slope = calibCSV5.getString(calibCSV5.getColumnIndex("SLOPE"))
+            val pHAC = calibCSV5.getString(calibCSV5.getColumnIndex("pHAC"))
+            val temperature1 = calibCSV5.getString(calibCSV5.getColumnIndex("temperature"))
+            Log.d("Cursor Data", "PH: " + calibCSV5.getString(calibCSV5.getColumnIndex("PH")))
+            if (index5 == 0) {
+                PH1 = ph
+               binding.ph1.text = ph
+            }
+            if (index5 == 1) {
+                PH2 = ph
+                binding.ph2.text = ph
+            }
+            if (index5 == 2) {
+                PH3 = ph
+                binding.ph3.text = ph
+            }
+            if (index5 == 3) {
+                PH4 = ph
+                binding.ph4.text = ph
+            }
+            if (index5 == 4) {
+                PH5 = ph
+                binding.ph5.text = ph
+            }
+            index5++
+        }
 
     }
 
@@ -426,13 +520,13 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //                    ph1.setText(sharedPreferences.getString("PH1", ""));
 
-                    databaseHelper.updateBufferData(
-                        1,
-                        ph.toString(),
-                        minMV1.text.toString(),
-                        maxMV1.text.toString(),
-                        this@PhMvTable
-                    )
+//                    databaseHelper.updateBufferData(
+//                        1,
+//                        ph.toString(),
+//                        minMV1.text.toString(),
+//                        maxMV1.text.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog.show(supportFragmentManager, null)
             }
@@ -443,13 +537,13 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //                    ph2.setText(sharedPreferences.getString("PH2", ""));
 
-                    databaseHelper.updateBufferData(
-                        2,
-                        ph.toString(),
-                        minMV2.text.toString(),
-                        maxMV2.text.toString(),
-                        this@PhMvTable
-                    )
+//                    databaseHelper.updateBufferData(
+//                        2,
+//                        ph.toString(),
+//                        minMV2.text.toString(),
+//                        maxMV2.text.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog1.show(supportFragmentManager, null)
             }
@@ -460,13 +554,13 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //                    ph3.setText(sharedPreferences.getString("PH3", ""));
 
-                    databaseHelper.updateBufferData(
-                        3,
-                        ph.toString(),
-                        minMV3.text.toString(),
-                        maxMV3.text.toString(),
-                        this@PhMvTable
-                    )
+//                    databaseHelper.updateBufferData(
+//                        3,
+//                        ph.toString(),
+//                        minMV3.text.toString(),
+//                        maxMV3.text.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog2.show(supportFragmentManager, null)
             }
@@ -477,13 +571,13 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //                    ph4.setText(sharedPreferences.getString("PH4", ""));
 
-                    databaseHelper.updateBufferData(
-                        4,
-                        ph.toString(),
-                        minMV4.text.toString(),
-                        maxMV4.text.toString(),
-                        this@PhMvTable
-                    )
+//                    databaseHelper.updateBufferData(
+//                        4,
+//                        ph.toString(),
+//                        minMV4.text.toString(),
+//                        maxMV4.text.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog3.show(supportFragmentManager, null)
             }
@@ -494,13 +588,13 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //                    ph5.setText(sharedPreferences.getString("PH5", ""));
 
-                    databaseHelper.updateBufferData(
-                        5,
-                        ph.toString(),
-                        minMV5.text.toString(),
-                        maxMV5.text.toString(),
-                        this@PhMvTable
-                    )
+//                    databaseHelper.updateBufferData(
+//                        5,
+//                        ph.toString(),
+//                        minMV5.text.toString(),
+//                        maxMV5.text.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog5.show(supportFragmentManager, null)
             }
@@ -509,15 +603,17 @@ class PhMvTable : AppCompatActivity() {
                 val dialog6 = EditPhBufferDialog { ph: Float ->
 //                    myEdit.putString("minMV1", String.valueOf(ph));
 //                    myEdit.commit();
-//                    minMV1.setText(sharedPreferences.getString("minMV1", ""));
+                    minMV1.setText(ph.toString());
 
-                    databaseHelper.updateBufferData(
-                        1,
-                        ph1.text.toString(),
-                        ph.toString(),
-                        maxMV1.text.toString(),
-                        this@PhMvTable
-                    )
+                    SharedPref.saveData(this@PhMvTable, SharedKeys.minMV1 + PhActivity.DEVICE_ID, ph.toString())
+
+//                    databaseHelper.updateBufferData(
+//                        1,
+//                        ph1.text.toString(),
+//                        ph.toString(),
+//                        maxMV1.text.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog6.show(supportFragmentManager, null)
             }
@@ -527,14 +623,19 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.putString("minMV2", String.valueOf(ph));
 //                    myEdit.commit();
 //                    minMV2.setText(sharedPreferences.getString("minMV2", ""));
+                    minMV2.setText(ph.toString());
 
-                    databaseHelper.updateBufferData(
-                        2,
-                        ph2.text.toString(),
-                        ph.toString(),
-                        maxMV2.text.toString(),
-                        this@PhMvTable
-                    )
+                    SharedPref.saveData(this@PhMvTable, SharedKeys.minMV2 + PhActivity.DEVICE_ID, ph.toString())
+
+
+//
+//                    databaseHelper.updateBufferData(
+//                        2,
+//                        ph2.text.toString(),
+//                        ph.toString(),
+//                        maxMV2.text.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog7.show(supportFragmentManager, null)
             }
@@ -546,13 +647,19 @@ class PhMvTable : AppCompatActivity() {
 //                    minMV3.setText(sharedPreferences.getString("minMV3", ""));
 //                    Toast.makeText(this, ph + "", Toast.LENGTH_SHORT).show();
 
-                    databaseHelper.updateBufferData(
-                        3,
-                        ph3.text.toString(),
-                        ph.toString(),
-                        maxMV3.text.toString(),
-                        this@PhMvTable
-                    )
+                    minMV3.setText(ph.toString());
+
+                    SharedPref.saveData(this@PhMvTable, SharedKeys.minMV3 + PhActivity.DEVICE_ID, ph.toString())
+
+
+
+//                    databaseHelper.updateBufferData(
+//                        3,
+//                        ph3.text.toString(),
+//                        ph.toString(),
+//                        maxMV3.text.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog8.show(supportFragmentManager, null)
             }
@@ -563,13 +670,19 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //                    minMV4.setText(sharedPreferences.getString("minMV4", ""));
 
-                    databaseHelper.updateBufferData(
-                        4,
-                        ph4.text.toString(),
-                        ph.toString(),
-                        maxMV4.text.toString(),
-                        this@PhMvTable
-                    )
+                    minMV4.setText(ph.toString());
+
+                    SharedPref.saveData(this@PhMvTable, SharedKeys.minMV4 + PhActivity.DEVICE_ID, ph.toString())
+
+
+
+//                    databaseHelper.updateBufferData(
+//                        4,
+//                        ph4.text.toString(),
+//                        ph.toString(),
+//                        maxMV4.text.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog9.show(supportFragmentManager, null)
             }
@@ -580,13 +693,18 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //                    minMV5.setText(sharedPreferences.getString("minMV5", ""));
 
-                    databaseHelper.updateBufferData(
-                        5,
-                        ph5.text.toString(),
-                        ph.toString(),
-                        maxMV5.text.toString(),
-                        this@PhMvTable
-                    )
+                    minMV5.setText(ph.toString());
+
+                    SharedPref.saveData(this@PhMvTable, SharedKeys.minMV5 + PhActivity.DEVICE_ID, ph.toString())
+
+
+//                    databaseHelper.updateBufferData(
+//                        5,
+//                        ph5.text.toString(),
+//                        ph.toString(),
+//                        maxMV5.text.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog10.show(supportFragmentManager, null)
             }
@@ -597,14 +715,18 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //
 //                    maxMV1.setText(sharedPreferences.getString("maxMV1", ""));
+                    maxMV1.setText(ph.toString());
 
-                    databaseHelper.updateBufferData(
-                        1,
-                        ph1.text.toString(),
-                        minMV1.text.toString(),
-                        ph.toString(),
-                        this@PhMvTable
-                    )
+                    SharedPref.saveData(this@PhMvTable, SharedKeys.maxMV1 + PhActivity.DEVICE_ID, ph.toString())
+
+
+//                    databaseHelper.updateBufferData(
+//                        1,
+//                        ph1.text.toString(),
+//                        minMV1.text.toString(),
+//                        ph.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog11.show(supportFragmentManager, null)
             }
@@ -615,14 +737,18 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //
 //                    maxMV2.setText(sharedPreferences.getString("maxMV2", ""));
+                    maxMV2.setText(ph.toString());
 
-                    databaseHelper.updateBufferData(
-                        2,
-                        ph2.text.toString(),
-                        minMV2.text.toString(),
-                        ph.toString(),
-                        this@PhMvTable
-                    )
+                    SharedPref.saveData(this@PhMvTable, SharedKeys.maxMV2 + PhActivity.DEVICE_ID, ph.toString())
+
+
+//                    databaseHelper.updateBufferData(
+//                        2,
+//                        ph2.text.toString(),
+//                        minMV2.text.toString(),
+//                        ph.toString(),
+//                        this@PhMvTable
+//                    )
                 }
                 dialog12.show(supportFragmentManager, null)
             }
@@ -633,14 +759,19 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //
 //                    maxMV3.setText(sharedPreferences.getString("maxMV3", ""));
+//
+//                    databaseHelper.updateBufferData(
+//                        3,
+//                        ph3.text.toString(),
+//                        minMV3.text.toString(),
+//                        ph.toString(),
+//                        this@PhMvTable
+//                    )
+                    maxMV3.setText(ph.toString());
 
-                    databaseHelper.updateBufferData(
-                        3,
-                        ph3.text.toString(),
-                        minMV3.text.toString(),
-                        ph.toString(),
-                        this@PhMvTable
-                    )
+                    SharedPref.saveData(this@PhMvTable, SharedKeys.maxMV3 + PhActivity.DEVICE_ID, ph.toString())
+
+
                 }
                 dialog13.show(supportFragmentManager, null)
             }
@@ -651,14 +782,19 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
 //
 //                    maxMV4.setText(sharedPreferences.getString("maxMV4", ""));
+//
+//                    databaseHelper.updateBufferData(
+//                        4,
+//                        ph4.text.toString(),
+//                        minMV4.text.toString(),
+//                        ph.toString(),
+//                        this@PhMvTable
+//                    )
+                    maxMV4.setText(ph.toString());
 
-                    databaseHelper.updateBufferData(
-                        4,
-                        ph4.text.toString(),
-                        minMV4.text.toString(),
-                        ph.toString(),
-                        this@PhMvTable
-                    )
+                    SharedPref.saveData(this@PhMvTable, SharedKeys.maxMV4 + PhActivity.DEVICE_ID, ph.toString())
+
+
                 }
                 dialog14.show(supportFragmentManager, null)
             }
@@ -670,13 +806,19 @@ class PhMvTable : AppCompatActivity() {
 //
 //                    maxMV5.setText(sharedPreferences.getString("maxMV5", ""));
 
-                    databaseHelper.updateBufferData(
-                        5,
-                        ph5.text.toString(),
-                        minMV5.text.toString(),
-                        ph.toString(),
-                        this@PhMvTable
-                    )
+//                    databaseHelper.updateBufferData(
+//                        5,
+//                        ph5.text.toString(),
+//                        minMV5.text.toString(),
+//                        ph.toString(),
+//                        this@PhMvTable
+//                    )
+
+                    maxMV5.setText(ph.toString());
+
+                    SharedPref.saveData(this@PhMvTable, SharedKeys.maxMV5 + PhActivity.DEVICE_ID, ph.toString())
+
+
                 }
                 dialog15.show(supportFragmentManager, null)
             }
@@ -701,10 +843,10 @@ class PhMvTable : AppCompatActivity() {
     public fun webSocketInit() {
         WebSocketManager.setMessageListener { message ->
 
-            runOnUiThread {
-                offlineModeSwitch.isChecked = true
-                offlineModeSwitch.text = "Connected"
-            }
+//            runOnUiThread {
+//                offlineModeSwitch.isChecked = true
+//                offlineModeSwitch.text = "Connected"
+//            }
 
 
             runOnUiThread {

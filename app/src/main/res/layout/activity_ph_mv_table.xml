@@ -6,16 +6,16 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <Switch
-        android:id="@+id/offlineModeSwitch"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="25dp"
-        android:layout_marginTop="5dp"
-        android:layout_marginEnd="0dp"
-        android:layout_marginBottom="5dp"
-        android:text="Connect "
-        tools:ignore="UseSwitchCompatOrMaterialXml" />
+<!--    <Switch-->
+<!--        android:id="@+id/offlineModeSwitch"-->
+<!--        android:layout_width="wrap_content"-->
+<!--        android:layout_height="wrap_content"-->
+<!--        android:layout_marginStart="25dp"-->
+<!--        android:layout_marginTop="5dp"-->
+<!--        android:layout_marginEnd="0dp"-->
+<!--        android:layout_marginBottom="5dp"-->
+<!--        android:text="Connect "-->
+<!--        tools:ignore="UseSwitchCompatOrMaterialXml" />-->
 
     <ScrollView
         android:layout_width="match_parent"

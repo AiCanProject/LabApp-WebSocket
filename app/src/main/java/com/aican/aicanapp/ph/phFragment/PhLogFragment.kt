@@ -320,6 +320,8 @@ class PhLogFragment : Fragment() {
                 if (ph == null || temp == null || mv == null) {
 //                    Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
                 }
+                ph = binding.tvPhCurr.text.toString()
+
                 addUserAction(
                     "username: " + Source.userName + ", Role: " + Source.userRole + ", Log pressed",
                     ph,
@@ -355,97 +357,97 @@ class PhLogFragment : Fragment() {
         }
 
 
-        printBtn.setOnClickListener(View.OnClickListener { //                printBtn.setB
-            try {
-                generatePDF()
-            } catch (e: FileNotFoundException) {
-                e.printStackTrace()
-            }
-            //                exportSensorCsv();
-
-            // calibration
-            // reset button
-            // voltage recieve and
-            val startsWith = "CurrentData"
-            //                String path = requireContext().getExternalFilesDir(null).getAbsolutePath() + File.separator + "/LabApp/Currentlog";
-            val path =
-                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog"
-            val root = File(path)
-            val filesAndFolders = root.listFiles()
-            Log.e("FileNameErrorDirRoot", root.path)
-            if (filesAndFolders == null || filesAndFolders.size == 0) {
-                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
-                return@OnClickListener
-            } else {
-                for (i in filesAndFolders.indices) {
-                    filesAndFolders[i].name.startsWith(startsWith)
-                }
-            }
-
-
-            //                try {
-            //                    Workbook workbook = new Workbook(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog/CurrentData.xlsx");
-            //                    PdfSaveOptions options = new PdfSaveOptions();
-            //                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault());
-            //                    String currentDateandTime = sdf.format(new Date());
-            //                    options.setCompliance(PdfCompliance.PDF_A_1_B);
-            //
-            ////                    File Pdfdir = new File(Environment.getExternalStorageDirectory()+"/LabApp/Currentlog/LogPdf");
-            ////                    if (!Pdfdir.exists()) {
-            ////                        if (!Pdfdir.mkdirs()) {
-            ////                            Log.d("App", "failed to create directory");
-            ////                        }
-            ////                    }
-            //                    String tempPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog";
-            //                    File tempRoot = new File(tempPath);
-            //                    fileNotWrite(tempRoot);
-            //                    File[] tempFilesAndFolders = tempRoot.listFiles();
-            //                    workbook.save(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + (tempFilesAndFolders.length - 1) + ".pdf", options);
-            //
-            //                    String path1 = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog";
-            //                    File root1 = new File(path1);
-            //                    fileNotWrite(root1);
-            //                    File[] filesAndFolders1 = root1.listFiles();
-            //
-            //                    if (filesAndFolders1 == null || filesAndFolders1.length == 0) {
-            //
-            //                        return;
-            //                    } else {
-            //                        for (int i = 0; i < filesAndFolders1.length; i++) {
-            //                            if (filesAndFolders1[i].getName().endsWith(".csv") || filesAndFolders1[i].getName().endsWith(".xlsx")) {
-            //                                filesAndFolders1[i].delete();
-            //                            }
-            //                        }
-            //                    }
-            //
-            //                } catch (Exception e) {
-            //                    e.printStackTrace();
-            //                }
-
-
-            //                String pathPDF = requireContext().getExternalFilesDir(null).getPath() + File.separator + "/LabApp/Currentlog/";
-            val pathPDF =
-                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog/"
-            val rootPDF = File(pathPDF)
-            fileNotWrite(root)
-            val filesAndFoldersPDF = rootPDF.listFiles()
-            val filesAndFoldersNewPDF = arrayOfNulls<File>(1)
-            if (filesAndFoldersPDF == null || filesAndFoldersPDF.size == 0) {
-                return@OnClickListener
-            } else {
-                for (i in filesAndFoldersPDF.indices) {
-                    if (filesAndFoldersPDF[i].name.endsWith(".pdf")) {
-                        filesAndFoldersNewPDF[0] = filesAndFoldersPDF[i]
-                    }
-                }
-            }
-            plAdapter = PrintLogAdapter(
-                requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF)
-            )
-            csvRecyclerView.adapter = plAdapter
-            plAdapter.notifyDataSetChanged()
-            csvRecyclerView.layoutManager = LinearLayoutManager(requireContext().applicationContext)
-        })
+//        printBtn.setOnClickListener(View.OnClickListener { //                printBtn.setB
+//            try {
+//                generatePDF()
+//            } catch (e: FileNotFoundException) {
+//                e.printStackTrace()
+//            }
+//            //                exportSensorCsv();
+//
+//            // calibration
+//            // reset button
+//            // voltage recieve and
+//            val startsWith = "CurrentData"
+//            //                String path = requireContext().getExternalFilesDir(null).getAbsolutePath() + File.separator + "/LabApp/Currentlog";
+//            val path =
+//                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog"
+//            val root = File(path)
+//            val filesAndFolders = root.listFiles()
+//            Log.e("FileNameErrorDirRoot", root.path)
+//            if (filesAndFolders == null || filesAndFolders.size == 0) {
+//                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
+//                return@OnClickListener
+//            } else {
+//                for (i in filesAndFolders.indices) {
+//                    filesAndFolders[i].name.startsWith(startsWith)
+//                }
+//            }
+//
+//
+//            //                try {
+//            //                    Workbook workbook = new Workbook(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog/CurrentData.xlsx");
+//            //                    PdfSaveOptions options = new PdfSaveOptions();
+//            //                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault());
+//            //                    String currentDateandTime = sdf.format(new Date());
+//            //                    options.setCompliance(PdfCompliance.PDF_A_1_B);
+//            //
+//            ////                    File Pdfdir = new File(Environment.getExternalStorageDirectory()+"/LabApp/Currentlog/LogPdf");
+//            ////                    if (!Pdfdir.exists()) {
+//            ////                        if (!Pdfdir.mkdirs()) {
+//            ////                            Log.d("App", "failed to create directory");
+//            ////                        }
+//            ////                    }
+//            //                    String tempPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog";
+//            //                    File tempRoot = new File(tempPath);
+//            //                    fileNotWrite(tempRoot);
+//            //                    File[] tempFilesAndFolders = tempRoot.listFiles();
+//            //                    workbook.save(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + (tempFilesAndFolders.length - 1) + ".pdf", options);
+//            //
+//            //                    String path1 = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog";
+//            //                    File root1 = new File(path1);
+//            //                    fileNotWrite(root1);
+//            //                    File[] filesAndFolders1 = root1.listFiles();
+//            //
+//            //                    if (filesAndFolders1 == null || filesAndFolders1.length == 0) {
+//            //
+//            //                        return;
+//            //                    } else {
+//            //                        for (int i = 0; i < filesAndFolders1.length; i++) {
+//            //                            if (filesAndFolders1[i].getName().endsWith(".csv") || filesAndFolders1[i].getName().endsWith(".xlsx")) {
+//            //                                filesAndFolders1[i].delete();
+//            //                            }
+//            //                        }
+//            //                    }
+//            //
+//            //                } catch (Exception e) {
+//            //                    e.printStackTrace();
+//            //                }
+//
+//
+//            //                String pathPDF = requireContext().getExternalFilesDir(null).getPath() + File.separator + "/LabApp/Currentlog/";
+//            val pathPDF =
+//                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog/"
+//            val rootPDF = File(pathPDF)
+//            fileNotWrite(root)
+//            val filesAndFoldersPDF = rootPDF.listFiles()
+//            val filesAndFoldersNewPDF = arrayOfNulls<File>(1)
+//            if (filesAndFoldersPDF == null || filesAndFoldersPDF.size == 0) {
+//                return@OnClickListener
+//            } else {
+//                for (i in filesAndFoldersPDF.indices) {
+//                    if (filesAndFoldersPDF[i].name.endsWith(".pdf")) {
+//                        filesAndFoldersNewPDF[0] = filesAndFoldersPDF[i]
+//                    }
+//                }
+//            }
+//            plAdapter = PrintLogAdapter(
+//                requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF)
+//            )
+//            csvRecyclerView.adapter = plAdapter
+//            plAdapter.notifyDataSetChanged()
+//            csvRecyclerView.layoutManager = LinearLayoutManager(requireContext().applicationContext)
+//        })
 
 
         recyclerView.setHasFixedSize(true)
@@ -742,7 +744,51 @@ class PhLogFragment : Fragment() {
 //        webSocketConnection()
 
 //        setPreviousData()
+        showPdfFiles()
 
+        // Set click listener for the printBtn
+        printBtn.setOnClickListener {
+            try {
+                generatePDF()
+            } catch (e: FileNotFoundException) {
+                e.printStackTrace()
+            }
+
+            val startsWith = "CurrentData"
+            val path = ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog"
+            val root = File(path)
+            val filesAndFolders = root.listFiles()
+
+            if (filesAndFolders == null || filesAndFolders.isEmpty()) {
+                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            // Call the function to show PDF files after generating
+            showPdfFiles()
+        }
+    }
+
+    private fun showPdfFiles() {
+        val pathPDF = ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog/"
+        val rootPDF = File(pathPDF)
+        fileNotWrite(rootPDF)
+        val filesAndFoldersPDF = rootPDF.listFiles() ?: return
+
+        val filesAndFoldersNewPDF = arrayOfNulls<File>(1)
+        for (i in filesAndFoldersPDF.indices) {
+            if (filesAndFoldersPDF[i].name.endsWith(".pdf")) {
+                filesAndFoldersNewPDF[0] = filesAndFoldersPDF[i]
+                break
+            }
+        }
+
+        plAdapter = PrintLogAdapter(
+            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF)
+        )
+        binding.recyclerViewCSVLog.adapter = plAdapter
+        plAdapter.notifyDataSetChanged()
+        binding.recyclerViewCSVLog.layoutManager = LinearLayoutManager(requireContext().applicationContext)
     }
 
     private fun setPreviousData() {
@@ -878,6 +924,8 @@ class PhLogFragment : Fragment() {
                             if (ph == null || temp == null || mv == null) {
 //                                Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
                             }
+                            ph = binding.tvPhCurr.text.toString()
+
                             //                        } else {
 //                            databaseHelper.print_insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
 //                            databaseHelper.insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
@@ -912,6 +960,7 @@ class PhLogFragment : Fragment() {
                                 jsonData.put("HOLD", 0.toString())
                                 jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                                 WebSocketManager.sendMessage(jsonData.toString())
+                                ph = binding.tvPhCurr.text.toString()
 
 //                                deviceRef.child("Data").child("HOLD").setValue(0);
                                 if (holdFlag == 1) {
@@ -1490,6 +1539,7 @@ class PhLogFragment : Fragment() {
     fun takeLog() {
         date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        ph = binding.tvPhCurr.text.toString()
         if (Constants.OFFLINE_MODE) {
             databaseHelper.print_insert_log_data(
                 date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID

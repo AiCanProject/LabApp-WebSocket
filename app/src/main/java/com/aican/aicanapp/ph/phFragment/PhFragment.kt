@@ -84,6 +84,8 @@ class PhFragment : Fragment() {
 
         getPreviousData()
 
+        webSocketInit()
+        turnAtcSwitch()
 
         userDao = Room.databaseBuilder(
             requireContext().applicationContext,
@@ -115,8 +117,7 @@ class PhFragment : Fragment() {
         }
 
 
-        webSocketInit()
-        turnAtcSwitch()
+
 
     }
 

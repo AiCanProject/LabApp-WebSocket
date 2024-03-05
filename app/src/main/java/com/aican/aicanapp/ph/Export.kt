@@ -41,6 +41,7 @@ import com.aican.aicanapp.adapters.UserDataAdapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.ActivityExportBinding
 import com.aican.aicanapp.roomDatabase.daoObjects.AllLogsDataDao
+import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
@@ -137,13 +138,14 @@ class Export : AppCompatActivity() {
     lateinit var month: String
     lateinit var year: String
     lateinit var binding: ActivityExportBinding
+    lateinit var recyclerView: RecyclerView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityExportBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        val recyclerView = findViewById<RecyclerView>(R.id.recyclerViewCSV)
+         recyclerView = findViewById<RecyclerView>(R.id.recyclerViewCSV)
         val userRecyclerView = findViewById<RecyclerView>(R.id.recyclerViewUserData)
 //        TextView noFilesText = findViewById(R.id.nofiles_textview);
         //        TextView noFilesText = findViewById(R.id.nofiles_textview);
@@ -212,12 +214,11 @@ class Export : AppCompatActivity() {
 
         convertToXls.visibility = View.INVISIBLE
 
-        if (Source.subscription != null) {
-            if (Source.subscription.equals("nonCfr")) {
-                exportUserData.visibility = View.GONE
-                userRecyclerView.visibility = View.GONE
-                tvUserLog.visibility = View.GONE
-            }
+        if (!Source.cfr_mode) {
+            exportUserData.visibility = View.GONE
+            userRecyclerView.visibility = View.GONE
+            tvUserLog.visibility = View.GONE
+
         }
         mDateBtn.setOnClickListener {
             val calendar1 = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
@@ -318,36 +319,6 @@ class Export : AppCompatActivity() {
 
         compoundBtn.setOnClickListener { compoundName = compoundNameEditText.text.toString() }
 
-        exportCSV.setOnClickListener {
-            companyName = companyNameEditText.text.toString()
-            if (!companyName.isEmpty()) {
-                if (Constants.OFFLINE_MODE) {
-                    val company_name =
-                        getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
-                    val editT = company_name.edit()
-                    editT.putString("COMPANY_NAME", companyName)
-                    editT.commit()
-                } else {
-
-                }
-            }
-            try {
-                generatePDF1()
-            } catch (e: FileNotFoundException) {
-                e.printStackTrace()
-            }
-            val pathPDF =
-                ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/"
-            val rootPDF = File(pathPDF)
-            fileNotWrite(rootPDF)
-            val filesAndFoldersPDF = rootPDF.listFiles()
-            fAdapter =
-                FileAdapter(applicationContext, reverseFileArray(filesAndFoldersPDF), "PhExport")
-            recyclerView.adapter = fAdapter
-            fAdapter.notifyDataSetChanged()
-            recyclerView.layoutManager = LinearLayoutManager(applicationContext)
-            convertToXls.visibility = View.INVISIBLE
-        }
 
         val pathPDF =
             ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/"
@@ -431,6 +402,88 @@ class Export : AppCompatActivity() {
             companyLogo.setImageBitmap(comLo)
         }
 
+//        exportCSV.setOnClickListener {
+//            companyName = companyNameEditText.text.toString()
+//            if (!companyName.isEmpty()) {
+//                if (Constants.OFFLINE_MODE) {
+//                    val company_name =
+//                        getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
+//                    val editT = company_name.edit()
+//                    editT.putString("COMPANY_NAME", companyName)
+//                    editT.commit()
+//                } else {
+//
+//                }
+//            }
+//            try {
+//                generatePDF1()
+//            } catch (e: FileNotFoundException) {
+//                e.printStackTrace()
+//            }
+//            val pathPDF =
+//                ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/"
+//            val rootPDF = File(pathPDF)
+//            fileNotWrite(rootPDF)
+//            val filesAndFoldersPDF = rootPDF.listFiles()
+//            fAdapter =
+//                FileAdapter(applicationContext, reverseFileArray(filesAndFoldersPDF), "PhExport")
+//            recyclerView.adapter = fAdapter
+//            fAdapter.notifyDataSetChanged()
+//            recyclerView.layoutManager = LinearLayoutManager(applicationContext)
+//            convertToXls.visibility = View.INVISIBLE
+//        }
+//
+//        printAllCalibData.setOnClickListener { v: View? ->
+//            try {
+//                generateAllPDF()
+//            } catch (e: FileNotFoundException) {
+//                e.printStackTrace()
+//            }
+////                exportCalibData();
+//            val path = ContextWrapper(this@Export).externalMediaDirs[0]
+//                .toString() + File.separator + "/LabApp/CalibrationData"
+//            val root = File(path)
+//            val filesAndFolders = root.listFiles()
+//            if (filesAndFolders == null || filesAndFolders.size == 0) {
+//                return@setOnClickListener
+//            } else {
+//                for (i in filesAndFolders.indices) {
+//                    filesAndFolders[i].name.endsWith(".pdf")
+//                }
+//            }
+//            val pathPDF1 = ContextWrapper(this@Export).externalMediaDirs[0]
+//                .toString() + File.separator + "/LabApp/Sensordata/"
+//            val rootPDF1 = File(pathPDF1)
+//            fileNotWrite(root)
+//            val filesAndFoldersPDF1 = rootPDF1.listFiles()
+//            fAdapter = FileAdapter(
+//                applicationContext,
+//                reverseFileArray(filesAndFoldersPDF1),
+//                "PhExport"
+//            )
+//            recyclerView.adapter = fAdapter
+//            fAdapter.notifyDataSetChanged()
+//            recyclerView.layoutManager = LinearLayoutManager(applicationContext)
+//            convertToXls.visibility = View.INVISIBLE
+//        }
+        exportCSV.setOnClickListener {
+            companyName = companyNameEditText.text.toString()
+            if (!companyName.isEmpty()) {
+                if (Constants.OFFLINE_MODE) {
+                    val company_name = getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
+                    val editT = company_name.edit()
+                    editT.putString("COMPANY_NAME", companyName)
+                    editT.commit()
+                }
+            }
+            try {
+                generatePDF1()
+            } catch (e: FileNotFoundException) {
+                e.printStackTrace()
+            }
+            updateRecyclerView()
+            convertToXls.visibility = View.INVISIBLE
+        }
 
         printAllCalibData.setOnClickListener { v: View? ->
             try {
@@ -438,36 +491,22 @@ class Export : AppCompatActivity() {
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
-//                exportCalibData();
-            val path = ContextWrapper(this@Export).externalMediaDirs[0]
-                .toString() + File.separator + "/LabApp/CalibrationData"
-            val root = File(path)
-            val filesAndFolders = root.listFiles()
-            if (filesAndFolders == null || filesAndFolders.size == 0) {
-                return@setOnClickListener
-            } else {
-                for (i in filesAndFolders.indices) {
-                    filesAndFolders[i].name.endsWith(".pdf")
-                }
-            }
-            val pathPDF1 = ContextWrapper(this@Export).externalMediaDirs[0]
-                .toString() + File.separator + "/LabApp/Sensordata/"
-            val rootPDF1 = File(pathPDF1)
-            fileNotWrite(root)
-            val filesAndFoldersPDF1 = rootPDF1.listFiles()
-            fAdapter = FileAdapter(
-                applicationContext,
-                reverseFileArray(filesAndFoldersPDF1),
-                "PhExport"
-            )
-            recyclerView.adapter = fAdapter
-            fAdapter.notifyDataSetChanged()
-            recyclerView.layoutManager = LinearLayoutManager(applicationContext)
+            updateRecyclerView()
             convertToXls.visibility = View.INVISIBLE
         }
-
     }
 
+    private fun updateRecyclerView() {
+        val pathPDF = ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/"
+        val rootPDF = File(pathPDF)
+        fileNotWrite(rootPDF)
+        val filesAndFoldersPDF = rootPDF.listFiles()
+        fAdapter = FileAdapter(applicationContext, reverseFileArray(filesAndFoldersPDF), "PhExport")
+        recyclerView.adapter = fAdapter
+        fAdapter.notifyDataSetChanged()
+        recyclerView.layoutManager = LinearLayoutManager(applicationContext)
+        convertToXls.visibility = View.INVISIBLE
+    }
 
     @Throws(FileNotFoundException::class)
     private fun generateAllPDF() {
@@ -616,31 +655,19 @@ $slope  |  $temp"""
         document.add(Paragraph("Calibration Table"))
         val db = databaseHelper.writableDatabase
         var calibCSV: Cursor? = null
-        if (Constants.OFFLINE_DATA) {
             calibCSV = db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
-            calibCSV = if (startDateString != null) {
-                db.rawQuery(
-                    "SELECT * FROM CalibAllDataOffline WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString')",
-                    null
-                )
-                //            curCSV = db.rawQuery("SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '" + startDateString + "' AND '" + endDateString + "')", null);
-            } else {
-                db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
-            }
-        } else {
-            calibCSV = db.rawQuery("SELECT * FROM CalibAllData", null)
-            calibCSV = if (startDateString != null) {
-                db.rawQuery(
-                    "SELECT * FROM CalibAllData WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString')",
-                    null
-                )
-                //            curCSV = db.rawQuery("SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '" + startDateString + "' AND '" + endDateString + "')", null);
-            } else {
-                db.rawQuery("SELECT * FROM CalibAllData", null)
-            }
-        }
+//            calibCSV = if (startDateString != null) {
+//                db.rawQuery(
+//                    "SELECT * FROM CalibAllDataOffline WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString')",
+//                    null
+//                )
+//                //            curCSV = db.rawQuery("SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '" + startDateString + "' AND '" + endDateString + "')", null);
+//            } else {
+//                db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
+//            }
+
         val so = 1
-        val columnWidth = floatArrayOf(200f, 210f, 190f, 170f, 340f, 170f, 210f)
+        val columnWidth = floatArrayOf(200f, 210f, 190f, 170f, 340f, 170f)
         var table = Table(columnWidth)
         table.addCell("pH")
         table.addCell("pH Aft Calib")
@@ -648,8 +675,10 @@ $slope  |  $temp"""
         table.addCell("mV")
         table.addCell("Date & Time")
         table.addCell("Temperature")
-        table.addCell("Calibrated by")
         var rowCounter = 0 // To keep track of the number of rows processed
+        runOnUiThread {
+            Toast.makeText(this@Export, "" + calibCSV.count + ", " + calibCSV.columnCount, Toast.LENGTH_SHORT).show()
+        }
         while (calibCSV.moveToNext()) {
             val ph = calibCSV.getString(calibCSV.getColumnIndex("PH"))
             val mv = calibCSV.getString(calibCSV.getColumnIndex("MV"))
@@ -663,7 +692,7 @@ $slope  |  $temp"""
             table.addCell(mv)
             table.addCell(date)
             table.addCell(temperature1)
-            table.addCell(if (Source.calib_completed_by == null) "Unknown" else Source.calib_completed_by)
+//            table.addCell(if (Source.calib_completed_by == null) "Unknown" else Source.calib_completed_by)
             rowCounter++
             if (rowCounter % 5 == 0) {
                 // Add the table to the document every 5 rows
@@ -685,7 +714,6 @@ $slope  |  $temp"""
                 table.addCell("mV")
                 table.addCell("Date & Time")
                 table.addCell("Temperature")
-                table.addCell("Calibrated by")
             }
         }
 
@@ -856,12 +884,17 @@ $slope  |  $temp"""
     }
 
     lateinit var allLogsDataDao: AllLogsDataDao
+    lateinit var userActionDao: UserActionDao
 
     override fun onResume() {
         super.onResume()
         allLogsDataDao = Room.databaseBuilder(
             this@Export.applicationContext, AppDatabase::class.java, "aican-database"
         ).build().allLogsDao()
+
+        userActionDao = Room.databaseBuilder(
+            this@Export.applicationContext, AppDatabase::class.java, "aican-database"
+        ).build().userActionDao()
 
     }
 
@@ -1426,45 +1459,51 @@ $slope  |  $tempe"""
         table1.addCell("Temp")
         table1.addCell("mV")
         table1.addCell("Device ID")
-        while (userCSV.moveToNext()) {
-            val Time = userCSV.getString(userCSV.getColumnIndex("time"))
-            var Date = userCSV.getString(userCSV.getColumnIndex("date"))
-            val activity = userCSV.getString(userCSV.getColumnIndex("useraction"))
-            val Ph = userCSV.getString(userCSV.getColumnIndex("ph"))
-            val Temp = userCSV.getString(userCSV.getColumnIndex("temperature"))
-            val Mv = userCSV.getString(userCSV.getColumnIndex("mv"))
-            val device = userCSV.getString(userCSV.getColumnIndex("deviceID"))
-            Date = "$Date $Time"
-            //            String record2 = Date + "," + Activity + "," + Ph + "," + Temp + "," + Mv + "," + device;
-            table1.addCell(Date + "")
-            table1.addCell(activity + "")
-            table1.addCell(Ph + "")
-            table1.addCell(Temp + "")
-            table1.addCell(Mv + "")
-            table1.addCell(device + "")
-        }
-        document.add(table1)
-        document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
-        val imgBit1 = getSignImage()
+        GlobalScope.launch(Dispatchers.Main) {
+            val allUserActionsArrayList = withContext(Dispatchers.IO) {
+                userActionDao.getAllUsersActions()
+            }
+            for (userA in allUserActionsArrayList){
+                val Time = userA.time
+                var Date = userA.date
+                val activity = userA.userAction
+                val Ph = userA.ph
+                val Temp = userA.temperature
+                val Mv = userA.mv
+                val device = userA.deviceID
+                Date = "$Date $Time"
+                //            String record2 = Date + "," + Activity + "," + Ph + "," + Temp + "," + Mv + "," + device;
+                table1.addCell(Date + "")
+                table1.addCell(activity + "")
+                table1.addCell(Ph + "")
+                table1.addCell(Temp + "")
+                table1.addCell(Mv + "")
+                table1.addCell(device + "")
+            }
+            document.add(table1)
+            document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+            val imgBit1 = getSignImage()
 
-        if (imgBit1 != null) {
+            if (imgBit1 != null) {
 
-            val byteArrayOutputStream = ByteArrayOutputStream()
-            imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-            val byteArray = byteArrayOutputStream.toByteArray()
+                val byteArrayOutputStream = ByteArrayOutputStream()
+                imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+                val byteArray = byteArrayOutputStream.toByteArray()
 
 // Create ImageData from byte array
-            val imageData = ImageDataFactory.create(byteArray)
+                val imageData = ImageDataFactory.create(byteArray)
 
 // Create an Image element
-            val image = Image(imageData).setHeight(80f).setWidth(80f)
-            document.add(image)
+                val image = Image(imageData).setHeight(80f).setWidth(80f)
+                document.add(image)
 
-        } else {
+            } else {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
+            }
+            document.close()
+            Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
         }
-        document.close()
-        Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
+
     }
 
     private fun checkPermission(): Boolean {
