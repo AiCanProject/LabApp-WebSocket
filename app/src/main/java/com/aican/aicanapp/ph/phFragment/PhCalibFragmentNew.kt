@@ -1628,6 +1628,8 @@ class PhCalibFragmentNew : Fragment() {
             if (batteryVal != null) {
                 if (batteryVal != "") {
                     battery = "Battery: $batteryVal %"
+                }else{
+                    battery = "Battery: 0 %"
                 }
             }
 

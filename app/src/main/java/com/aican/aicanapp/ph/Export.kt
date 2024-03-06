@@ -570,8 +570,11 @@ class Export : AppCompatActivity() {
             val batteryVal = SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
             if (batteryVal != null) {
                 if (batteryVal != "") {
-                    battery = "$batteryVal %"
+                    battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
+                }else{
+                    battery = "Battery: 0 %"
+
                 }
             }
 
@@ -965,6 +968,9 @@ $slope  |  $temp"""
                 if (batteryVal != "") {
                     battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
+                }else{
+                    battery = "Battery: 0 %"
+
                 }
             }
 
@@ -1387,6 +1393,9 @@ $slope  |  $temp"""
                 if (batteryVal != "") {
                     battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
+                }else{
+                    battery = "Battery: 0 %"
+
                 }
             }
 
