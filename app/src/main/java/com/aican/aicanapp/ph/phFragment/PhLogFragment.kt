@@ -1090,6 +1090,8 @@ class PhLogFragment : Fragment() {
     @Throws(FileNotFoundException::class)
     private fun generatePDF() {
 
+        Toast.makeText(requireContext(), "Printing...", Toast.LENGTH_LONG).show()
+
         var company_name = ""
 
         val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")

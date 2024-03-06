@@ -37,7 +37,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
-import com.aican.aicanapp.Dashboard
 import com.aican.aicanapp.ProbeScanner
 import com.aican.aicanapp.R
 import com.aican.aicanapp.adapters.CalibFileAdapter
@@ -62,7 +61,6 @@ import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
-import com.itextpdf.io.image.ImageData
 import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.pdf.PdfDocument
 import com.itextpdf.kernel.pdf.PdfWriter
@@ -79,7 +77,6 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
 import java.io.OutputStream
-import java.net.MalformedURLException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -216,10 +213,11 @@ class PhCalibFragmentNew : Fragment() {
         /////
 
 
-
     }
+
     private fun showCalibPDFs() {
-        val path = ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData"
+        val path =
+            ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData"
         val root = File(path)
         val filesAndFolders = root.listFiles()
         if (filesAndFolders == null || filesAndFolders.isEmpty()) {
@@ -227,7 +225,8 @@ class PhCalibFragmentNew : Fragment() {
             return
         }
 
-        val pathPDF = ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData/"
+        val pathPDF =
+            ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData/"
         val rootPDF = File(pathPDF)
         fileNotWrite(root)
         val filesAndFoldersPDF = rootPDF.listFiles()
@@ -238,6 +237,7 @@ class PhCalibFragmentNew : Fragment() {
         calibFileAdapter.notifyDataSetChanged()
         calibRecyclerView.layoutManager = LinearLayoutManager(requireContext().applicationContext)
     }
+
     private fun updateMessage(message: String) {
         sharedViewModel.messageLiveData.value = message
     }
@@ -333,7 +333,7 @@ class PhCalibFragmentNew : Fragment() {
 //                                    Toast.makeText(requireContext(), "" + tempForm, Toast.LENGTH_SHORT).show()
                                 }
 
-                                if (tempToggleSharedPref != null){
+                                if (tempToggleSharedPref != null) {
                                     if (tempToggleSharedPref == "true") {
                                         tvTempCurr.text = "$tempForm°C"
                                         SharedPref.saveData(
@@ -350,7 +350,7 @@ class PhCalibFragmentNew : Fragment() {
                                             )
                                         }
                                     }
-                                }else{
+                                } else {
                                     tvTempCurr.text = "$tempForm°C"
                                     SharedPref.saveData(
                                         requireContext(),
@@ -1543,6 +1543,8 @@ class PhCalibFragmentNew : Fragment() {
     @Throws(FileNotFoundException::class)
     private fun generatePDF() {
 
+        Toast.makeText(requireContext(), "Printing...", Toast.LENGTH_LONG).show()
+
         if (SharedPref.getSavedData(
                 getContext(), "COMPANY_NAME"
             ) != null && SharedPref.getSavedData(
@@ -1745,9 +1747,7 @@ class PhCalibFragmentNew : Fragment() {
 //                document.add(new Paragraph("Calibration : " + calib_stat));
             }
         } else {
-            if (spin.selectedItemPosition == 0) {
-                document.add(Paragraph("Calibration : $calib_stat"))
-            }
+
         }
         document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
         val imgBit1: Bitmap? = getSignImage()
@@ -1765,7 +1765,7 @@ class PhCalibFragmentNew : Fragment() {
             val image = Image(imageData).setHeight(80f).setWidth(80f)
             document.add(image)
 
-        }else{
+        } else {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
         }
         document.close()
@@ -1831,7 +1831,7 @@ class PhCalibFragmentNew : Fragment() {
                     ", started calibration mode 5, of buffer " + currentBuf, "", "", "", ""
         )
 
-        timer5 = object : CountDownTimer(5000, 1000) {
+        timer5 = object : CountDownTimer(45000, 1000) {
             //45000
             //        timer5 = new CountDownTimer(5000, 1000) { //45000
             override fun onTick(millisUntilFinished: Long) {
@@ -1872,8 +1872,11 @@ class PhCalibFragmentNew : Fragment() {
                         throw java.lang.RuntimeException(e)
                     }
                     val mv1Text = binding.mv1.text.toString()
-                    if (PhFragment.validateNumber(binding.mv1.text.toString()) && PhFragment.validateNumber(mMaxMV1)
-                        && PhFragment.validateNumber(mMinMV1)) {
+                    if (PhFragment.validateNumber(binding.mv1.text.toString()) && PhFragment.validateNumber(
+                            mMaxMV1
+                        )
+                        && PhFragment.validateNumber(mMinMV1)
+                    ) {
                         if (mv1Text.toFloat() <= mMaxMV1.toFloat() && mv1Text.toFloat() >= mMinMV1.toFloat()) {
                             wrong_5 = false
                             // Toast.makeText(fragmentContext, "In Range", Toast.LENGTH_SHORT).show()
@@ -1908,8 +1911,11 @@ class PhCalibFragmentNew : Fragment() {
                     }
 
                     val mv2Text = binding.mv2.text.toString()
-                    if (PhFragment.validateNumber(binding.mv2.text.toString()) && PhFragment.validateNumber(mMaxMV2)
-                        && PhFragment.validateNumber(mMinMV2)) {
+                    if (PhFragment.validateNumber(binding.mv2.text.toString()) && PhFragment.validateNumber(
+                            mMaxMV2
+                        )
+                        && PhFragment.validateNumber(mMinMV2)
+                    ) {
                         if (mv2Text.toFloat() <= mMaxMV2.toFloat() && mv2Text.toFloat() >= mMinMV2.toFloat()) {
                             wrong_5 = false
                             // Toast.makeText(fragmentContext, "In Range", Toast.LENGTH_SHORT).show()
@@ -1920,7 +1926,8 @@ class PhCalibFragmentNew : Fragment() {
                             // wrong_3 = false
                             calibrateBtn.isEnabled = true
                             showAlertDialogButtonClicked()
-                            Toast.makeText(fragmentContext, "Out of Range", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(fragmentContext, "Out of Range", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
 
@@ -1943,8 +1950,11 @@ class PhCalibFragmentNew : Fragment() {
                     }
 
                     val mv3Text = binding.mv3.text.toString()
-                    if (PhFragment.validateNumber(binding.mv3.text.toString()) && PhFragment.validateNumber(mMaxMV3)
-                        && PhFragment.validateNumber(mMinMV3)) {
+                    if (PhFragment.validateNumber(binding.mv3.text.toString()) && PhFragment.validateNumber(
+                            mMaxMV3
+                        )
+                        && PhFragment.validateNumber(mMinMV3)
+                    ) {
                         if (mv3Text.toFloat() <= mMaxMV3.toFloat() && mv3Text.toFloat() >= mMinMV3.toFloat()) {
                             wrong_5 = false
                             // Toast.makeText(fragmentContext, "In Range", Toast.LENGTH_SHORT).show()
@@ -1955,7 +1965,8 @@ class PhCalibFragmentNew : Fragment() {
                             // wrong_3 = false
                             calibrateBtn.isEnabled = true
                             showAlertDialogButtonClicked()
-                            Toast.makeText(fragmentContext, "Out of Range", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(fragmentContext, "Out of Range", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
 
@@ -1978,8 +1989,11 @@ class PhCalibFragmentNew : Fragment() {
                     }
 
                     val mv4Text = binding.mv4.text.toString()
-                    if (PhFragment.validateNumber(binding.mv4.text.toString()) && PhFragment.validateNumber(mMaxMV4)
-                        && PhFragment.validateNumber(mMinMV4)) {
+                    if (PhFragment.validateNumber(binding.mv4.text.toString()) && PhFragment.validateNumber(
+                            mMaxMV4
+                        )
+                        && PhFragment.validateNumber(mMinMV4)
+                    ) {
                         if (mv4Text.toFloat() <= mMaxMV4.toFloat() && mv4Text.toFloat() >= mMinMV4.toFloat()) {
                             wrong_5 = false
                             // Toast.makeText(fragmentContext, "In Range", Toast.LENGTH_SHORT).show()
@@ -1990,7 +2004,8 @@ class PhCalibFragmentNew : Fragment() {
                             // wrong_3 = false
                             calibrateBtn.isEnabled = true
                             showAlertDialogButtonClicked()
-                            Toast.makeText(fragmentContext, "Out of Range", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(fragmentContext, "Out of Range", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
 
@@ -2013,8 +2028,11 @@ class PhCalibFragmentNew : Fragment() {
                     }
 
                     val mv5Text = binding.mv5.text.toString()
-                    if (PhFragment.validateNumber(binding.mv5.text.toString()) && PhFragment.validateNumber(mMaxMV5)
-                        && PhFragment.validateNumber(mMinMV5)) {
+                    if (PhFragment.validateNumber(binding.mv5.text.toString()) && PhFragment.validateNumber(
+                            mMaxMV5
+                        )
+                        && PhFragment.validateNumber(mMinMV5)
+                    ) {
                         if (mv5Text.toFloat() <= mMaxMV5.toFloat() && mv5Text.toFloat() >= mMinMV5.toFloat()) {
                             wrong_5 = false
                             // Toast.makeText(fragmentContext, "In Range", Toast.LENGTH_SHORT).show()
@@ -2025,7 +2043,8 @@ class PhCalibFragmentNew : Fragment() {
                             // wrong_3 = false
                             calibrateBtn.isEnabled = true
                             showAlertDialogButtonClicked()
-                            Toast.makeText(fragmentContext, "Out of Range", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(fragmentContext, "Out of Range", Toast.LENGTH_SHORT)
+                                .show()
                         }
                     }
 
@@ -3220,62 +3239,72 @@ class PhCalibFragmentNew : Fragment() {
         }
     }
 
-    fun updateMinMaxMVs(){
+    fun updateMinMaxMVs() {
 
-        val mMinMV1 = SharedPref.getSavedData(requireContext(), SharedKeys.minMV1 + PhActivity.DEVICE_ID)
-        if (mMinMV1 != null){
-            this.mMinMV1  = mMinMV1
+        val mMinMV1 =
+            SharedPref.getSavedData(requireContext(), SharedKeys.minMV1 + PhActivity.DEVICE_ID)
+        if (mMinMV1 != null) {
+            this.mMinMV1 = mMinMV1
         }
-        val mMinMV2 = SharedPref.getSavedData(requireContext(), SharedKeys.minMV2 + PhActivity.DEVICE_ID)
+        val mMinMV2 =
+            SharedPref.getSavedData(requireContext(), SharedKeys.minMV2 + PhActivity.DEVICE_ID)
         if (mMinMV2 != null) {
             this.mMinMV2 = mMinMV2
         }
 
-        val mMinMV3 = SharedPref.getSavedData(requireContext(), SharedKeys.minMV3 + PhActivity.DEVICE_ID)
+        val mMinMV3 =
+            SharedPref.getSavedData(requireContext(), SharedKeys.minMV3 + PhActivity.DEVICE_ID)
         if (mMinMV3 != null) {
             this.mMinMV3 = mMinMV3
         }
 
-        val mMinMV4 = SharedPref.getSavedData(requireContext(), SharedKeys.minMV4 + PhActivity.DEVICE_ID)
+        val mMinMV4 =
+            SharedPref.getSavedData(requireContext(), SharedKeys.minMV4 + PhActivity.DEVICE_ID)
         if (mMinMV4 != null) {
             this.mMinMV4 = mMinMV4
         }
 
-        val mMinMV5 = SharedPref.getSavedData(requireContext(), SharedKeys.minMV5 + PhActivity.DEVICE_ID)
+        val mMinMV5 =
+            SharedPref.getSavedData(requireContext(), SharedKeys.minMV5 + PhActivity.DEVICE_ID)
         if (mMinMV5 != null) {
             this.mMinMV5 = mMinMV5
         }
-        val mMaxMV1 = SharedPref.getSavedData(requireContext(), SharedKeys.maxMV1 + PhActivity.DEVICE_ID)
+        val mMaxMV1 =
+            SharedPref.getSavedData(requireContext(), SharedKeys.maxMV1 + PhActivity.DEVICE_ID)
         if (mMaxMV1 != null) {
             this.mMaxMV1 = mMaxMV1
         }
 
-        val mMaxMV2 = SharedPref.getSavedData(requireContext(), SharedKeys.maxMV2 + PhActivity.DEVICE_ID)
+        val mMaxMV2 =
+            SharedPref.getSavedData(requireContext(), SharedKeys.maxMV2 + PhActivity.DEVICE_ID)
         if (mMaxMV2 != null) {
             this.mMaxMV2 = mMaxMV2
         }
 
-        val mMaxMV3 = SharedPref.getSavedData(requireContext(), SharedKeys.maxMV3 + PhActivity.DEVICE_ID)
+        val mMaxMV3 =
+            SharedPref.getSavedData(requireContext(), SharedKeys.maxMV3 + PhActivity.DEVICE_ID)
         if (mMaxMV3 != null) {
             this.mMaxMV3 = mMaxMV3
         }
 
-        val mMaxMV4 = SharedPref.getSavedData(requireContext(), SharedKeys.maxMV4 + PhActivity.DEVICE_ID)
+        val mMaxMV4 =
+            SharedPref.getSavedData(requireContext(), SharedKeys.maxMV4 + PhActivity.DEVICE_ID)
         if (mMaxMV4 != null) {
             this.mMaxMV4 = mMaxMV4
         }
 
-        val mMaxMV5 = SharedPref.getSavedData(requireContext(), SharedKeys.maxMV5 + PhActivity.DEVICE_ID)
+        val mMaxMV5 =
+            SharedPref.getSavedData(requireContext(), SharedKeys.maxMV5 + PhActivity.DEVICE_ID)
         if (mMaxMV5 != null) {
             this.mMaxMV5 = mMaxMV5
         }
     }
 
-     var mMinMV1: String = ""
-     var mMinMV2: String = ""
-     var mMinMV3: String = ""
-     var mMinMV4: String = ""
-     var mMinMV5: String = ""
+    var mMinMV1: String = ""
+    var mMinMV2: String = ""
+    var mMinMV3: String = ""
+    var mMinMV4: String = ""
+    var mMinMV5: String = ""
 
     var mMaxMV1: String = ""
     var mMaxMV2: String = ""
@@ -3343,7 +3372,7 @@ class PhCalibFragmentNew : Fragment() {
 
 
         if (Constants.OFFLINE_DATA) {
-            PH_MODE = "both"
+            PH_MODE = "5"
         }
         threePointCalib.visibility = View.GONE
 

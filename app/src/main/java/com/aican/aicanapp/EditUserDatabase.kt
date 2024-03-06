@@ -57,14 +57,14 @@ class EditUserDatabase : AppCompatActivity() {
 
         val role = ArrayAdapter(this, android.R.layout.simple_spinner_item, r)
         role.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spinner.setAdapter(role)
-        spinner.setOnItemSelectedListener(object : AdapterView.OnItemSelectedListener {
+        spinner.adapter = role
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(adapterView: AdapterView<*>, view: View, i: Int, l: Long) {
                 userRole = adapterView.getItemAtPosition(i).toString()
             }
 
             override fun onNothingSelected(adapterView: AdapterView<*>?) {}
-        })
+        }
 
         if (userRole == r[0]) {
             spinner.setSelection(0)
@@ -80,11 +80,11 @@ class EditUserDatabase : AppCompatActivity() {
             if (passwordText.getText().toString().isEmpty() || passwordText.getText()
                     .toString() == "" || passwordText.getText().toString() == prevPasscode
             ) {
-                if (passwordText.getText().toString() == prevPasscode) {
-                    previPasscode.setText("Your previous passcode is same as your current passcode")
-                    passwordText.setError("Your previous passcode is same as your current passcode")
+                if (passwordText.text.toString() == prevPasscode) {
+                    previPasscode.text = "Your previous passcode is same as your current passcode"
+                    passwordText.error = "Your previous passcode is same as your current passcode"
                 } else {
-                    passwordText.setError("Enter some password")
+                    passwordText.error = "Enter some password"
                 }
             } else {
                 val date =
@@ -93,7 +93,7 @@ class EditUserDatabase : AppCompatActivity() {
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault())
                     .format(Date())
                 password = passwordText.getText().toString()
-                val passwordUpdated = databaseHelper!!.updateUserDetails(
+                val passwordUpdated = databaseHelper.updateUserDetails(
                     username,
                     uid,
                     name.getText().toString(),
@@ -101,7 +101,7 @@ class EditUserDatabase : AppCompatActivity() {
                     password
                 )
                 if (passwordUpdated) {
-                    databaseHelper!!.insert_action_data(
+                    databaseHelper.insert_action_data(
                         time,
                         date,
                         "Username: " + username + ", Name: " + name.getText()
