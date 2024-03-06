@@ -27,6 +27,7 @@ import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
 import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
+import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
@@ -189,6 +190,16 @@ class PhAlarmFragment : Fragment() {
                 try {
                     jsonData = JSONObject(message)
                     Log.d("JSONReceived:PHFragment", "onMessage: " + message)
+                    if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val battery: String = jsonData.getString("BATTERY")
+//                        binding.batteryPercent.setText("$battery %")
+                        SharedPref.saveData(
+                            requireContext(),
+                            "battery" + PhActivity.DEVICE_ID,
+                            battery
+                        )
+
+                    }
                     if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         val ph = jsonData.getString("PH_VAL").toFloat()
                         val phForm =

@@ -242,6 +242,16 @@ class PhGraphFragment : Fragment() {
                     updateMessage(message.toString())
                     jsonData = JSONObject(message.toString())
                     Log.d("JSONReceived:PHFragment", "onMessage: $message")
+                    if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val battery: String = jsonData.getString("BATTERY")
+//                        binding.batteryPercent.setText("$battery %")
+                        SharedPref.saveData(
+                            requireContext(),
+                            "battery" + PhActivity.DEVICE_ID,
+                            battery
+                        )
+
+                    }
                     if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         var ph = jsonData.getString("PH_VAL").toFloat()
                         val phForm = String.format(Locale.UK, "%.2f", ph)

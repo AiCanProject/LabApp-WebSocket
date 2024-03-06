@@ -272,6 +272,18 @@ class PhCalibFragmentNew : Fragment() {
                     updateMessage(message)
                     jsonData = JSONObject(message)
                     Log.d("JSONReceived:PHFragment", "onMessage: $message")
+
+                    if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val battery: String = jsonData.getString("BATTERY")
+//                        binding.batteryPercent.setText("$battery %")
+                        SharedPref.saveData(
+                            requireContext(),
+                            "battery" + PhActivity.DEVICE_ID,
+                            battery
+                        )
+
+                    }
+
                     if (jsonData.has("SLOPE") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         if (jsonData.getString("SLOPE") != "nan" && PhFragment.validateNumber(
                                 jsonData.getString("SLOPE")

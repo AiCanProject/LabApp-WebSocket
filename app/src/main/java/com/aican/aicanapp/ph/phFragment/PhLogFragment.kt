@@ -857,6 +857,18 @@ class PhLogFragment : Fragment() {
 
                     jsonData = JSONObject(message)
                     Log.d("JSONReceived:PHFragment", "onMessage: " + message)
+
+                    if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val battery: String = jsonData.getString("BATTERY")
+//                        binding.batteryPercent.setText("$battery %")
+                        SharedPref.saveData(
+                            requireContext(),
+                            "battery" + PhActivity.DEVICE_ID,
+                            battery
+                        )
+
+                    }
+
                     if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         var phk = 0.0f
                         if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
