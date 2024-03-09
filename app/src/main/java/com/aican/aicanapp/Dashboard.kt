@@ -176,7 +176,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
         binding.offlineModeSwitch.setOnCheckedChangeListener { _, isChecked ->
             webSocketConnected = if (isChecked) {
-//                                val uri = URI("ws://localhost:3000")
+
 //                val uri = URI("wss://socketsbay.com/wss/v2/1/demo/")
                 val uri = URI("ws://192.168.4.1:81")
 
