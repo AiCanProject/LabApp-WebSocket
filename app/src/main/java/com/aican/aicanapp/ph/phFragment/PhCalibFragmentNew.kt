@@ -1471,15 +1471,16 @@ class PhCalibFragmentNew : Fragment() {
         var calibCSV: Cursor? = null
         if (Constants.OFFLINE_MODE || Constants.OFFLINE_DATA) {
 //            calibCSV = db.rawQuery("SELECT * FROM CalibOfflineData", null);
-            if (spin.selectedItemPosition == 0) {
+            if (spin.selectedItemPosition == 0 || PhCalibFragmentNew.ph_mode_selected == 5) {
                 calibCSV = db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
             }
-            if (spin.selectedItemPosition == 1) {
-                calibCSV = db.rawQuery("SELECT * FROM CalibOfflineDataThree", null)
+            if (spin.selectedItemPosition == 1 || ph_mode_selected == 3) {
+                calibCSV = db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
             }
         } else {
             calibCSV = db.rawQuery("SELECT * FROM CalibData", null)
         }
+        var jk = 1
         while (calibCSV != null && calibCSV.moveToNext()) {
             val ph = calibCSV.getString(calibCSV.getColumnIndex("PH"))
             val mv = calibCSV.getString(calibCSV.getColumnIndex("MV"))
@@ -1487,12 +1488,25 @@ class PhCalibFragmentNew : Fragment() {
             val slope = calibCSV.getString(calibCSV.getColumnIndex("SLOPE"))
             val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC"))
             val temperature1 = calibCSV.getString(calibCSV.getColumnIndex("temperature"))
-            table.addCell(ph)
-            table.addCell(pHAC + "")
-            table.addCell(slope + "")
-            table.addCell(mv)
-            table.addCell(date)
-            table.addCell(temperature1)
+            if (ph_mode_selected == 3) {
+                if (jk in 2..4) {
+                    table.addCell(ph)
+                    table.addCell(pHAC + "")
+                    table.addCell(slope + "")
+                    table.addCell(mv)
+                    table.addCell(date)
+                    table.addCell(temperature1)
+                }
+            }else{
+                table.addCell(ph)
+                table.addCell(pHAC + "")
+                table.addCell(slope + "")
+                table.addCell(mv)
+                table.addCell(date)
+                table.addCell(temperature1)
+            }
+            jk++
+
         }
         document.add(table)
         if (Constants.OFFLINE_DATA) {
@@ -1994,11 +2008,19 @@ class PhCalibFragmentNew : Fragment() {
                                         jsonData.put("DT_4", "$date123 $time123")
                                         jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                                         WebSocketManager.sendMessage(jsonData.toString())
+                                        if (ph_mode_selected == 5){
+                                            SharedPref.saveData(
+                                                requireContext(),
+                                                "CALIB_STAT" + PhActivity.DEVICE_ID,
+                                                "incomplete"
+                                            )
+                                    }else {
                                         SharedPref.saveData(
                                             requireContext(),
                                             "CALIB_STAT" + PhActivity.DEVICE_ID,
                                             "incomplete"
                                         )
+                                    }
                                         //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_4").setValue(date123 + " " + time123);
                                         log1.setBackgroundColor(Color.WHITE)
                                         log2.setBackgroundColor(Color.WHITE)
@@ -2619,6 +2641,10 @@ class PhCalibFragmentNew : Fragment() {
 
     private fun startTimer() {
         calibrateBtn.isEnabled = false
+        printCalibData.isEnabled = false
+        binding.printCSV.isEnabled = false
+        calibrateBtn.text = "Saving data.."
+
         PhCalibFragmentNew.LOG_INTERVAL = 6f
         tvTimer.setText(PhCalibFragmentNew.LOG_INTERVAL.toString())
         handler1 = Handler()
@@ -2633,6 +2659,8 @@ class PhCalibFragmentNew : Fragment() {
                     tvTimer.setText(PhCalibFragmentNew.LOG_INTERVAL.toString())
                     handler1.removeCallbacks(this)
                     calibrateBtn.isEnabled = true
+                    printCalibData.isEnabled = true
+                    binding.printCSV.isEnabled = true
                     calibrateBtn.text = "Start"
                     if (ph_mode_selected == 5) {
                         currentBuf = 0
@@ -2643,6 +2671,11 @@ class PhCalibFragmentNew : Fragment() {
                         log4.setBackgroundColor(Color.WHITE)
                         log5.setBackgroundColor(Color.WHITE)
                     } else {
+                        SharedPref.saveData(
+                            requireContext(),
+                            "CALIB_STAT" + PhActivity.DEVICE_ID,
+                            "completed"
+                        )
                         currentBuf = 1
                         line = 1
                         log2.setBackgroundColor(Color.GRAY)
@@ -3039,7 +3072,7 @@ class PhCalibFragmentNew : Fragment() {
 
 
         if (Constants.OFFLINE_DATA) {
-            PH_MODE = "3"
+            PH_MODE = "both"
         }
 
 
