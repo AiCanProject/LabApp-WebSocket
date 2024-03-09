@@ -44,6 +44,7 @@ import com.aican.aicanapp.roomDatabase.daoObjects.AllLogsDataDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
 import com.aican.aicanapp.utils.Constants
+import com.aican.aicanapp.utils.SharedKeys
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.google.android.material.datepicker.CalendarConstraints
@@ -58,6 +59,7 @@ import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
+import com.opencsv.CSVWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -66,6 +68,7 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
+import java.io.FileWriter
 import java.io.IOException
 import java.io.OutputStream
 import java.text.SimpleDateFormat
@@ -92,7 +95,7 @@ class Export : AppCompatActivity() {
     lateinit var companyLogo: ImageView
     lateinit var mDateBtn: Button
     lateinit var exportUserData: Button
-    lateinit var exportCSV: Button
+    lateinit var exportPDFAllLogDataBtn: Button
     lateinit var convertToXls: Button
     lateinit var arNumBtn: ImageButton
     lateinit var batchNumBtn: ImageButton
@@ -145,7 +148,7 @@ class Export : AppCompatActivity() {
         binding = ActivityExportBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-         recyclerView = findViewById<RecyclerView>(R.id.recyclerViewCSV)
+        recyclerView = findViewById<RecyclerView>(R.id.recyclerViewCSV)
         val userRecyclerView = findViewById<RecyclerView>(R.id.recyclerViewUserData)
 //        TextView noFilesText = findViewById(R.id.nofiles_textview);
         //        TextView noFilesText = findViewById(R.id.nofiles_textview);
@@ -154,7 +157,7 @@ class Export : AppCompatActivity() {
         companyLogo = findViewById<ImageView>(R.id.companyLogo)
         deviceId = findViewById<TextView>(R.id.DeviceId)
         dateA = findViewById<TextView>(R.id.dateA)
-        exportCSV = findViewById<Button>(R.id.exportCSV)
+        exportPDFAllLogDataBtn = findViewById<Button>(R.id.exportCSV)
         printAllCalibData = findViewById(R.id.printAllCalibData)
         mDateBtn = findViewById<Button>(R.id.materialDateBtn)
         arNumEditText = findViewById<EditText>(R.id.ar_num_sort)
@@ -361,7 +364,7 @@ class Export : AppCompatActivity() {
             companyName = companyNameEditText.text.toString()
 
             try {
-                generatePDF2()
+                generateUserActivityPDF()
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
@@ -466,7 +469,10 @@ class Export : AppCompatActivity() {
 //            recyclerView.layoutManager = LinearLayoutManager(applicationContext)
 //            convertToXls.visibility = View.INVISIBLE
 //        }
-        exportCSV.setOnClickListener {
+
+
+
+        exportPDFAllLogDataBtn.setOnClickListener {
             companyName = companyNameEditText.text.toString()
             if (!companyName.isEmpty()) {
                 if (Constants.OFFLINE_MODE) {
@@ -477,7 +483,8 @@ class Export : AppCompatActivity() {
                 }
             }
             try {
-                generatePDF1()
+                generateAllLogPDFs()
+//                generateAllLogCSV()
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
@@ -485,9 +492,59 @@ class Export : AppCompatActivity() {
             convertToXls.visibility = View.INVISIBLE
         }
 
+        binding.printSensorCSV.setOnClickListener {
+            companyName = companyNameEditText.text.toString()
+            if (!companyName.isEmpty()) {
+                if (Constants.OFFLINE_MODE) {
+                    val company_name = getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
+                    val editT = company_name.edit()
+                    editT.putString("COMPANY_NAME", companyName)
+                    editT.commit()
+                }
+            }
+            try {
+//                generateAllLogPDFs()
+                generateAllLogCSV()
+            } catch (e: FileNotFoundException) {
+                e.printStackTrace()
+            }
+            updateRecyclerView()
+            convertToXls.visibility = View.INVISIBLE
+        }
+        binding.printAllCalibData.visibility = View.VISIBLE
+        exportPDFAllLogDataBtn.visibility = View.VISIBLE
+        binding.printAllCalibDataCSV.visibility = View.VISIBLE
+        binding.printSensorCSV.visibility  = View.VISIBLE
+
+        if (Source.EXPORT_CSV){
+            binding.printAllCalibDataCSV.visibility = View.VISIBLE
+            binding.printSensorCSV.visibility  = View.VISIBLE
+        }else{
+            binding.printAllCalibDataCSV.visibility = View.GONE
+            binding.printSensorCSV.visibility  = View.GONE
+        }
+
+        if (Source.EXPORT_PDF){
+            binding.printAllCalibData.visibility = View.VISIBLE
+            exportPDFAllLogDataBtn.visibility = View.VISIBLE
+        }else{
+            binding.printAllCalibData.visibility = View.GONE
+            exportPDFAllLogDataBtn.visibility = View.GONE
+        }
+
         printAllCalibData.setOnClickListener { v: View? ->
             try {
-                generateAllPDF()
+                printAllCalibPDF()
+            } catch (e: FileNotFoundException) {
+                e.printStackTrace()
+            }
+            updateRecyclerView()
+            convertToXls.visibility = View.INVISIBLE
+        }
+
+        binding.printAllCalibDataCSV.setOnClickListener { v: View? ->
+            try {
+                printAllCalibCSV()
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
@@ -497,19 +554,180 @@ class Export : AppCompatActivity() {
     }
 
     private fun updateRecyclerView() {
-        val pathPDF = ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/"
+        val pathPDF =
+            ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/"
         val rootPDF = File(pathPDF)
         fileNotWrite(rootPDF)
-        val filesAndFoldersPDF = rootPDF.listFiles()
-        fAdapter = FileAdapter(applicationContext, reverseFileArray(filesAndFoldersPDF), "PhExport")
+        val filesAndFoldersPDF = rootPDF.listFiles() ?: return
+
+        // Sort the files based on last modified timestamp in descending order
+        val sortedFiles = filesAndFoldersPDF.sortedByDescending { it.lastModified() }
+
+        // Find the first PDF file
+        val pdfFile =
+            sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
+
+        // Set up RecyclerView with adapter
+        fAdapter = FileAdapter(applicationContext, sortedFiles.toTypedArray(), "PhExport")
+
         recyclerView.adapter = fAdapter
         fAdapter.notifyDataSetChanged()
-        recyclerView.layoutManager = LinearLayoutManager(applicationContext)
-        convertToXls.visibility = View.INVISIBLE
+        recyclerView.layoutManager = LinearLayoutManager(this@Export)
+    }
+
+    fun printAllCalibCSV() {
+        Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
+
+
+        val exportDir = File(ContextWrapper(this@Export).externalMediaDirs[0], "/LabApp/Sensordata")
+        if (!exportDir.exists()) {
+            exportDir.mkdirs()
+        }
+
+        val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
+        val currentDateandTime = sdf.format(Date())
+        val tempPath =
+            ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata"
+        val tempRoot = File(tempPath)
+        fileNotWrite(tempRoot)
+        val tempFilesAndFolders = tempRoot.listFiles()
+        val file = File(
+            ContextWrapper(this@Export).externalMediaDirs[0],
+            "/LabApp/Sensordata/AllCalibData_$currentDateandTime-${(tempFilesAndFolders?.size ?: 0) - 1}.csv"
+        )
+
+        try {
+            val writer = CSVWriter(FileWriter(file))
+            val headers = arrayOf(
+                "Company Name",
+                "Report Generated By",
+                "Device ID",
+                "Last Calibrated By",
+                "Date",
+                "Time",
+                "Offset",
+                "Temperature",
+                "Battery",
+                "Slope"
+            )
+            writer.writeNext(headers)
+
+
+            var company_name1 = ""
+            val companyname = SharedPref.getSavedData(this@Export, "COMPANY_NAME")
+            company_name1 =
+                if (!companyname.isNullOrEmpty()) "Company: $companyname" else "Company: N/A"
+
+            val newOffset = if (SharedPref.getSavedData(
+                    this@Export, "OFFSET_" + PhActivity.DEVICE_ID
+                ) != null && SharedPref.getSavedData(
+                    this@Export, "OFFSET_" + PhActivity.DEVICE_ID
+                ) != ""
+            ) {
+                val data =
+                    SharedPref.getSavedData(this@Export, "OFFSET_" + PhActivity.DEVICE_ID)
+                "Offset: $data"
+            } else {
+                "Offset: " + "0"
+            }
+
+            val newSlope = if (SharedPref.getSavedData(
+                    this@Export, "SLOPE_" + PhActivity.DEVICE_ID
+                ) != null && SharedPref.getSavedData(
+                    this@Export, "SLOPE_" + PhActivity.DEVICE_ID
+                ) != ""
+            ) {
+                val data =
+                    SharedPref.getSavedData(this@Export, "SLOPE_" + PhActivity.DEVICE_ID)
+                "Slope: $data"
+            } else {
+                "Slope: " + "0"
+            }
+
+            val tempData =
+                SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
+
+            val newTemp = if (SharedPref.getSavedData(
+                    this@Export, "tempValue" + PhActivity.DEVICE_ID
+                ) != null && SharedPref.getSavedData(
+                    this@Export, "tempValue" + PhActivity.DEVICE_ID
+                ) != ""
+            ) {
+
+                "Temperature: $tempData"
+            } else {
+                "Temperature: " + "0"
+            }
+
+            val batteryVal =
+                SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
+            val newBattery = if (batteryVal != null && batteryVal != "") {
+                "Battery: $batteryVal %"
+            } else {
+                "Battery: 0 %"
+
+            }
+
+
+            writer.writeNext(arrayOf(company_name1))
+            if (Source.cfr_mode) {
+                writer.writeNext(arrayOf("Username: ${Source.logUserName}"))
+            }
+            writer.writeNext(arrayOf("Device ID: ${PhActivity.DEVICE_ID}"))
+            writer.writeNext(
+                arrayOf(
+                    "Date: ${Source.getPresentDate()}",
+                    "Time: ${Source.getCurrentTime()}"
+                )
+            )
+            writer.writeNext(arrayOf(newOffset, newSlope, newTemp, newBattery))
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "")) // Blank row
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "")) // Blank row
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "")) // Blank row
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "")) // Blank row
+
+            writer.writeNext(arrayOf("All Calibration's Table"))
+            val calibHeaders =
+                arrayOf("pH", "pH After Calib", "Slope", "mV", "Date & Time", "Temperature")
+            writer.writeNext(calibHeaders)
+            var rowCounter = 0
+            val db = databaseHelper.writableDatabase
+            val calibCSV = db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
+            while (calibCSV.moveToNext()) {
+                val ph = calibCSV.getString(calibCSV.getColumnIndex("PH")) ?: "--"
+                val mv = calibCSV.getString(calibCSV.getColumnIndex("MV")) ?: "--"
+                val date = calibCSV.getString(calibCSV.getColumnIndex("DT")) ?: "--"
+                val slope = calibCSV.getString(calibCSV.getColumnIndex("SLOPE")) ?: "--"
+                val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC")) ?: "--"
+                val temperature1 =
+                    calibCSV.getString(calibCSV.getColumnIndex("temperature")) ?: "--"
+
+                val row = arrayOf(ph, pHAC, slope, mv, date, temperature1)
+                writer.writeNext(row)
+
+                rowCounter++
+                if (rowCounter % 5 == 0) {
+                    // Add the headers for the next set of rows
+                    writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "")) // Blank row
+                    writer.writeNext(calibHeaders)
+                }
+            }
+
+            writer.close()
+            Toast.makeText(this@Export, "CSV file exported", Toast.LENGTH_SHORT).show()
+        } catch (e: IOException) {
+            Toast.makeText(
+                this@Export,
+                "Error exporting CSV file: ${e.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+            e.printStackTrace()
+        }
     }
 
     @Throws(FileNotFoundException::class)
-    private fun generateAllPDF() {
+    private fun printAllCalibPDF() {
         Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
 
         val company_name = "Company: $companyName"
@@ -538,6 +756,37 @@ class Export : AppCompatActivity() {
         }
         temp = "Temperature: " + shp.getString("temp", "")
         battery = "Battery: " + shp.getString("battery", "")
+
+
+        val leftDesignationString =
+            SharedPref.getSavedData(this@Export, SharedKeys.LEFT_DESIGNATION_KEY)
+        val rightDesignationString =
+            SharedPref.getSavedData(
+                this@Export, SharedKeys.RIGHT_DESIGNATION_KEY
+            )
+
+        if (leftDesignationString != null && leftDesignationString != "") {
+
+        } else {
+            SharedPref.saveData(
+                this@Export,
+                SharedKeys.LEFT_DESIGNATION_KEY,
+                "Operator Sign"
+            )
+        }
+
+        if (rightDesignationString != null && rightDesignationString != "") {
+        } else {
+            SharedPref.saveData(
+                this@Export,
+                SharedKeys.RIGHT_DESIGNATION_KEY,
+                "Supervisor Sign"
+            )
+        }
+
+
+
+
         if (Constants.OFFLINE_DATA) {
             val slopeData = SharedPref.getSavedData(this@Export, "SLOPE_" + PhActivity.DEVICE_ID)
 
@@ -572,7 +821,7 @@ class Export : AppCompatActivity() {
                 if (batteryVal != "") {
                     battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
-                }else{
+                } else {
                     battery = "Battery: 0 %"
 
                 }
@@ -652,15 +901,15 @@ class Export : AppCompatActivity() {
         document.add(
             Paragraph(
                 """$reportDate  |  $reportTime
-$offset  |  $battery
-$slope  |  $temp"""
+                        $offset  |  $battery
+                        $slope  |  $temp"""
             )
         )
         document.add(Paragraph(""))
         document.add(Paragraph("Calibration Table"))
         val db = databaseHelper.writableDatabase
         var calibCSV: Cursor? = null
-            calibCSV = db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
+        calibCSV = db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
 //            calibCSV = if (startDateString != null) {
 //                db.rawQuery(
 //                    "SELECT * FROM CalibAllDataOffline WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString')",
@@ -682,7 +931,11 @@ $slope  |  $temp"""
         table.addCell("Temperature")
         var rowCounter = 0 // To keep track of the number of rows processed
         runOnUiThread {
-            Toast.makeText(this@Export, "" + calibCSV.count + ", " + calibCSV.columnCount, Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this@Export,
+                "" + calibCSV.count + ", " + calibCSV.columnCount,
+                Toast.LENGTH_SHORT
+            ).show()
         }
         while (calibCSV.moveToNext()) {
             val ph = calibCSV.getString(calibCSV.getColumnIndex("PH"))
@@ -703,7 +956,15 @@ $slope  |  $temp"""
                 // Add the table to the document every 5 rows
                 document.add(table)
                 document.add(Paragraph("Calibration : " + "completed"))
-                document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+                if (leftDesignationString != null && leftDesignationString != "" &&
+                    rightDesignationString != null && rightDesignationString != ""
+                ) {
+                    document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
+
+                } else {
+                    document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+
+                }
                 document.add(Paragraph(""))
                 document.add(Paragraph(""))
                 document.add(Paragraph(""))
@@ -903,8 +1164,189 @@ $slope  |  $temp"""
 
     }
 
+    fun generateAllLogCSV() {
+        try {
+            val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
+            val currentDateandTime = sdf.format(Date())
+            val tempPath =
+                File(this@Export.externalMediaDirs[0], "/LabApp/Sensordata")
+            tempPath.mkdirs()
+
+            val filePath =
+                File(tempPath, "DSL_$currentDateandTime-${tempPath.listFiles()?.size ?: 0}.csv")
+            val writer = CSVWriter(FileWriter(filePath))
+
+            val db = databaseHelper.writableDatabase
+
+            var company_name1 = ""
+            val companyname = SharedPref.getSavedData(this@Export, "COMPANY_NAME")
+            company_name1 =
+                if (!companyname.isNullOrEmpty()) "Company: $companyname" else "Company: N/A"
+
+            val newOffset = if (SharedPref.getSavedData(
+                    this@Export, "OFFSET_" + PhActivity.DEVICE_ID
+                ) != null && SharedPref.getSavedData(
+                    this@Export, "OFFSET_" + PhActivity.DEVICE_ID
+                ) != ""
+            ) {
+                val data =
+                    SharedPref.getSavedData(this@Export, "OFFSET_" + PhActivity.DEVICE_ID)
+                "Offset: $data"
+            } else {
+                "Offset: " + "0"
+            }
+
+            val newSlope = if (SharedPref.getSavedData(
+                    this@Export, "SLOPE_" + PhActivity.DEVICE_ID
+                ) != null && SharedPref.getSavedData(
+                    this@Export, "SLOPE_" + PhActivity.DEVICE_ID
+                ) != ""
+            ) {
+                val data =
+                    SharedPref.getSavedData(this@Export, "SLOPE_" + PhActivity.DEVICE_ID)
+                "Slope: $data"
+            } else {
+                "Slope: " + "0"
+            }
+
+            val tempData =
+                SharedPref.getSavedData(this@Export, "tempValue" + PhActivity.DEVICE_ID)
+
+            val newTemp = if (SharedPref.getSavedData(
+                    this@Export, "tempValue" + PhActivity.DEVICE_ID
+                ) != null && SharedPref.getSavedData(
+                    this@Export, "tempValue" + PhActivity.DEVICE_ID
+                ) != ""
+            ) {
+
+                "Temperature: $tempData"
+            } else {
+                "Temperature: " + "0"
+            }
+
+            val batteryVal =
+                SharedPref.getSavedData(this@Export, "battery" + PhActivity.DEVICE_ID)
+            val newBattery = if (batteryVal != null && batteryVal != "") {
+                "Battery: $batteryVal %"
+            } else {
+                "Battery: 0 %"
+
+            }
+
+
+            writer.writeNext(arrayOf(company_name1))
+            if (Source.cfr_mode) {
+                writer.writeNext(arrayOf("Username: ${Source.logUserName}"))
+            }
+            writer.writeNext(arrayOf("Device ID: ${PhActivity.DEVICE_ID}"))
+            writer.writeNext(
+                arrayOf(
+                    "Date: ${Source.getPresentDate()}",
+                    "Time: ${Source.getCurrentTime()}"
+                )
+            )
+            writer.writeNext(arrayOf(newOffset, newSlope, newTemp, newBattery))
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+
+            writer.writeNext(arrayOf("Calibration Table", "", "", "", "", "", "", "", ""))
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+
+            writer.writeNext(
+                arrayOf(
+                    "pH",
+                    "pH After Cal",
+                    "Slope",
+                    "mV",
+                    "Date & Time",
+                    "Temperature"
+                )
+            )
+
+            var calibCSV: Cursor? = null
+            if (Constants.OFFLINE_MODE) {
+                calibCSV = if (Source.calibMode == 0) {
+                    db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
+                } else {
+                    db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
+                }
+            } else {
+                calibCSV = db.rawQuery("SELECT * FROM CalibData", null)
+            }
+
+            while (calibCSV != null && calibCSV.moveToNext()) {
+                val ph = calibCSV.getString(calibCSV.getColumnIndex("PH")) ?: "--"
+                val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC")) ?: "--"
+                val slope = calibCSV.getString(calibCSV.getColumnIndex("SLOPE")) ?: "--"
+                val mv = calibCSV.getString(calibCSV.getColumnIndex("MV")) ?: "--"
+                val date = calibCSV.getString(calibCSV.getColumnIndex("DT")) ?: "--"
+                val temperature1 =
+                    calibCSV.getString(calibCSV.getColumnIndex("temperature")) ?: "--"
+
+                writer.writeNext(arrayOf(ph, pHAC, slope, mv, date, temperature1))
+            }
+
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+            writer.writeNext(arrayOf("All Log Data", "", "", "", "", "", "", "", "", "", ""))
+            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+
+
+
+            GlobalScope.launch(Dispatchers.Main) {
+                val allLogsArrayList = withContext(Dispatchers.IO) {
+                    allLogsDataDao.getAllLogs()
+                }
+                Toast.makeText(this@Export, "" + allLogsArrayList.size, Toast.LENGTH_SHORT).show()
+                if (allLogsArrayList != null) {
+
+                    val headers = arrayOf(
+                        "Date",
+                        "Time",
+                        "pH",
+                        "Temperature",
+                        "Batch No",
+                        "AR No",
+                        "Product"
+                    )
+                    writer.writeNext(headers)
+
+                    for (logs in allLogsArrayList) {
+                        val date = logs.date
+                        val time = logs.time
+                        val pH = logs.ph ?: "--"
+                        val temp = logs.temperature ?: "--"
+                        val batchnum = logs.batchnum ?: "--"
+                        val arnum = logs.arnum ?: "--"
+                        val comp = logs.compound ?: "--"
+
+                        val row = arrayOf(date, time, pH, temp, batchnum, arnum, comp)
+                        writer.writeNext(row)
+                    }
+
+                    Toast.makeText(this@Export, "CSV file exported", Toast.LENGTH_SHORT).show()
+
+
+                }
+                writer.close()
+            }
+
+        } catch (e: IOException) {
+            Toast.makeText(
+                this@Export,
+                "Error exporting CSV file: ${e.message}",
+                Toast.LENGTH_SHORT
+            ).show()
+            e.printStackTrace()
+
+        }
+    }
+
     @Throws(FileNotFoundException::class)
-    fun generatePDF1() {
+    fun generateAllLogPDFs() {
 
         Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
 
@@ -968,7 +1410,7 @@ $slope  |  $temp"""
                 if (batteryVal != "") {
                     battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
-                }else{
+                } else {
                     battery = "Battery: 0 %"
 
                 }
@@ -1089,107 +1531,7 @@ $slope  |  $temp"""
         table1.addCell("Temp")
         table1.addCell("Batch No")
         table1.addCell("AR No")
-        table1.addCell("Compound")
-        var curCSV: Cursor
-        if (Constants.OFFLINE_MODE) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString') AND (arnum = '$compoundName') AND (batchnum = '$batchNumString') AND (compound = '$arNumString')",
-                null
-            )
-        } else {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString') AND (arnum = '$compoundName') AND (batchnum = '$batchNumString') AND (compound = '$arNumString')",
-                null
-            )
-            //            Cursor curCSV = db.rawQuery("SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '" + startDateString + "' AND '" + endDateString + "') AND (time BETWEEN '" + startTimeString + "' AND '" + endTimeString + "')')", null);
-        }
-        if (arNumEditText.text.toString().isEmpty()) {
-            arNumString = null
-        }
-        if (compoundNameEditText.text.toString().isEmpty()) {
-            compoundName = null
-        }
-        if (batchNumEditText.text.toString().isEmpty()) {
-            batchNumString = null
-        }
-
-        //Setting sql query according to filer
-        if ((startDateString != null) && (compoundName != null) && (batchNumString != null) && (arNumString != null)) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString') AND (arnum = '$compoundName') AND (batchnum = '$batchNumString') AND (compound = '$arNumString')",
-                null
-            )
-        } else if ((startDateString != null) && (compoundName != null) && (batchNumString != null)) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString') AND (arnum = '$compoundName') AND (batchnum = '$batchNumString')",
-                null
-            )
-        } else if ((startDateString != null) && (compoundName != null) && (arNumString != null)) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString') AND (arnum = '$compoundName') AND (batchnum = '$batchNumString') AND (compound = '$arNumString')",
-                null
-            )
-        } else if ((startDateString != null) && (batchNumString != null) && (arNumString != null)) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString') AND (batchnum = '$batchNumString') AND (compound = '$arNumString')",
-                null
-            )
-        } else if ((compoundName != null) && (batchNumString != null) && (arNumString != null)) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE  (arnum = '$compoundName') AND (batchnum = '$batchNumString') AND (compound = '$arNumString')",
-                null
-            )
-        } else if (startDateString != null && compoundName != null) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE  (time BETWEEN '$startTimeString' AND '$endTimeString') AND (arnum = '$compoundName')",
-                null
-            )
-        } else if (startDateString != null && batchNumString != null) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString') AND (batchnum = '$batchNumString')",
-                null
-            )
-        } else if (startDateString != null && arNumString != null) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString') AND (compound = '$arNumString')",
-                null
-            )
-        } else if (compoundName != null && batchNumString != null) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE  (arnum = '$compoundName') AND (batchnum = '$batchNumString')",
-                null
-            )
-        } else if (compoundName != null && arNumString != null) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE  (arnum = '$compoundName') AND (compound = '$arNumString')",
-                null
-            )
-        } else if (batchNumString != null && arNumString != null) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE  (batchnum = '$batchNumString') AND (compound = '$arNumString')",
-                null
-            )
-        } else if (startDateString != null) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString')",
-                null
-            )
-            //            curCSV = db.rawQuery("SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '" + startDateString + "' AND '" + endDateString + "')", null);
-        } else if (compoundName != null) {
-            curCSV =
-                db.rawQuery("SELECT * FROM LogUserdetails WHERE  (arnum = '$compoundName')", null)
-        } else if (batchNumString != null) {
-            curCSV = db.rawQuery(
-                "SELECT * FROM LogUserdetails WHERE  (batchnum = '$batchNumString') ",
-                null
-            )
-        } else if (arNumString != null) {
-            curCSV =
-                db.rawQuery("SELECT * FROM LogUserdetails WHERE  (compound = '$arNumString')", null)
-        } else {
-            curCSV = db.rawQuery("SELECT * FROM LogUserdetails", null)
-        }
-
+        table1.addCell("Product")
 
         GlobalScope.launch(Dispatchers.Main) {
             val allLogsArrayList = withContext(Dispatchers.IO) {
@@ -1233,7 +1575,44 @@ $slope  |  $temp"""
                 document.add(table1)
 
                 document.add(Paragraph(""))
-                document.add(Paragraph("Operator Sign                                                                                          Supervisor Sign"))
+
+
+                val leftDesignationString =
+                    SharedPref.getSavedData(this@Export, SharedKeys.LEFT_DESIGNATION_KEY)
+                val rightDesignationString =
+                    SharedPref.getSavedData(
+                        this@Export, SharedKeys.RIGHT_DESIGNATION_KEY
+                    )
+
+                if (leftDesignationString != null && leftDesignationString != "") {
+
+                } else {
+                    SharedPref.saveData(
+                        this@Export,
+                        SharedKeys.LEFT_DESIGNATION_KEY,
+                        "Operator Sign"
+                    )
+                }
+
+                if (rightDesignationString != null && rightDesignationString != "") {
+                } else {
+                    SharedPref.saveData(
+                        this@Export,
+                        SharedKeys.RIGHT_DESIGNATION_KEY,
+                        "Supervisor Sign"
+                    )
+                }
+
+                if (leftDesignationString != null && leftDesignationString != "" &&
+                    rightDesignationString != null && rightDesignationString != ""
+                ) {
+                    document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
+
+                } else {
+                    document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+
+                }
+
                 val imgBit1 = getSignImage()
 
                 if (imgBit1 != null) {
@@ -1318,8 +1697,9 @@ $slope  |  $temp"""
         }
     }
 
+
     @Throws(FileNotFoundException::class)
-    fun generatePDF2() {
+    fun generateUserActivityPDF() {
         Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
 
         if (SharedPref.getSavedData(
@@ -1393,7 +1773,7 @@ $slope  |  $temp"""
                 if (batteryVal != "") {
                     battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
-                }else{
+                } else {
                     battery = "Battery: 0 %"
 
                 }
@@ -1480,7 +1860,7 @@ $slope  |  $tempe"""
             val allUserActionsArrayList = withContext(Dispatchers.IO) {
                 userActionDao.getAllUsersActions()
             }
-            for (userA in allUserActionsArrayList){
+            for (userA in allUserActionsArrayList) {
                 val Time = userA.time
                 var Date = userA.date
                 val activity = userA.userAction
@@ -1498,7 +1878,42 @@ $slope  |  $tempe"""
                 table1.addCell(device + "")
             }
             document.add(table1)
-            document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+            val leftDesignationString =
+                SharedPref.getSavedData(this@Export, SharedKeys.LEFT_DESIGNATION_KEY)
+            val rightDesignationString =
+                SharedPref.getSavedData(
+                    this@Export, SharedKeys.RIGHT_DESIGNATION_KEY
+                )
+
+            if (leftDesignationString != null && leftDesignationString != "") {
+
+            } else {
+                SharedPref.saveData(
+                    this@Export,
+                    SharedKeys.LEFT_DESIGNATION_KEY,
+                    "Operator Sign"
+                )
+            }
+
+            if (rightDesignationString != null && rightDesignationString != "") {
+            } else {
+                SharedPref.saveData(
+                    this@Export,
+                    SharedKeys.RIGHT_DESIGNATION_KEY,
+                    "Supervisor Sign"
+                )
+            }
+
+            if (leftDesignationString != null && leftDesignationString != "" &&
+                rightDesignationString != null && rightDesignationString != ""
+            ) {
+                document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
+
+            } else {
+                document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+
+            }
+
             val imgBit1 = getSignImage()
 
             if (imgBit1 != null) {

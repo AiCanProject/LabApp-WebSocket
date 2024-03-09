@@ -17,7 +17,6 @@ class SettingsPage : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             AICANLabAppTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -36,6 +35,8 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
         modifier = modifier
     )
 }
+
+
 
 @Preview(showBackground = true, showSystemUi = true)
 @Composable

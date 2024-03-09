@@ -7,7 +7,6 @@ import android.view.View
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
-import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -90,9 +89,7 @@ class PhMvTable : AppCompatActivity() {
 
     private lateinit var tempValue: EditText
     private lateinit var setATC: Button
-    private lateinit var setThermistor: Button
-    private lateinit var setNTC: CheckBox
-    private lateinit var setPTC: CheckBox
+
 
     private lateinit var jsonData: JSONObject
 
@@ -102,9 +99,6 @@ class PhMvTable : AppCompatActivity() {
         binding = ActivityPhMvTableBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        setPTC = findViewById<CheckBox>(R.id.setPTC)
-        setNTC = findViewById<CheckBox>(R.id.setNTC)
-        setThermistor = findViewById<Button>(R.id.setThermistor)
         monitorValTxt = findViewById<TextView>(R.id.monitorValTxt)
         maxMVEdit1 = findViewById<TextView>(R.id.maxMVEdit1)
         maxMVEdit2 = findViewById<TextView>(R.id.maxMVEdit2)
@@ -286,86 +280,6 @@ class PhMvTable : AppCompatActivity() {
         }
 
 
-        setNTC.setOnClickListener {
-            setPTC.isChecked = !setNTC.isChecked
-        }
-        setPTC.setOnClickListener {
-            setNTC.isChecked = !setPTC.isChecked
-        }
-        setNTC.isChecked = true
-
-        setThermistor.setOnClickListener {
-            if (setNTC.isChecked) {
-                jsonData = JSONObject()
-                try {
-                    jsonData.put("THERM_VAL", "0")
-                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                    WebSocketManager.sendMessage(jsonData.toString())
-                } catch (e: JSONException) {
-                    throw RuntimeException(e)
-                }
-            } else if (setPTC.isChecked) {
-                jsonData = JSONObject()
-                try {
-                    jsonData.put("THERM_VAL", "1")
-                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                    WebSocketManager.sendMessage(jsonData.toString())
-                } catch (e: JSONException) {
-                    throw RuntimeException(e)
-                }
-            } else {
-                Toast.makeText(this@PhMvTable, "Check at least one", Toast.LENGTH_SHORT).show()
-            }
-        }
-
-        val tempVal = SharedPref.getSavedData(this@PhMvTable, "tempValue" + PhActivity.DEVICE_ID)
-
-        if (tempVal != null) {
-            binding.setManualTempEdit.setText(tempVal.toString())
-        }
-
-        binding.setManualTempBtn.setOnClickListener {
-            if (binding.setManualTempEdit.text.toString() != "") {
-                if (PhFragment.validateNumber(binding.setManualTempEdit.text.toString())) {
-                    SharedPref.saveData(
-                        this@PhMvTable,
-                        "tempValue" + PhActivity.DEVICE_ID,
-                        binding.setManualTempEdit.text.toString()
-                    )
-                }
-            }
-        }
-
-
-        val tempToggleSharedPref =
-            SharedPref.getSavedData(this@PhMvTable, "setTempToggle" + PhActivity.DEVICE_ID)
-
-        if (tempToggleSharedPref != null) {
-            if (tempToggleSharedPref == "true") {
-                binding.tempratureStateToggle.text = "Auto"
-                binding.tempratureStateToggle.isChecked = true
-                binding.setTempLayout.visibility = View.GONE
-
-            } else {
-                binding.tempratureStateToggle.text = "Manual"
-                binding.tempratureStateToggle.isChecked = false
-                binding.setTempLayout.visibility = View.VISIBLE
-            }
-        }
-
-        binding.tempratureStateToggle.setOnClickListener {
-            if (binding.tempratureStateToggle.isChecked) {
-                SharedPref.saveData(this@PhMvTable, "setTempToggle" + PhActivity.DEVICE_ID, "true")
-                binding.tempratureStateToggle.text = "Auto"
-                binding.setTempLayout.visibility = View.GONE
-
-            } else {
-                SharedPref.saveData(this@PhMvTable, "setTempToggle" + PhActivity.DEVICE_ID, "false")
-                binding.tempratureStateToggle.text = "Manual"
-                binding.setTempLayout.visibility = View.VISIBLE
-
-            }
-        }
 
 
         webSocketInit()
@@ -381,50 +295,60 @@ class PhMvTable : AppCompatActivity() {
         binding.phEdit4.visibility = View.INVISIBLE
         binding.phEdit5.visibility = View.INVISIBLE
 
-        val mMinMV1 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV1 + PhActivity.DEVICE_ID)
-        if (mMinMV1 != null){
+        val mMinMV1 =
+            SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV1 + PhActivity.DEVICE_ID)
+        if (mMinMV1 != null) {
             minMV1.text = mMinMV1
         }
-        val mMinMV2 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV2 + PhActivity.DEVICE_ID)
+        val mMinMV2 =
+            SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV2 + PhActivity.DEVICE_ID)
         if (mMinMV2 != null) {
             minMV2.text = mMinMV2
         }
 
-        val mMinMV3 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV3 + PhActivity.DEVICE_ID)
+        val mMinMV3 =
+            SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV3 + PhActivity.DEVICE_ID)
         if (mMinMV3 != null) {
             minMV3.text = mMinMV3
         }
 
-        val mMinMV4 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV4 + PhActivity.DEVICE_ID)
+        val mMinMV4 =
+            SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV4 + PhActivity.DEVICE_ID)
         if (mMinMV4 != null) {
             minMV4.text = mMinMV4
         }
 
-        val mMinMV5 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV5 + PhActivity.DEVICE_ID)
+        val mMinMV5 =
+            SharedPref.getSavedData(this@PhMvTable, SharedKeys.minMV5 + PhActivity.DEVICE_ID)
         if (mMinMV5 != null) {
             minMV5.text = mMinMV5
         }
-        val mMaxMV1 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV1 + PhActivity.DEVICE_ID)
+        val mMaxMV1 =
+            SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV1 + PhActivity.DEVICE_ID)
         if (mMaxMV1 != null) {
             maxMV1.text = mMaxMV1
         }
 
-        val mMaxMV2 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV2 + PhActivity.DEVICE_ID)
+        val mMaxMV2 =
+            SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV2 + PhActivity.DEVICE_ID)
         if (mMaxMV2 != null) {
             maxMV2.text = mMaxMV2
         }
 
-        val mMaxMV3 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV3 + PhActivity.DEVICE_ID)
+        val mMaxMV3 =
+            SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV3 + PhActivity.DEVICE_ID)
         if (mMaxMV3 != null) {
             maxMV3.text = mMaxMV3
         }
 
-        val mMaxMV4 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV4 + PhActivity.DEVICE_ID)
+        val mMaxMV4 =
+            SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV4 + PhActivity.DEVICE_ID)
         if (mMaxMV4 != null) {
             maxMV4.text = mMaxMV4
         }
 
-        val mMaxMV5 = SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV5 + PhActivity.DEVICE_ID)
+        val mMaxMV5 =
+            SharedPref.getSavedData(this@PhMvTable, SharedKeys.maxMV5 + PhActivity.DEVICE_ID)
         if (mMaxMV5 != null) {
             maxMV5.text = mMaxMV5
         }
@@ -443,7 +367,7 @@ class PhMvTable : AppCompatActivity() {
             Log.d("Cursor Data", "PH: " + calibCSV5.getString(calibCSV5.getColumnIndex("PH")))
             if (index5 == 0) {
                 PH1 = ph
-               binding.ph1.text = ph
+                binding.ph1.text = ph
             }
             if (index5 == 1) {
                 PH2 = ph
@@ -605,7 +529,11 @@ class PhMvTable : AppCompatActivity() {
 //                    myEdit.commit();
                     minMV1.setText(ph.toString());
 
-                    SharedPref.saveData(this@PhMvTable, SharedKeys.minMV1 + PhActivity.DEVICE_ID, ph.toString())
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        SharedKeys.minMV1 + PhActivity.DEVICE_ID,
+                        ph.toString()
+                    )
 
 //                    databaseHelper.updateBufferData(
 //                        1,
@@ -625,7 +553,11 @@ class PhMvTable : AppCompatActivity() {
 //                    minMV2.setText(sharedPreferences.getString("minMV2", ""));
                     minMV2.setText(ph.toString());
 
-                    SharedPref.saveData(this@PhMvTable, SharedKeys.minMV2 + PhActivity.DEVICE_ID, ph.toString())
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        SharedKeys.minMV2 + PhActivity.DEVICE_ID,
+                        ph.toString()
+                    )
 
 
 //
@@ -649,8 +581,11 @@ class PhMvTable : AppCompatActivity() {
 
                     minMV3.setText(ph.toString());
 
-                    SharedPref.saveData(this@PhMvTable, SharedKeys.minMV3 + PhActivity.DEVICE_ID, ph.toString())
-
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        SharedKeys.minMV3 + PhActivity.DEVICE_ID,
+                        ph.toString()
+                    )
 
 
 //                    databaseHelper.updateBufferData(
@@ -672,8 +607,11 @@ class PhMvTable : AppCompatActivity() {
 
                     minMV4.setText(ph.toString());
 
-                    SharedPref.saveData(this@PhMvTable, SharedKeys.minMV4 + PhActivity.DEVICE_ID, ph.toString())
-
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        SharedKeys.minMV4 + PhActivity.DEVICE_ID,
+                        ph.toString()
+                    )
 
 
 //                    databaseHelper.updateBufferData(
@@ -695,7 +633,11 @@ class PhMvTable : AppCompatActivity() {
 
                     minMV5.setText(ph.toString());
 
-                    SharedPref.saveData(this@PhMvTable, SharedKeys.minMV5 + PhActivity.DEVICE_ID, ph.toString())
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        SharedKeys.minMV5 + PhActivity.DEVICE_ID,
+                        ph.toString()
+                    )
 
 
 //                    databaseHelper.updateBufferData(
@@ -717,7 +659,11 @@ class PhMvTable : AppCompatActivity() {
 //                    maxMV1.setText(sharedPreferences.getString("maxMV1", ""));
                     maxMV1.setText(ph.toString());
 
-                    SharedPref.saveData(this@PhMvTable, SharedKeys.maxMV1 + PhActivity.DEVICE_ID, ph.toString())
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        SharedKeys.maxMV1 + PhActivity.DEVICE_ID,
+                        ph.toString()
+                    )
 
 
 //                    databaseHelper.updateBufferData(
@@ -739,7 +685,11 @@ class PhMvTable : AppCompatActivity() {
 //                    maxMV2.setText(sharedPreferences.getString("maxMV2", ""));
                     maxMV2.setText(ph.toString());
 
-                    SharedPref.saveData(this@PhMvTable, SharedKeys.maxMV2 + PhActivity.DEVICE_ID, ph.toString())
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        SharedKeys.maxMV2 + PhActivity.DEVICE_ID,
+                        ph.toString()
+                    )
 
 
 //                    databaseHelper.updateBufferData(
@@ -769,7 +719,11 @@ class PhMvTable : AppCompatActivity() {
 //                    )
                     maxMV3.setText(ph.toString());
 
-                    SharedPref.saveData(this@PhMvTable, SharedKeys.maxMV3 + PhActivity.DEVICE_ID, ph.toString())
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        SharedKeys.maxMV3 + PhActivity.DEVICE_ID,
+                        ph.toString()
+                    )
 
 
                 }
@@ -792,7 +746,11 @@ class PhMvTable : AppCompatActivity() {
 //                    )
                     maxMV4.setText(ph.toString());
 
-                    SharedPref.saveData(this@PhMvTable, SharedKeys.maxMV4 + PhActivity.DEVICE_ID, ph.toString())
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        SharedKeys.maxMV4 + PhActivity.DEVICE_ID,
+                        ph.toString()
+                    )
 
 
                 }
@@ -816,7 +774,11 @@ class PhMvTable : AppCompatActivity() {
 
                     maxMV5.setText(ph.toString());
 
-                    SharedPref.saveData(this@PhMvTable, SharedKeys.maxMV5 + PhActivity.DEVICE_ID, ph.toString())
+                    SharedPref.saveData(
+                        this@PhMvTable,
+                        SharedKeys.maxMV5 + PhActivity.DEVICE_ID,
+                        ph.toString()
+                    )
 
 
                 }

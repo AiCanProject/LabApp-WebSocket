@@ -32,7 +32,6 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.fragment.app.activityViewModels
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -48,8 +47,8 @@ import com.aican.aicanapp.databinding.ActivityDashboardBinding
 import com.aican.aicanapp.dialogs.EditNameDialog
 import com.aican.aicanapp.dialogs.EditNameDialog.OnNameChangedListener
 import com.aican.aicanapp.interfaces.DashboardListsOptionsClickListener
-import com.aican.aicanapp.ph.phFragment.PhFragment
 import com.aican.aicanapp.utils.Constants
+import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
@@ -93,7 +92,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
     lateinit var primaryDatabase: DatabaseReference
 
     private val databaseReference: DatabaseReference by lazy {
-        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
+//        FirebaseDatabase.getInstance().setPersistenceEnabled(true)
 
         FirebaseDatabase.getInstance().getReference("NEW_USERS")
     }
@@ -171,14 +170,20 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         phDev = binding.phDev
 
         binding.settingPage.setOnClickListener {
-            startActivity(Intent(this@Dashboard, SettingsPage::class.java))
+            startActivity(Intent(this@Dashboard, AdminSettings::class.java))
         }
+
+        fetchWebSocketUrl()
+
+        fetchExportConditions()
 
         binding.offlineModeSwitch.setOnCheckedChangeListener { _, isChecked ->
             webSocketConnected = if (isChecked) {
 //                                val uri = URI("ws://localhost:3000")
 //                val uri = URI("wss://socketsbay.com/wss/v2/1/demo/")
-                val uri = URI("ws://192.168.4.1:81")
+//                val uri = URI("ws://192.168.4.1:81")
+
+                val uri = URI(Source.WEBSOCKET_URL)
 
                 //{"DEVICE_ID": "EPT2020", "CAL_MODE": "1"}
 
@@ -484,6 +489,41 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
     }
 
+    private fun fetchExportConditions() {
+        val exportCsvEnabled = SharedPref.getSavedData(this@Dashboard, "EXPORT_CSV")
+        val exportPdfEnabled = SharedPref.getSavedData(this@Dashboard, "EXPORT_PDF")
+
+        if (exportCsvEnabled != null && exportCsvEnabled != "") {
+            Source.EXPORT_CSV = true
+        }else{
+            SharedPref.saveData(this@Dashboard,"EXPORT_CSV", "false")
+            Source.EXPORT_CSV = false
+        }
+
+        if (exportPdfEnabled != null && exportPdfEnabled != "") {
+            Source.EXPORT_PDF = true
+        }else{
+            Source.EXPORT_PDF = false
+            SharedPref.saveData(this@Dashboard,"EXPORT_PDF", "true")
+        }
+    }
+
+    private fun fetchWebSocketUrl() {
+        val websocketUrl = SharedPref.getSavedData(this@Dashboard, "WEBSOCKET_URL")
+        if (websocketUrl != null) {
+            if (websocketUrl != "") {
+                Source.WEBSOCKET_URL = websocketUrl
+            } else {
+                Source.WEBSOCKET_URL = "ws://192.168.4.1:81"
+                SharedPref.saveData(this@Dashboard, "WEBSOCKET_URL", "ws://192.168.4.1:81")
+            }
+        } else {
+            Source.WEBSOCKET_URL = "ws://192.168.4.1:81"
+            SharedPref.saveData(this@Dashboard, "WEBSOCKET_URL", "ws://192.168.4.1:81")
+
+        }
+    }
+
     fun setUpNewPh() {
 
 //        Toast.makeText(this@Dashboard, "" + uid, Toast.LENGTH_SHORT).show()
@@ -510,15 +550,16 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
                             .setOnClickListener { finishAffinity() }
                         dialog.show()
                     }
-                    if ((cfr == "non cfr" )|| (cfr == "non_cfr")
+                    if ((cfr == "non cfr") || (cfr == "non_cfr")
                         || (cfr == "nonCfr") || cfr ==
-                            "noncfr"
-                        ||(cfr == "Non Cfr") || (cfr == "Non cfr")) {
+                        "noncfr"
+                        || (cfr == "Non Cfr") || (cfr == "Non cfr")
+                    ) {
                         Source.cfr_mode = false
                         setting.visibility = View.GONE
                     }
                     if (cfr == "cfr") {
-                        Source.cfr_mode =true
+                        Source.cfr_mode = true
                         setting.visibility = View.VISIBLE
 
                     }
