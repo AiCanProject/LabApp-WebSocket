@@ -2714,9 +2714,9 @@ class PhCalibFragmentNew : Fragment() {
                         if (dt5.text.toString().length >= 15) dt5.text.toString()
                             .substring(11, 16) else "--"
                     )
-//                    databaseHelper.insertCalibrationAllDataOffline(
-//                        "-", "-", "-", "-", "-", "-", "-", "-", "-"
-//                    )
+                    databaseHelper.insertCalibrationAllDataOffline(
+                        "calibration-ended", "-", "-", "-", "-", "-", "-", "-", "-"
+                    )
 //                    deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(0)
                     tvTimer.text = "00:45"
                     Log.d("Runnable", "ok")
