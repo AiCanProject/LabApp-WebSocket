@@ -10,9 +10,11 @@ import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.os.Handler
+import android.provider.MediaStore
 import android.util.Base64
 import android.util.Log
 import android.view.LayoutInflater
@@ -66,7 +68,6 @@ import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
-import com.opencsv.CSVWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONException
@@ -75,25 +76,27 @@ import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FileOutputStream
-import java.io.FileWriter
-import java.io.IOException
 import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 
-class PhCalibFragmentNew : Fragment() {
+class PhCalibTemp : Fragment() {
 
     companion object {
         var PH_MODE = "both"
         private var line = 0
+        private var line_3 = 0
         var wrong_5 = false
 
         private var LOG_INTERVAL = 0f
         private var LOG_INTERVAL_3 = 0f
+    }
 
-        var ph_mode_selected = 5
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
     }
 
 
@@ -107,9 +110,10 @@ class PhCalibFragmentNew : Fragment() {
     private lateinit var fragmentContext: Context
     lateinit var mode: String
     var currentBuf = 0
+    var currentBufThree = 0
     private val sharedViewModel: SharedViewModel by activityViewModels()
 
-
+    // Within your fragment's lifecycle methods or when the context is available
     override fun onAttach(context: Context) {
         super.onAttach(context)
         fragmentContext = context
@@ -148,37 +152,56 @@ class PhCalibFragmentNew : Fragment() {
         }
 
 
+//        printCalibData.setOnClickListener { v: View? ->
+//            try {
+//                generatePDF()
+//
+//                addUserAction(
+//                    "username: " + Source.userName + ", Role: " + Source.userRole +
+//                            ", print calib report ", "", "", "", ""
+//                )
+//
+//            } catch (e: FileNotFoundException) {
+////                Toast.makeText(requireContext(), "" + e.getMessage(), Toast.LENGTH_SHORT).show();
+//                e.printStackTrace()
+//            }
+////                exportCalibData();
+//            val path =
+//                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData"
+//            val root = File(path)
+//            val filesAndFolders = root.listFiles()
+//            if (filesAndFolders == null || filesAndFolders.size == 0) {
+//                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
+//                return@setOnClickListener
+//            } else {
+//                for (i in filesAndFolders.indices) {
+//                    filesAndFolders[i].name.endsWith(".pdf")
+//                }
+//            }
+//            val pathPDF =
+//                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData/"
+//            val rootPDF = File(pathPDF)
+//            fileNotWrite(root)
+//            val filesAndFoldersPDF = rootPDF.listFiles()
+//            calibFileAdapter = CalibFileAdapter(
+//                requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF)
+//            )
+//            calibRecyclerView.adapter = calibFileAdapter
+//            calibFileAdapter.notifyDataSetChanged()
+//            calibRecyclerView.layoutManager =
+//                LinearLayoutManager(requireContext().applicationContext)
+//        }
 
         showCalibPDFs()
-
-        binding.printCalibData.visibility = View.VISIBLE
-        binding.printCSV.visibility = View.VISIBLE
-
-        if (Source.EXPORT_CSV) {
-            binding.printCSV.visibility = View.VISIBLE
-
-        } else {
-            binding.printCSV.visibility = View.GONE
-
-        }
-
-        if (Source.EXPORT_PDF) {
-            binding.printCalibData.visibility = View.VISIBLE
-
-        } else {
-            binding.printCalibData.visibility = View.GONE
-
-        }
 
         // Set click listener for the button
         printCalibData.setOnClickListener {
             try {
                 generatePDF()
-//                printCalibCSV()
 
                 addUserAction(
                     "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", print calib report pdf", "", "", "", ""
+                            ", print calib report ", "", "", "", ""
                 )
 
             } catch (e: FileNotFoundException) {
@@ -187,52 +210,12 @@ class PhCalibFragmentNew : Fragment() {
             // Call the function to show calibration PDFs after generating
             showCalibPDFs()
         }
-
-
-        binding.printCSV.setOnClickListener {
-            try {
-//                generatePDF()
-                printCalibCSV()
-
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", print calib report csv", "", "", "", ""
-                )
-
-            } catch (e: FileNotFoundException) {
-                e.printStackTrace()
-            }
-            // Call the function to show calibration PDFs after generating
-            showCalibPDFs()
-        }
-
         /////
 
 
     }
 
     private fun showCalibPDFs() {
-        val pathPDF =
-            ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData/"
-        val rootPDF = File(pathPDF)
-        fileNotWrite(rootPDF)
-        val filesAndFoldersPDF = rootPDF.listFiles() ?: return
-
-        // Sort the files based on last modified timestamp in descending order
-        val sortedFiles = filesAndFoldersPDF.sortedByDescending { it.lastModified() }
-
-        // Find the first PDF file
-        val pdfFile =
-            sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
-
-        // Set up RecyclerView with adapter
-        calibFileAdapter = CalibFileAdapter(requireContext(), sortedFiles.toTypedArray())
-        calibRecyclerView.adapter = calibFileAdapter
-        calibFileAdapter.notifyDataSetChanged()
-        calibRecyclerView.layoutManager = LinearLayoutManager(requireContext())
-    }
-
-    private fun showCalibPDFs1() {
         val path =
             ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/CalibrationData"
         val root = File(path)
@@ -1025,7 +1008,374 @@ class PhCalibFragmentNew : Fragment() {
                             }
                         }
                     } else if (spin.selectedItemPosition == 1) {
+                        if (jsonData.has("POST_VAL_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("POST_VAL_2")
+                            var v = `val`
+                            if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                                v = String.format(
+                                    Locale.UK, "%.2f", `val`.toFloat()
+                                )
+                            }
+                            phAfterCalib1_3.text = v
+                            pHAC1_3 = phAfterCalib1_3.text.toString()
+                            val calibDatClass1 = CalibDatClass(
+                                1,
+                                ph1_3.text.toString(),
+                                mv1_3.text.toString(),
+                                slope1_3.text.toString(),
+                                dt1_3.text.toString(),
+                                bufferD1_3.text.toString(),
+                                phAfterCalib1_3.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataThree(calibDatClass1)
+
+                            SharedPref.saveData(requireContext(), "pHAC1_3", pHAC1_3)
+
+
+                        }
+                        if (jsonData.has("POST_VAL_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("POST_VAL_3")
+                            var v = `val`
+                            if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                                v = String.format(
+                                    Locale.UK, "%.2f", `val`.toFloat()
+                                )
+                            }
+                            phAfterCalib2_3.text = v
+                            pHAC2_3 = phAfterCalib2_3.text.toString()
+                            val calibDatClass2 = CalibDatClass(
+                                2,
+                                ph2_3.text.toString(),
+                                mv2_3.text.toString(),
+                                slope2_3.text.toString(),
+                                dt2_3.text.toString(),
+                                bufferD2_3.text.toString(),
+                                phAfterCalib2_3.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataThree(calibDatClass2)
+
+                            SharedPref.saveData(requireContext(), "pHAC2_3", pHAC2_3)
+
+                        }
+                        if (jsonData.has("POST_VAL_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("POST_VAL_4")
+                            var v = `val`
+                            if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                                v = String.format(
+                                    Locale.UK, "%.2f", `val`.toFloat()
+                                )
+                            }
+                            phAfterCalib3_3.text = v
+                            pHAC3_3 = phAfterCalib3_3.text.toString()
+                            val calibDatClass3 = CalibDatClass(
+                                3,
+                                ph3_3.text.toString(),
+                                mv3_3.text.toString(),
+                                slope3_3.text.toString(),
+                                dt3_3.text.toString(),
+                                bufferD3_3.text.toString(),
+                                phAfterCalib3_3.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataThree(calibDatClass3)
+
+                            SharedPref.saveData(requireContext(), "pHAC3_3", pHAC3_3)
+
+
+                        }
+                        if (jsonData.has("SLOPE_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("SLOPE_1")
+                            var v = `val`
+                            if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                                v = String.format(
+                                    Locale.UK, "%.2f", `val`.toFloat()
+                                )
+                            }
+                            slope2_3.text = v
+                            val calibDatClass2 = CalibDatClass(
+                                2,
+                                ph2_3.text.toString(),
+                                mv2_3.text.toString(),
+                                slope2_3.text.toString(),
+                                dt2_3.text.toString(),
+                                bufferD2_3.text.toString(),
+                                phAfterCalib2_3.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataThree(calibDatClass2)
+                        }
+                        if (jsonData.has("SLOPE_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("SLOPE_2")
+                            var v = `val`
+                            if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                                v = String.format(
+                                    Locale.UK, "%.2f", `val`.toFloat()
+                                )
+                            }
+                            slope3_3.text = v
+                            pHAC3_3 = phAfterCalib3_3.text.toString()
+                            val calibDatClass3 = CalibDatClass(
+                                3,
+                                ph3_3.text.toString(),
+                                mv3_3.text.toString(),
+                                slope3_3.text.toString(),
+                                dt3_3.text.toString(),
+                                bufferD3_3.text.toString(),
+                                phAfterCalib3_3.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataThree(calibDatClass3)
+                        }
+                        if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("PH_VAL")
+                            var v = `val`
+                            if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                                v = String.format(
+                                    Locale.UK, "%.2f", `val`.toFloat()
+                                )
+                                phView.moveTo(v.toFloat())
+                            }
+                            tvPhCurr.text = v
+                        }
+//                        if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+//                            val ph = jsonData.getString("TEMP_VAL").toFloat()
+//                            val tempForm = String.format(Locale.UK, "%.1f", ph)
+//                            tvTempCurr.text = "$tempForm°C"
+//                            if (ph <= -127.0) {
+//                                tvTempCurr.text = "NA"
+//                            }
+//                        }
+                        if (jsonData.has("EC_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val ph = jsonData.getString("EC_VAL")
+                            SharedPref.saveData(
+                                requireContext(), "ecValue" + PhActivity.DEVICE_ID, ph
+                            )
+                            tvEcCurr.text = ph
+                        }
+                        if (jsonData.has("MV_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("MV_2")
+                            var e = `val`
+                            if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                                e = String.format(
+                                    Locale.UK, "%.2f", `val`.toFloat()
+                                )
+                            }
+                            mv1_3.text = e
+                            mV1_3 = mv1_3.text.toString()
+
+//                            SharedPref.saveData(requireContext(),)
+
+
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
+                            val myEdit = sharedPreferences.edit()
+                            myEdit.putString("MV1_3", mV1_3)
+                            myEdit.commit()
+                        }
+                        if (jsonData.has("MV_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("MV_3")
+                            var e = `val`
+                            if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                                e = String.format(
+                                    Locale.UK, "%.2f", `val`.toFloat()
+                                )
+                            }
+                            mv2_3.text = e
+                            mV2_3 = mv2_3.text.toString()
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
+                            val myEdit = sharedPreferences.edit()
+                            myEdit.putString("MV2_3", mV2_3)
+                            myEdit.commit()
+                        }
+                        if (jsonData.has("MV_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("MV_4")
+                            var e = `val`
+                            if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                                e = String.format(
+                                    Locale.UK, "%.2f", `val`.toFloat()
+                                )
+                            }
+                            mv3_3.text = e
+                            mV3_3 = mv3_3.text.toString()
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
+                            val myEdit = sharedPreferences.edit()
+                            myEdit.putString("MV3_3", mV3_3)
+                            myEdit.commit()
+                        }
+                        if (jsonData.has("DT_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("DT_2")
+                            dt1_3.text = `val`
+                            DT1_3 = dt1_3.text.toString()
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
+                            val myEdit = sharedPreferences.edit()
+                            myEdit.putString("DT1_3", DT1_3)
+                            myEdit.commit()
+                        }
+                        if (jsonData.has("DT_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("DT_3")
+                            dt2_3.text = `val`
+                            DT2_3 = dt2_3.text.toString()
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
+                            val myEdit = sharedPreferences.edit()
+                            myEdit.putString("DT2_3", DT2_3)
+                            myEdit.commit()
+                        }
+                        if (jsonData.has("DT_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("DT_4")
+                            dt3_3.text = `val`
+                            DT3_3 = dt3_3.text.toString()
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
+                            val myEdit = sharedPreferences.edit()
+                            myEdit.putString("DT3_3", DT3_3)
+                            myEdit.commit()
+                        }
+                        if (jsonData.has("B_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("B_2")
+                            ph1_3.text = `val`
+                            PH1_3 = ph1_3.text.toString()
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
+                            val myEdit = sharedPreferences.edit()
+                            myEdit.putString("PH1_3", PH1_3)
+                            myEdit.commit()
+                        }
+                        if (jsonData.has("B_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("B_3")
+                            ph2_3.text = `val`
+                            PH2_3 = ph2_3.text.toString()
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
+                            val myEdit = sharedPreferences.edit()
+                            myEdit.putString("PH2_3", PH2_3)
+                            myEdit.commit()
+                        }
+                        if (jsonData.has("B_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("B_4")
+                            ph3_3.text = `val`
+                            PH3_3 = ph3_3.text.toString()
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
+                            val myEdit = sharedPreferences.edit()
+                            myEdit.putString("PH3_3", PH3_3)
+                            myEdit.commit()
+                        }
+                        if (jsonData.has("CAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val `val` = jsonData.getString("CAL")
+                            val ec = `val`.toInt()
+                            Log.d("ECVal", "onDataChange: $ec")
+                            //                            stateChangeModeFive();
+                            val sharedPreferences = fragmentContext.getSharedPreferences(
+                                "CalibPrefs", Context.MODE_PRIVATE
+                            )
+                            val myEdit = sharedPreferences.edit()
+                            if (jsonData.getString("CAL") == "21" && jsonData.has("POST_VAL_2")) {
+                                val d = jsonData.getString("POST_VAL_2")
+                                phAfterCalib1_3.text = d
+                                val calibDatClass1 = CalibDatClass(
+                                    1,
+                                    ph1_3.text.toString(),
+                                    mv1_3.text.toString(),
+                                    slope1_3.text.toString(),
+                                    dt1_3.text.toString(),
+                                    bufferD1_3.text.toString(),
+                                    phAfterCalib1_3.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+                                databaseHelper.updateClbOffDataThree(calibDatClass1)
+                                myEdit.putString("tem1_3", tvTempCurr.text.toString())
+                                myEdit.putString("pHAC1_3", d)
+                                myEdit.commit()
+                                temp1_3.text = tvTempCurr.text
+                            } else if (jsonData.getString("CAL") == "31" && jsonData.has("POST_VAL_3")) {
+                                val d = jsonData.getString("POST_VAL_3")
+                                phAfterCalib2_3.text = d
+                                val calibDatClass2 = CalibDatClass(
+                                    2,
+                                    ph2_3.text.toString(),
+                                    mv2_3.text.toString(),
+                                    slope2_3.text.toString(),
+                                    dt2_3.text.toString(),
+                                    bufferD2_3.text.toString(),
+                                    phAfterCalib2_3.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+                                databaseHelper.updateClbOffDataThree(calibDatClass2)
+                                myEdit.putString("tem2_3", tvTempCurr.text.toString())
+                                myEdit.putString("pHAC2_3", d)
+                                myEdit.commit()
+                                temp2_3.text = tvTempCurr.text
+                            } else if (jsonData.getString("CAL") == "41" && jsonData.has("POST_VAL_4")) {
+                                val d = jsonData.getString("POST_VAL_4")
+                                phAfterCalib3_3.text = d.toString()
+                                val calibDatClass3 = CalibDatClass(
+                                    3,
+                                    ph3_3.text.toString(),
+                                    mv3_3.text.toString(),
+                                    slope3_3.text.toString(),
+                                    dt3_3.text.toString(),
+                                    bufferD3_3.text.toString(),
+                                    phAfterCalib3_3.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+                                databaseHelper.updateClbOffDataThree(calibDatClass3)
+                                myEdit.putString("tem3_3", tvTempCurr.text.toString())
+                                myEdit.putString("pHAC3_3", d.toString())
+                                myEdit.commit()
+                                temp3_3.text = tvTempCurr.text
+//                                calibData3()
+                            }
+                        }
                     }
+
+
 //                    if (Constants.OFFLINE_MODE) {
 //                        offlineDataFeeding();
 //                    }
@@ -1057,6 +1407,41 @@ class PhCalibFragmentNew : Fragment() {
     private fun calibrateButtons() {
 
 
+        resetCalibThree.setOnClickListener {
+            jsonData = JSONObject()
+            try {
+                jsonData.put("CAL", "0")
+                jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+
+                WebSocketManager.sendMessage(jsonData.toString())
+            } catch (e: JSONException) {
+                throw java.lang.RuntimeException(e)
+            }
+            line_3 = 0
+            currentBufThree = 0
+
+
+            //                resetCalibration.resetCalibration();
+            calibrateBtnThree.isEnabled = true
+            isCalibrating = false
+            phGraph.isEnabled = true
+            phMvTable.isEnabled = true
+            printCalibData.isEnabled = true
+            calibSpinner.isEnabled = true
+            spin.isEnabled = true
+            Source.calibratingNow = false
+            if (timer3 != null) {
+                timer3!!.cancel()
+            }
+            log1_3.setBackgroundColor(Color.GRAY)
+            log2_3.setBackgroundColor(Color.WHITE)
+            log3_3.setBackgroundColor(Color.WHITE)
+
+
+            //
+            tvTimerThree.visibility = View.INVISIBLE
+        }
+
         resetCalibFive.setOnClickListener {
             Source.calibratingNow = false
             //                Intent i = new Intent(requireContext(), PhActivity.class);
@@ -1073,23 +1458,8 @@ class PhCalibFragmentNew : Fragment() {
             } catch (e: JSONException) {
                 throw java.lang.RuntimeException(e)
             }
-            if (ph_mode_selected == 5) {
-                line = 0
-                log1.setBackgroundColor(Color.GRAY)
-                log2.setBackgroundColor(Color.WHITE)
-                log3.setBackgroundColor(Color.WHITE)
-                log4.setBackgroundColor(Color.WHITE)
-                log5.setBackgroundColor(Color.WHITE)
-                currentBuf = 0
-
-            } else {
-                line = 1
-                log2.setBackgroundColor(Color.GRAY)
-                log3.setBackgroundColor(Color.WHITE)
-                log4.setBackgroundColor(Color.WHITE)
-                currentBuf = 1
-
-            }
+            line = 0
+            currentBuf = 0
 
 
             //                resetCalibration.resetCalibration();
@@ -1104,6 +1474,11 @@ class PhCalibFragmentNew : Fragment() {
             if (timer5 != null) {
                 timer5!!.cancel()
             }
+            log1.setBackgroundColor(Color.GRAY)
+            log2.setBackgroundColor(Color.WHITE)
+            log3.setBackgroundColor(Color.WHITE)
+            log4.setBackgroundColor(Color.WHITE)
+            log5.setBackgroundColor(Color.WHITE)
 
 
             //
@@ -1132,6 +1507,26 @@ class PhCalibFragmentNew : Fragment() {
             }
         }
 
+        calibrateBtnThree.setOnClickListener { v: View? ->
+            if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
+                if (connectedWebsocket) {
+                    calibrateThreePointOffline()
+                } else {
+                    Toast.makeText(
+                        fragmentContext,
+                        "Websocket connection is not established yet",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } else if (Constants.OFFLINE_DATA) {
+                Toast.makeText(
+                    fragmentContext,
+                    "You can't calibrate you are inoffline mode and device is not connect",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+            }
+        }
 
     }
 
@@ -1155,150 +1550,6 @@ class PhCalibFragmentNew : Fragment() {
             bitmap = BitmapFactory.decodeByteArray(b, 0, b.size)
         }
         return bitmap
-    }
-
-    private fun printCalibCSV() {
-        try {
-
-            val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
-            val currentDateandTime = sdf.format(Date())
-            val tempPath =
-                File(requireContext().externalMediaDirs[0], "/LabApp/CalibrationData")
-            tempPath.mkdirs()
-
-            val filePath =
-                File(tempPath, "CD_$currentDateandTime-${tempPath.listFiles()?.size ?: 0}.csv")
-            val writer = CSVWriter(FileWriter(filePath))
-
-            val db = databaseHelper.writableDatabase
-
-            var company_name1 = ""
-            val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
-            company_name1 =
-                if (!companyname.isNullOrEmpty()) "Company: $companyname" else "Company: N/A"
-
-            val newOffset = if (SharedPref.getSavedData(
-                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
-                ) != ""
-            ) {
-                val data =
-                    SharedPref.getSavedData(requireContext(), "OFFSET_" + PhActivity.DEVICE_ID)
-                "Offset: $data"
-            } else {
-                "Offset: " + "0"
-            }
-
-            val newSlope = if (SharedPref.getSavedData(
-                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
-                ) != ""
-            ) {
-                val data =
-                    SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
-                "Slope: $data"
-            } else {
-                "Slope: " + "0"
-            }
-
-            val tempData =
-                SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
-
-            val newTemp = if (SharedPref.getSavedData(
-                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
-                ) != ""
-            ) {
-
-                "Temperature: $tempData"
-            } else {
-                "Temperature: " + "0"
-            }
-
-            val batteryVal =
-                SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
-            val newBattery = if (batteryVal != null && batteryVal != "") {
-                "Battery: $batteryVal %"
-            } else {
-                "Battery: 0 %"
-
-            }
-
-
-            writer.writeNext(arrayOf(company_name1))
-            if (Source.cfr_mode) {
-                writer.writeNext(arrayOf("Username: ${Source.logUserName}"))
-            }
-            writer.writeNext(arrayOf("Device ID: ${PhActivity.DEVICE_ID}"))
-            writer.writeNext(
-                arrayOf(
-                    "Date: ${Source.getPresentDate()}",
-                    "Time: ${Source.getCurrentTime()}"
-                )
-            )
-            writer.writeNext(arrayOf(newOffset, newSlope, newTemp, newBattery))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("Calibration Table", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-
-            writer.writeNext(
-                arrayOf(
-                    "pH",
-                    "pH After Cal",
-                    "Slope",
-                    "mV",
-                    "Date & Time",
-                    "Temperature"
-                )
-            )
-
-            var calibCSV: Cursor? = null
-            if (Constants.OFFLINE_MODE) {
-                calibCSV = if (Source.calibMode == 0) {
-                    db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
-                } else {
-                    db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
-                }
-            } else {
-                calibCSV = db.rawQuery("SELECT * FROM CalibData", null)
-            }
-
-            while (calibCSV != null && calibCSV.moveToNext()) {
-                val ph = calibCSV.getString(calibCSV.getColumnIndex("PH")) ?: "--"
-                val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC")) ?: "--"
-                val slope = calibCSV.getString(calibCSV.getColumnIndex("SLOPE")) ?: "--"
-                val mv = calibCSV.getString(calibCSV.getColumnIndex("MV")) ?: "--"
-                val date = calibCSV.getString(calibCSV.getColumnIndex("DT")) ?: "--"
-                val temperature1 =
-                    calibCSV.getString(calibCSV.getColumnIndex("temperature")) ?: "--"
-
-                writer.writeNext(arrayOf(ph, pHAC, slope, mv, date, temperature1))
-            }
-
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-
-
-            writer.close()
-
-            Toast.makeText(requireContext(), "CSV file exported", Toast.LENGTH_SHORT).show()
-
-
-        } catch (e: IOException) {
-            Toast.makeText(
-                requireContext(),
-                "Error exporting CSV file: ${e.message}",
-                Toast.LENGTH_SHORT
-            ).show()
-            e.printStackTrace()
-        }
     }
 
     @Throws(FileNotFoundException::class)
@@ -1512,39 +1763,7 @@ class PhCalibFragmentNew : Fragment() {
         } else {
 
         }
-        val leftDesignationString =
-            SharedPref.getSavedData(requireContext(), SharedKeys.LEFT_DESIGNATION_KEY)
-        val rightDesignationString =
-            SharedPref.getSavedData(requireContext(), SharedKeys.RIGHT_DESIGNATION_KEY)
-
-        if (leftDesignationString != null && leftDesignationString != "") {
-
-        } else {
-            SharedPref.saveData(
-                requireContext(),
-                SharedKeys.LEFT_DESIGNATION_KEY,
-                "Operator Sign"
-            )
-        }
-
-        if (rightDesignationString != null && rightDesignationString != "") {
-        } else {
-            SharedPref.saveData(
-                requireContext(),
-                SharedKeys.RIGHT_DESIGNATION_KEY,
-                "Supervisor Sign"
-            )
-        }
-
-        if (leftDesignationString != null && leftDesignationString != "" &&
-            rightDesignationString != null && rightDesignationString != ""
-        ) {
-            document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
-
-        } else {
-            document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
-
-        }
+        document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
         val imgBit1: Bitmap? = getSignImage()
 
         if (imgBit1 != null) {
@@ -1567,6 +1786,22 @@ class PhCalibFragmentNew : Fragment() {
         Toast.makeText(fragmentContext, "Pdf generated", Toast.LENGTH_SHORT).show()
     }
 
+    fun getPath(uri: Uri?): String? {
+        val projection = arrayOf(MediaStore.Images.Media.DATA)
+        val cursor = requireActivity().managedQuery(uri, projection, null, null, null)
+        val column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA)
+        cursor.moveToFirst()
+        return cursor.getString(column_index)
+    }
+
+
+    fun getImageUri(inContext: Context, inImage: Bitmap): Uri? {
+        val bytes = ByteArrayOutputStream()
+        inImage.compress(Bitmap.CompressFormat.JPEG, 100, bytes)
+        val path =
+            MediaStore.Images.Media.insertImage(inContext.contentResolver, inImage, "Title", null)
+        return Uri.parse(path)
+    }
 
     private fun getSignImage(): Bitmap? {
         val sh = fragmentContext.getSharedPreferences("signature", Context.MODE_PRIVATE)
@@ -1581,6 +1816,8 @@ class PhCalibFragmentNew : Fragment() {
 
 
     var isCalibrating = false
+
+
     var timer5: CountDownTimer? = null
     val handler55 = Handler()
     lateinit var runnable55: Runnable
@@ -1608,7 +1845,7 @@ class PhCalibFragmentNew : Fragment() {
                     ", started calibration mode 5, of buffer " + currentBuf, "", "", "", ""
         )
 
-        timer5 = object : CountDownTimer(5000, 1000) {
+        timer5 = object : CountDownTimer(45000, 1000) {
             //45000
             //        timer5 = new CountDownTimer(5000, 1000) { //45000
             override fun onTick(millisUntilFinished: Long) {
@@ -1833,9 +2070,9 @@ class PhCalibFragmentNew : Fragment() {
                     log3.setBackgroundColor(Color.WHITE)
                     log4.setBackgroundColor(Color.WHITE)
                     log5.setBackgroundColor(Color.WHITE)
-                    PhCalibFragmentNew.wrong_5 = false
+                    PhCalibTemp.wrong_5 = false
                 }
-                PhCalibFragmentNew.wrong_5 = false
+                PhCalibTemp.wrong_5 = false
             }
 
             override fun onFinish() {
@@ -1848,423 +2085,268 @@ class PhCalibFragmentNew : Fragment() {
                             printCalibData.isEnabled = true
                             calibSpinner.isEnabled = true
                             spin.isEnabled = true
-                            if (ph_mode_selected == 5) {
-                                if (!PhCalibFragmentNew.wrong_5) {
-                                    PhCalibFragmentNew.wrong_5 = false
-                                    line = currentBuf + 1
-                                    if (currentBuf == 4) {
-                                        val date123 =
-                                            SimpleDateFormat(
-                                                "yyyy-MM-dd",
-                                                Locale.getDefault()
-                                            ).format(
-                                                Date()
-                                            )
-                                        val time123 =
-                                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                                                Date()
-                                            )
-
-                                        dt5.text = "$date123 $time123"
-                                        jsonData = JSONObject()
-                                        val object1 = JSONObject()
-                                        jsonData.put("DT_5", "$date123 $time123")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-                                        SharedPref.saveData(
-                                            requireContext(),
-                                            "CALIB_STAT" + PhActivity.DEVICE_ID,
-                                            "completed"
+                            if (!PhCalibTemp.wrong_5) {
+                                PhCalibTemp.wrong_5 = false
+                                line = currentBuf + 1
+                                if (currentBuf == 4) {
+                                    val date123 =
+                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    val time123 =
+                                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(
+                                            Date()
                                         )
 
-//                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_5").setValue(date123 + " " + time123);
-                                        calibrateBtn.isEnabled = false
-                                        Source.calib_completed_by = Source.logUserName
-                                        calibrateBtn.text = "DONE"
-                                        startTimer()
-                                    }
-
-
-                                    if (currentBuf == 0) {
-                                        val date123 =
-                                            SimpleDateFormat(
-                                                "yyyy-MM-dd",
-                                                Locale.getDefault()
-                                            ).format(
-                                                Date()
-                                            )
-                                        val time123 =
-                                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                                                Date()
-                                            )
-                                        dt1.text = "$date123 $time123"
-                                        jsonData = JSONObject()
-                                        val object1 = JSONObject()
-                                        jsonData.put("DT_1", "$date123 $time123")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-                                        SharedPref.saveData(
-                                            requireContext(),
-                                            "CALIB_STAT" + PhActivity.DEVICE_ID,
-                                            "incomplete"
-                                        )
-                                        //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_1").setValue(date123 + " " + time123);
-                                        log1.setBackgroundColor(Color.WHITE)
-                                        log2.setBackgroundColor(Color.GRAY)
-                                        log3.setBackgroundColor(Color.WHITE)
-                                        log4.setBackgroundColor(Color.WHITE)
-                                        log5.setBackgroundColor(Color.WHITE)
-                                    }
-                                    if (currentBuf == 1) {
-                                        val date123 =
-                                            SimpleDateFormat(
-                                                "yyyy-MM-dd",
-                                                Locale.getDefault()
-                                            ).format(
-                                                Date()
-                                            )
-                                        val time123 =
-                                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                                                Date()
-                                            )
-                                        dt2.text = "$date123 $time123"
-                                        jsonData = JSONObject()
-                                        val object1 = JSONObject()
-                                        jsonData.put("DT_2", "$date123 $time123")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-                                        SharedPref.saveData(
-                                            requireContext(),
-                                            "CALIB_STAT" + PhActivity.DEVICE_ID,
-                                            "incomplete"
-                                        )
-                                        //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_2").setValue(date123 + " " + time123);
-                                        log1.setBackgroundColor(Color.WHITE)
-                                        log2.setBackgroundColor(Color.WHITE)
-                                        log3.setBackgroundColor(Color.GRAY)
-                                        log4.setBackgroundColor(Color.WHITE)
-                                        log5.setBackgroundColor(Color.WHITE)
-                                    }
-                                    if (currentBuf == 2) {
-                                        val date123 =
-                                            SimpleDateFormat(
-                                                "yyyy-MM-dd",
-                                                Locale.getDefault()
-                                            ).format(
-                                                Date()
-                                            )
-                                        val time123 =
-                                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                                                Date()
-                                            )
-                                        dt3.text = "$date123 $time123"
-                                        jsonData = JSONObject()
-                                        val object1 = JSONObject()
-                                        jsonData.put("DT_3", "$date123 $time123")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-
-//                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_3").setValue(date123 + " " + time123);
-                                        SharedPref.saveData(
-                                            requireContext(),
-                                            "CALIB_STAT" + PhActivity.DEVICE_ID,
-                                            "incomplete"
-                                        )
-                                        log1.setBackgroundColor(Color.WHITE)
-                                        log2.setBackgroundColor(Color.WHITE)
-                                        log3.setBackgroundColor(Color.WHITE)
-                                        log4.setBackgroundColor(Color.GRAY)
-                                        log5.setBackgroundColor(Color.WHITE)
-                                    }
-                                    if (currentBuf == 3) {
-                                        val date123 =
-                                            SimpleDateFormat(
-                                                "yyyy-MM-dd",
-                                                Locale.getDefault()
-                                            ).format(
-                                                Date()
-                                            )
-                                        val time123 =
-                                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                                                Date()
-                                            )
-                                        dt4.text = "$date123 $time123"
-                                        jsonData = JSONObject()
-                                        val object1 = JSONObject()
-                                        jsonData.put("DT_4", "$date123 $time123")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-                                        SharedPref.saveData(
-                                            requireContext(),
-                                            "CALIB_STAT" + PhActivity.DEVICE_ID,
-                                            "incomplete"
-                                        )
-                                        //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_4").setValue(date123 + " " + time123);
-                                        log1.setBackgroundColor(Color.WHITE)
-                                        log2.setBackgroundColor(Color.WHITE)
-                                        log3.setBackgroundColor(Color.WHITE)
-                                        log4.setBackgroundColor(Color.WHITE)
-                                        log5.setBackgroundColor(Color.GRAY)
-                                    }
-                                    calibrateBtn.isEnabled = true
-                                    tvTimer.visibility = View.INVISIBLE
-                                    val currentTime = SimpleDateFormat(
-                                        "yyyy-MM-dd HH:mm", Locale.getDefault()
-                                    ).format(
-                                        Date()
-                                    )
-                                    bufferList.add(BufferData(null, null, currentTime))
-                                    //                        bufferListThree.add(new BufferData(null, null, currentTime));
+                                    dt5.text = "$date123 $time123"
                                     jsonData = JSONObject()
-                                    val object0 = JSONObject()
-                                    jsonData.put("CAL", (calValues.get(currentBuf) + 1).toString())
+                                    val object1 = JSONObject()
+                                    jsonData.put("DT_5", "$date123 $time123")
                                     jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                                     WebSocketManager.sendMessage(jsonData.toString())
-                                    //                                deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(calValues[currentBuf] + 1);
-                                    Log.e("cValue", currentBuf.toString() + "")
+                                    SharedPref.saveData(
+                                        requireContext(),
+                                        "CALIB_STAT" + PhActivity.DEVICE_ID,
+                                        "completed"
+                                    )
+
+//                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_5").setValue(date123 + " " + time123);
+                                    calibrateBtn.isEnabled = false
+                                    Source.calib_completed_by = Source.logUserName
+                                    calibrateBtn.text = "DONE"
+                                    startTimer()
+                                }
+                                if (currentBuf == 0) {
+                                    val date123 =
+                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    val time123 =
+                                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    dt1.text = "$date123 $time123"
+                                    jsonData = JSONObject()
+                                    val object1 = JSONObject()
+                                    jsonData.put("DT_1", "$date123 $time123")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+                                    SharedPref.saveData(
+                                        requireContext(),
+                                        "CALIB_STAT" + PhActivity.DEVICE_ID,
+                                        "incomplete"
+                                    )
+                                    //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_1").setValue(date123 + " " + time123);
+                                    log1.setBackgroundColor(Color.WHITE)
+                                    log2.setBackgroundColor(Color.GRAY)
+                                    log3.setBackgroundColor(Color.WHITE)
+                                    log4.setBackgroundColor(Color.WHITE)
+                                    log5.setBackgroundColor(Color.WHITE)
+                                }
+                                if (currentBuf == 1) {
+                                    val date123 =
+                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    val time123 =
+                                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    dt2.text = "$date123 $time123"
+                                    jsonData = JSONObject()
+                                    val object1 = JSONObject()
+                                    jsonData.put("DT_2", "$date123 $time123")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+                                    SharedPref.saveData(
+                                        requireContext(),
+                                        "CALIB_STAT" + PhActivity.DEVICE_ID,
+                                        "incomplete"
+                                    )
+                                    //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_2").setValue(date123 + " " + time123);
+                                    log1.setBackgroundColor(Color.WHITE)
+                                    log2.setBackgroundColor(Color.WHITE)
+                                    log3.setBackgroundColor(Color.GRAY)
+                                    log4.setBackgroundColor(Color.WHITE)
+                                    log5.setBackgroundColor(Color.WHITE)
+                                }
+                                if (currentBuf == 2) {
+                                    val date123 =
+                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    val time123 =
+                                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    dt3.text = "$date123 $time123"
+                                    jsonData = JSONObject()
+                                    val object1 = JSONObject()
+                                    jsonData.put("DT_3", "$date123 $time123")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+
+//                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_3").setValue(date123 + " " + time123);
+                                    SharedPref.saveData(
+                                        requireContext(),
+                                        "CALIB_STAT" + PhActivity.DEVICE_ID,
+                                        "incomplete"
+                                    )
+                                    log1.setBackgroundColor(Color.WHITE)
+                                    log2.setBackgroundColor(Color.WHITE)
+                                    log3.setBackgroundColor(Color.WHITE)
+                                    log4.setBackgroundColor(Color.GRAY)
+                                    log5.setBackgroundColor(Color.WHITE)
+                                }
+                                if (currentBuf == 3) {
+                                    val date123 =
+                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    val time123 =
+                                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    dt4.text = "$date123 $time123"
+                                    jsonData = JSONObject()
+                                    val object1 = JSONObject()
+                                    jsonData.put("DT_4", "$date123 $time123")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+                                    SharedPref.saveData(
+                                        requireContext(),
+                                        "CALIB_STAT" + PhActivity.DEVICE_ID,
+                                        "incomplete"
+                                    )
+                                    //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_4").setValue(date123 + " " + time123);
+                                    log1.setBackgroundColor(Color.WHITE)
+                                    log2.setBackgroundColor(Color.WHITE)
+                                    log3.setBackgroundColor(Color.WHITE)
+                                    log4.setBackgroundColor(Color.WHITE)
+                                    log5.setBackgroundColor(Color.GRAY)
+                                }
+                                calibrateBtn.isEnabled = true
+                                tvTimer.visibility = View.INVISIBLE
+                                val currentTime = SimpleDateFormat(
+                                    "yyyy-MM-dd HH:mm", Locale.getDefault()
+                                ).format(
+                                    Date()
+                                )
+                                bufferList.add(BufferData(null, null, currentTime))
+                                //                        bufferListThree.add(new BufferData(null, null, currentTime));
+                                jsonData = JSONObject()
+                                val object0 = JSONObject()
+                                jsonData.put("CAL", (calValues.get(currentBuf) + 1).toString())
+                                jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                WebSocketManager.sendMessage(jsonData.toString())
+                                //                                deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(calValues[currentBuf] + 1);
+                                Log.e("cValue", currentBuf.toString() + "")
 
 
 //                                int b = currentBuf < 0 ? 4 : currentBuf;
-                                    val b = currentBuf
-                                    Log.e("cValue2", currentBuf.toString() + "")
-                                    Log.e("bValue", b.toString() + "")
+                                val b = currentBuf
+                                Log.e("cValue2", currentBuf.toString() + "")
+                                Log.e("bValue", b.toString() + "")
 
 //                                deviceRef.child("UI").child("PH").child("PH_CAL").child(postCoeffLabels[b]).get().addOnSuccessListener(dataSnapshot2 -> {
 //                                    Float postCoeff = dataSnapshot2.getValue(Float.class);
-                                    val sharedPreferences = fragmentContext.getSharedPreferences(
-                                        "CalibPrefs", Context.MODE_PRIVATE
+                                val sharedPreferences = fragmentContext.getSharedPreferences(
+                                    "CalibPrefs", Context.MODE_PRIVATE
+                                )
+                                val myEdit = sharedPreferences.edit()
+                                if (b == 0) {
+                                    myEdit.putString("tem1", tvTempCurr.text.toString())
+                                    myEdit.commit()
+                                    jsonData = JSONObject()
+                                    jsonData.put("CALIBRATION_STAT", "incomplete")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+                                    //                                    deviceRef.child("Data").child("CALIBRATION_STAT").setValue("incomplete");
+                                    val calibDatClass = CalibDatClass(
+                                        1,
+                                        ph1.text.toString(),
+                                        mv1.text.toString(),
+                                        slope1.text.toString(),
+                                        dt1.text.toString(),
+                                        bufferD1.text.toString(),
+                                        phAfterCalib1.text.toString(),
+                                        tvTempCurr.text.toString(),
+                                        if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                            .substring(0, 10) else "--",
+                                        if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                            .substring(11, 16) else "--"
                                     )
-                                    val myEdit = sharedPreferences.edit()
-                                    if (b == 0) {
-                                        myEdit.putString("tem1", tvTempCurr.text.toString())
-                                        myEdit.commit()
-                                        jsonData = JSONObject()
-                                        jsonData.put("CALIBRATION_STAT", "incomplete")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-                                        //                                    deviceRef.child("Data").child("CALIBRATION_STAT").setValue("incomplete");
-                                        val calibDatClass = CalibDatClass(
-                                            1,
-                                            ph1.text.toString(),
-                                            mv1.text.toString(),
-                                            slope1.text.toString(),
-                                            dt1.text.toString(),
-                                            bufferD1.text.toString(),
-                                            phAfterCalib1.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt1.text.toString().length >= 15) dt1.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt1.text.toString().length >= 15) dt1.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.updateClbOffDataFive(calibDatClass)
-                                        temp1.text = tvTempCurr.text
-                                    } else if (b == 1) {
-                                        myEdit.putString("tem2", tvTempCurr.text.toString())
-                                        myEdit.commit()
-                                        val calibDatClass = CalibDatClass(
-                                            2,
-                                            ph2.text.toString(),
-                                            mv2.text.toString(),
-                                            slope2.text.toString(),
-                                            dt2.text.toString(),
-                                            bufferD2.text.toString(),
-                                            phAfterCalib2.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.updateClbOffDataFive(calibDatClass)
-                                        temp2.text = tvTempCurr.text
-                                    } else if (b == 2) {
-                                        myEdit.putString("tem3", tvTempCurr.text.toString())
-                                        myEdit.commit()
-                                        val calibDatClass = CalibDatClass(
-                                            3,
-                                            ph3.text.toString(),
-                                            mv3.text.toString(),
-                                            slope3.text.toString(),
-                                            dt3.text.toString(),
-                                            bufferD3.text.toString(),
-                                            phAfterCalib3.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.updateClbOffDataFive(calibDatClass)
-                                        temp3.text = tvTempCurr.text
-                                    } else if (b == 3) {
-                                        myEdit.putString("tem4", tvTempCurr.text.toString())
-                                        myEdit.commit()
-                                        val calibDatClass = CalibDatClass(
-                                            4,
-                                            ph4.text.toString(),
-                                            mv4.text.toString(),
-                                            slope4.text.toString(),
-                                            dt4.text.toString(),
-                                            bufferD4.text.toString(),
-                                            phAfterCalib4.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.updateClbOffDataFive(calibDatClass)
-                                        temp4.text = tvTempCurr.text
-                                    } else if (b == 4) {
-                                        myEdit.putString("tem5", tvTempCurr.text.toString())
-                                        myEdit.commit()
-                                        temp5.text = tvTempCurr.text
-                                        jsonData = JSONObject()
-                                        jsonData.put("CALIBRATION_STAT", "ok")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-                                        //                                    deviceRef.child("Data").child("CALIBRATION_STAT").setValue("ok");
+                                    databaseHelper.updateClbOffDataFive(calibDatClass)
+                                    temp1.text = tvTempCurr.text
+                                } else if (b == 1) {
+                                    myEdit.putString("tem2", tvTempCurr.text.toString())
+                                    myEdit.commit()
+                                    val calibDatClass = CalibDatClass(
+                                        2,
+                                        ph2.text.toString(),
+                                        mv2.text.toString(),
+                                        slope2.text.toString(),
+                                        dt2.text.toString(),
+                                        bufferD2.text.toString(),
+                                        phAfterCalib2.text.toString(),
+                                        tvTempCurr.text.toString(),
+                                        if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                            .substring(0, 10) else "--",
+                                        if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                            .substring(11, 16) else "--"
+                                    )
+                                    databaseHelper.updateClbOffDataFive(calibDatClass)
+                                    temp2.text = tvTempCurr.text
+                                } else if (b == 2) {
+                                    myEdit.putString("tem3", tvTempCurr.text.toString())
+                                    myEdit.commit()
+                                    val calibDatClass = CalibDatClass(
+                                        3,
+                                        ph3.text.toString(),
+                                        mv3.text.toString(),
+                                        slope3.text.toString(),
+                                        dt3.text.toString(),
+                                        bufferD3.text.toString(),
+                                        phAfterCalib3.text.toString(),
+                                        tvTempCurr.text.toString(),
+                                        if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                            .substring(0, 10) else "--",
+                                        if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                            .substring(11, 16) else "--"
+                                    )
+                                    databaseHelper.updateClbOffDataFive(calibDatClass)
+                                    temp3.text = tvTempCurr.text
+                                } else if (b == 3) {
+                                    myEdit.putString("tem4", tvTempCurr.text.toString())
+                                    myEdit.commit()
+                                    val calibDatClass = CalibDatClass(
+                                        4,
+                                        ph4.text.toString(),
+                                        mv4.text.toString(),
+                                        slope4.text.toString(),
+                                        dt4.text.toString(),
+                                        bufferD4.text.toString(),
+                                        phAfterCalib4.text.toString(),
+                                        tvTempCurr.text.toString(),
+                                        if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                            .substring(0, 10) else "--",
+                                        if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                            .substring(11, 16) else "--"
+                                    )
+                                    databaseHelper.updateClbOffDataFive(calibDatClass)
+                                    temp4.text = tvTempCurr.text
+                                } else if (b == 4) {
+                                    myEdit.putString("tem5", tvTempCurr.text.toString())
+                                    myEdit.commit()
+                                    temp5.text = tvTempCurr.text
+                                    jsonData = JSONObject()
+                                    jsonData.put("CALIBRATION_STAT", "ok")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+                                    //                                    deviceRef.child("Data").child("CALIBRATION_STAT").setValue("ok");
 //                                    calibData()
-                                        val calibDatClass = CalibDatClass(
-                                            5,
-                                            ph5.text.toString(),
-                                            mv5.text.toString(),
-                                            slope5.text.toString(),
-                                            dt5.text.toString(),
-                                            bufferD5.text.toString(),
-                                            phAfterCalib5.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt5.text.toString().length >= 15) dt5.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt5.text.toString().length >= 15) dt5.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.updateClbOffDataFive(calibDatClass)
-                                        databaseHelper.insertCalibrationOfflineAllData(
-                                            ph1.text.toString(),
-                                            mv1.text.toString(),
-                                            slope1.text.toString(),
-                                            dt1.text.toString(),
-                                            bufferD1.text.toString(),
-                                            phAfterCalib1.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt1.text.toString().length >= 15) dt1.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt1.text.toString().length >= 15) dt1.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.insertCalibrationOfflineAllData(
-                                            ph2.text.toString(),
-                                            mv2.text.toString(),
-                                            slope2.text.toString(),
-                                            dt2.text.toString(),
-                                            bufferD2.text.toString(),
-                                            phAfterCalib2.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.insertCalibrationOfflineAllData(
-                                            ph3.text.toString(),
-                                            mv3.text.toString(),
-                                            slope3.text.toString(),
-                                            dt3.text.toString(),
-                                            bufferD3.text.toString(),
-                                            phAfterCalib3.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.insertCalibrationOfflineAllData(
-                                            ph4.text.toString(),
-                                            mv4.text.toString(),
-                                            slope4.text.toString(),
-                                            dt4.text.toString(),
-                                            bufferD4.text.toString(),
-                                            phAfterCalib4.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.insertCalibrationOfflineAllData(
-                                            ph5.text.toString(),
-                                            mv5.text.toString(),
-                                            slope5.text.toString(),
-                                            dt5.text.toString(),
-                                            bufferD5.text.toString(),
-                                            phAfterCalib5.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt5.text.toString().length >= 15) dt5.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt5.text.toString().length >= 15) dt5.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                    }
-                                    currentBuf += 1
-//                                calibData()
-                                    deleteAllOfflineCalibData()
-
-
-                                    databaseHelper.insertCalibrationOfflineData(
-                                        ph1.text.toString(),
-                                        mv1.text.toString(),
-                                        slope1.text.toString(),
-                                        dt1.text.toString(),
-                                        bufferD1.text.toString(),
-                                        phAfterCalib1.text.toString(),
-                                        tvTempCurr.text.toString(),
-                                        if (dt1.text.toString().length >= 15) dt1.text.toString()
-                                            .substring(0, 10) else "--",
-                                        if (dt1.text.toString().length >= 15) dt1.text.toString()
-                                            .substring(11, 16) else "--"
-                                    )
-                                    databaseHelper.insertCalibrationOfflineData(
-                                        ph2.text.toString(),
-                                        mv2.text.toString(),
-                                        slope2.text.toString(),
-                                        dt2.text.toString(),
-                                        bufferD2.text.toString(),
-                                        phAfterCalib2.text.toString(),
-                                        tvTempCurr.text.toString(),
-                                        if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                            .substring(0, 10) else "--",
-                                        if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                            .substring(11, 16) else "--"
-                                    )
-                                    databaseHelper.insertCalibrationOfflineData(
-                                        ph3.text.toString(),
-                                        mv3.text.toString(),
-                                        slope3.text.toString(),
-                                        dt3.text.toString(),
-                                        bufferD3.text.toString(),
-                                        phAfterCalib3.text.toString(),
-                                        tvTempCurr.text.toString(),
-                                        if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                            .substring(0, 10) else "--",
-                                        if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                            .substring(11, 16) else "--"
-                                    )
-                                    databaseHelper.insertCalibrationOfflineData(
-                                        ph4.text.toString(),
-                                        mv4.text.toString(),
-                                        slope4.text.toString(),
-                                        dt4.text.toString(),
-                                        bufferD4.text.toString(),
-                                        phAfterCalib4.text.toString(),
-                                        tvTempCurr.text.toString(),
-                                        if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                            .substring(0, 10) else "--",
-                                        if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                            .substring(11, 16) else "--"
-                                    )
-                                    databaseHelper.insertCalibrationOfflineData(
+                                    val calibDatClass = CalibDatClass(
+                                        5,
                                         ph5.text.toString(),
                                         mv5.text.toString(),
                                         slope5.text.toString(),
@@ -2277,247 +2359,8 @@ class PhCalibFragmentNew : Fragment() {
                                         if (dt5.text.toString().length >= 15) dt5.text.toString()
                                             .substring(11, 16) else "--"
                                     )
-
-
-                                } else {
-//                            --line_3;
-//                            --currentBufThree;
-                                    timer5!!.cancel()
-                                    handler55.removeCallbacks(this)
-                                    PhCalibFragmentNew.wrong_5 = false
-                                    calibrateBtn.isEnabled = true
-                                    showAlertDialogButtonClicked()
-                                }
-                            }
-                            if (ph_mode_selected == 3) {
-                                if (!PhCalibFragmentNew.wrong_5) {
-                                    PhCalibFragmentNew.wrong_5 = false
-                                    line = currentBuf + 1
-                                    if (currentBuf == 3) {
-                                        val date123 =
-                                            SimpleDateFormat(
-                                                "yyyy-MM-dd",
-                                                Locale.getDefault()
-                                            ).format(
-                                                Date()
-                                            )
-                                        val time123 =
-                                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                                                Date()
-                                            )
-
-                                        dt4.text = "$date123 $time123"
-                                        jsonData = JSONObject()
-                                        val object1 = JSONObject()
-                                        jsonData.put("DT_4", "$date123 $time123")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-                                        SharedPref.saveData(
-                                            requireContext(),
-                                            "CALIB_STAT" + PhActivity.DEVICE_ID,
-                                            "completed"
-                                        )
-
-//                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_5").setValue(date123 + " " + time123);
-                                        calibrateBtn.isEnabled = false
-                                        Source.calib_completed_by = Source.logUserName
-                                        calibrateBtn.text = "DONE"
-                                        startTimer()
-                                    }
-
-
-                                    if (currentBuf == 1) {
-                                        val date123 =
-                                            SimpleDateFormat(
-                                                "yyyy-MM-dd",
-                                                Locale.getDefault()
-                                            ).format(
-                                                Date()
-                                            )
-                                        val time123 =
-                                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                                                Date()
-                                            )
-                                        dt2.text = "$date123 $time123"
-                                        jsonData = JSONObject()
-                                        val object1 = JSONObject()
-                                        jsonData.put("DT_2", "$date123 $time123")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-                                        SharedPref.saveData(
-                                            requireContext(),
-                                            "CALIB_STAT" + PhActivity.DEVICE_ID,
-                                            "incomplete"
-                                        )
-                                        //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_2").setValue(date123 + " " + time123);
-                                        log1.setBackgroundColor(Color.WHITE)
-                                        log2.setBackgroundColor(Color.WHITE)
-                                        log3.setBackgroundColor(Color.GRAY)
-                                        log4.setBackgroundColor(Color.WHITE)
-                                        log5.setBackgroundColor(Color.WHITE)
-                                    }
-                                    if (currentBuf == 2) {
-                                        val date123 =
-                                            SimpleDateFormat(
-                                                "yyyy-MM-dd",
-                                                Locale.getDefault()
-                                            ).format(
-                                                Date()
-                                            )
-                                        val time123 =
-                                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                                                Date()
-                                            )
-                                        dt3.text = "$date123 $time123"
-                                        jsonData = JSONObject()
-                                        val object1 = JSONObject()
-                                        jsonData.put("DT_3", "$date123 $time123")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-
-//                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_3").setValue(date123 + " " + time123);
-                                        SharedPref.saveData(
-                                            requireContext(),
-                                            "CALIB_STAT" + PhActivity.DEVICE_ID,
-                                            "incomplete"
-                                        )
-                                        log1.setBackgroundColor(Color.WHITE)
-                                        log2.setBackgroundColor(Color.WHITE)
-                                        log3.setBackgroundColor(Color.WHITE)
-                                        log4.setBackgroundColor(Color.GRAY)
-                                        log5.setBackgroundColor(Color.WHITE)
-                                    }
-                                    if (currentBuf == 3) {
-                                        val date123 =
-                                            SimpleDateFormat(
-                                                "yyyy-MM-dd",
-                                                Locale.getDefault()
-                                            ).format(
-                                                Date()
-                                            )
-                                        val time123 =
-                                            SimpleDateFormat("HH:mm", Locale.getDefault()).format(
-                                                Date()
-                                            )
-                                        dt4.text = "$date123 $time123"
-                                        jsonData = JSONObject()
-                                        val object1 = JSONObject()
-                                        jsonData.put("DT_4", "$date123 $time123")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-                                        SharedPref.saveData(
-                                            requireContext(),
-                                            "CALIB_STAT" + PhActivity.DEVICE_ID,
-                                            "incomplete"
-                                        )
-                                        //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_4").setValue(date123 + " " + time123);
-                                        log1.setBackgroundColor(Color.WHITE)
-                                        log2.setBackgroundColor(Color.WHITE)
-                                        log3.setBackgroundColor(Color.WHITE)
-                                        log4.setBackgroundColor(Color.WHITE)
-                                        log5.setBackgroundColor(Color.GRAY)
-                                    }
-
-                                    calibrateBtn.isEnabled = true
-                                    tvTimer.visibility = View.INVISIBLE
-                                    val currentTime = SimpleDateFormat(
-                                        "yyyy-MM-dd HH:mm", Locale.getDefault()
-                                    ).format(
-                                        Date()
-                                    )
-                                    bufferList.add(BufferData(null, null, currentTime))
-                                    //                        bufferListThree.add(new BufferData(null, null, currentTime));
-                                    jsonData = JSONObject()
-                                    val object0 = JSONObject()
-                                    jsonData.put("CAL", (calValues.get(currentBuf) + 1).toString())
-                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                    WebSocketManager.sendMessage(jsonData.toString())
-                                    //                                deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(calValues[currentBuf] + 1);
-                                    Log.e("cValue", currentBuf.toString() + "")
-
-
-//                                int b = currentBuf < 0 ? 4 : currentBuf;
-                                    val b = currentBuf
-                                    Log.e("cValue2", currentBuf.toString() + "")
-                                    Log.e("bValue", b.toString() + "")
-
-//                                deviceRef.child("UI").child("PH").child("PH_CAL").child(postCoeffLabels[b]).get().addOnSuccessListener(dataSnapshot2 -> {
-//                                    Float postCoeff = dataSnapshot2.getValue(Float.class);
-                                    val sharedPreferences = fragmentContext.getSharedPreferences(
-                                        "CalibPrefs", Context.MODE_PRIVATE
-                                    )
-                                    val myEdit = sharedPreferences.edit()
-
-                                    if (b == 1) {
-                                        myEdit.putString("tem2", tvTempCurr.text.toString())
-                                        myEdit.commit()
-                                        val calibDatClass = CalibDatClass(
-                                            2,
-                                            ph2.text.toString(),
-                                            mv2.text.toString(),
-                                            slope2.text.toString(),
-                                            dt2.text.toString(),
-                                            bufferD2.text.toString(),
-                                            phAfterCalib2.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.updateClbOffDataFive(calibDatClass)
-                                        temp2.text = tvTempCurr.text
-                                    } else if (b == 2) {
-                                        myEdit.putString("tem3", tvTempCurr.text.toString())
-                                        myEdit.commit()
-                                        val calibDatClass = CalibDatClass(
-                                            3,
-                                            ph3.text.toString(),
-                                            mv3.text.toString(),
-                                            slope3.text.toString(),
-                                            dt3.text.toString(),
-                                            bufferD3.text.toString(),
-                                            phAfterCalib3.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.updateClbOffDataFive(calibDatClass)
-                                        temp3.text = tvTempCurr.text
-                                    } else if (b == 3) {
-                                        myEdit.putString("tem4", tvTempCurr.text.toString())
-                                        myEdit.commit()
-                                        val calibDatClass = CalibDatClass(
-                                            4,
-                                            ph4.text.toString(),
-                                            mv4.text.toString(),
-                                            slope4.text.toString(),
-                                            dt4.text.toString(),
-                                            bufferD4.text.toString(),
-                                            phAfterCalib4.text.toString(),
-                                            tvTempCurr.text.toString(),
-                                            if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                                .substring(0, 10) else "--",
-                                            if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                                .substring(11, 16) else "--"
-                                        )
-                                        databaseHelper.updateClbOffDataFive(calibDatClass)
-
-                                        temp4.text = tvTempCurr.text
-                                        jsonData = JSONObject()
-                                        jsonData.put("CALIBRATION_STAT", "ok")
-                                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                        WebSocketManager.sendMessage(jsonData.toString())
-                                    }
-
-                                    currentBuf += 1
-//                                calibData()
-                                    deleteAllOfflineCalibData()
-
-
-                                    databaseHelper.insertCalibrationOfflineData(
+                                    databaseHelper.updateClbOffDataFive(calibDatClass)
+                                    databaseHelper.insertCalibrationOfflineAllData(
                                         ph1.text.toString(),
                                         mv1.text.toString(),
                                         slope1.text.toString(),
@@ -2530,7 +2373,7 @@ class PhCalibFragmentNew : Fragment() {
                                         if (dt1.text.toString().length >= 15) dt1.text.toString()
                                             .substring(11, 16) else "--"
                                     )
-                                    databaseHelper.insertCalibrationOfflineData(
+                                    databaseHelper.insertCalibrationOfflineAllData(
                                         ph2.text.toString(),
                                         mv2.text.toString(),
                                         slope2.text.toString(),
@@ -2543,7 +2386,7 @@ class PhCalibFragmentNew : Fragment() {
                                         if (dt2.text.toString().length >= 15) dt2.text.toString()
                                             .substring(11, 16) else "--"
                                     )
-                                    databaseHelper.insertCalibrationOfflineData(
+                                    databaseHelper.insertCalibrationOfflineAllData(
                                         ph3.text.toString(),
                                         mv3.text.toString(),
                                         slope3.text.toString(),
@@ -2556,7 +2399,7 @@ class PhCalibFragmentNew : Fragment() {
                                         if (dt3.text.toString().length >= 15) dt3.text.toString()
                                             .substring(11, 16) else "--"
                                     )
-                                    databaseHelper.insertCalibrationOfflineData(
+                                    databaseHelper.insertCalibrationOfflineAllData(
                                         ph4.text.toString(),
                                         mv4.text.toString(),
                                         slope4.text.toString(),
@@ -2569,7 +2412,7 @@ class PhCalibFragmentNew : Fragment() {
                                         if (dt4.text.toString().length >= 15) dt4.text.toString()
                                             .substring(11, 16) else "--"
                                     )
-                                    databaseHelper.insertCalibrationOfflineData(
+                                    databaseHelper.insertCalibrationOfflineAllData(
                                         ph5.text.toString(),
                                         mv5.text.toString(),
                                         slope5.text.toString(),
@@ -2582,17 +2425,87 @@ class PhCalibFragmentNew : Fragment() {
                                         if (dt5.text.toString().length >= 15) dt5.text.toString()
                                             .substring(11, 16) else "--"
                                     )
+                                }
+                                currentBuf += 1
+//                                calibData()
+                                deleteAllOfflineCalibData()
 
 
-                                } else {
+                                databaseHelper.insertCalibrationOfflineData(
+                                    ph1.text.toString(),
+                                    mv1.text.toString(),
+                                    slope1.text.toString(),
+                                    dt1.text.toString(),
+                                    bufferD1.text.toString(),
+                                    phAfterCalib1.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+                                databaseHelper.insertCalibrationOfflineData(
+                                    ph2.text.toString(),
+                                    mv2.text.toString(),
+                                    slope2.text.toString(),
+                                    dt2.text.toString(),
+                                    bufferD2.text.toString(),
+                                    phAfterCalib2.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+                                databaseHelper.insertCalibrationOfflineData(
+                                    ph3.text.toString(),
+                                    mv3.text.toString(),
+                                    slope3.text.toString(),
+                                    dt3.text.toString(),
+                                    bufferD3.text.toString(),
+                                    phAfterCalib3.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+                                databaseHelper.insertCalibrationOfflineData(
+                                    ph4.text.toString(),
+                                    mv4.text.toString(),
+                                    slope4.text.toString(),
+                                    dt4.text.toString(),
+                                    bufferD4.text.toString(),
+                                    phAfterCalib4.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+                                databaseHelper.insertCalibrationOfflineData(
+                                    ph5.text.toString(),
+                                    mv5.text.toString(),
+                                    slope5.text.toString(),
+                                    dt5.text.toString(),
+                                    bufferD5.text.toString(),
+                                    phAfterCalib5.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+
+
+                            } else {
 //                            --line_3;
 //                            --currentBufThree;
-                                    timer5!!.cancel()
-                                    handler55.removeCallbacks(this)
-                                    PhCalibFragmentNew.wrong_5 = false
-                                    calibrateBtn.isEnabled = true
-                                    showAlertDialogButtonClicked()
-                                }
+                                timer5!!.cancel()
+                                handler55.removeCallbacks(this)
+                                PhCalibTemp.wrong_5 = false
+                                calibrateBtn.isEnabled = true
+                                showAlertDialogButtonClicked()
                             }
                         } catch (e: JSONException) {
                             e.printStackTrace()
@@ -2619,36 +2532,28 @@ class PhCalibFragmentNew : Fragment() {
 
     private fun startTimer() {
         calibrateBtn.isEnabled = false
-        PhCalibFragmentNew.LOG_INTERVAL = 6f
-        tvTimer.setText(PhCalibFragmentNew.LOG_INTERVAL.toString())
+        PhCalibTemp.LOG_INTERVAL = 6f
+        tvTimer.setText(PhCalibTemp.LOG_INTERVAL.toString())
         handler1 = Handler()
         runnable1 = object : Runnable {
             override fun run() {
                 Log.d("Runnable", "Handler is working")
                 calibrateBtn.isEnabled = false
-                if (PhCalibFragmentNew.LOG_INTERVAL == 0f) { // just remove call backs
+                if (PhCalibTemp.LOG_INTERVAL == 0f) { // just remove call backs
                     requireActivity().runOnUiThread {
 //                        Toast.makeText(requireContext(), "" + phAfterCalib5.text.toString(), Toast.LENGTH_SHORT).show()
                     }
-                    tvTimer.setText(PhCalibFragmentNew.LOG_INTERVAL.toString())
+                    tvTimer.setText(PhCalibTemp.LOG_INTERVAL.toString())
                     handler1.removeCallbacks(this)
                     calibrateBtn.isEnabled = true
                     calibrateBtn.text = "Start"
-                    if (ph_mode_selected == 5) {
-                        currentBuf = 0
-                        line = 0
-                        log1.setBackgroundColor(Color.GRAY)
-                        log2.setBackgroundColor(Color.WHITE)
-                        log3.setBackgroundColor(Color.WHITE)
-                        log4.setBackgroundColor(Color.WHITE)
-                        log5.setBackgroundColor(Color.WHITE)
-                    } else {
-                        currentBuf = 1
-                        line = 1
-                        log2.setBackgroundColor(Color.GRAY)
-                        log3.setBackgroundColor(Color.WHITE)
-                        log4.setBackgroundColor(Color.WHITE)
-                    }
+                    currentBuf = 0
+                    line = 0
+                    log1.setBackgroundColor(Color.GRAY)
+                    log2.setBackgroundColor(Color.WHITE)
+                    log3.setBackgroundColor(Color.WHITE)
+                    log4.setBackgroundColor(Color.WHITE)
+                    log5.setBackgroundColor(Color.WHITE)
                     databaseHelper.insertCalibrationAllDataOffline(
                         ph1.text.toString(),
                         mv1.text.toString(),
@@ -2721,9 +2626,9 @@ class PhCalibFragmentNew : Fragment() {
                     tvTimer.text = "00:45"
                     Log.d("Runnable", "ok")
                 } else { // post again
-                    --PhCalibFragmentNew.LOG_INTERVAL
+                    --PhCalibTemp.LOG_INTERVAL
                     tvTimer.text =
-                        "00:0" + PhCalibFragmentNew.LOG_INTERVAL.toString().substring(0, 1)
+                        "00:0" + PhCalibTemp.LOG_INTERVAL.toString().substring(0, 1)
                     handler1.postDelayed(this, 1000)
                 }
             }
@@ -2816,6 +2721,448 @@ class PhCalibFragmentNew : Fragment() {
         // the alert dialog
         val dialog = builder.create()
         dialog.show()
+    }
+
+    private var line_3 = 0
+    var wrong_3 = false
+    var timer3: CountDownTimer? = null
+    val handler33 = Handler()
+    lateinit var runnable33: Runnable
+
+    private fun calibrateThreePointOffline() {
+        val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        calibrateBtnThree.setBackgroundColor(
+            ContextCompat.getColor(
+                requireContext(), R.color.black
+            )
+        )
+        calibrateBtnThree.isEnabled = false
+        tvTimerThree.visibility = View.VISIBLE
+        isCalibrating = true
+
+        addUserAction(
+            "username: " + Source.userName + ", Role: " + Source.userRole +
+                    ", started calibration mode 3, of buffer " + currentBufThree, "", "", "", ""
+        )
+
+//        startTimer();
+        timer3 = object : CountDownTimer(45000, 1000) {
+            //45000
+            override fun onTick(millisUntilFinished: Long) {
+                var millisUntilFinished = millisUntilFinished
+                calibrateBtnThree.isEnabled = false
+                phGraph.isEnabled = false
+                phMvTable.isEnabled = false
+                printCalibData.isEnabled = false
+                calibSpinner.isEnabled = false
+                spin.isEnabled = false
+                millisUntilFinished /= 1000
+                val min = millisUntilFinished.toInt() / 60
+                val sec = millisUntilFinished.toInt() % 60
+                val time = String.format(Locale.UK, "%02d:%02d", min, sec)
+                tvTimerThree.text = time
+                Log.e("lineNThree", line.toString() + "")
+                if (!Source.calibratingNow) {
+                    timer3!!.cancel()
+                    //                    handler33.removeCallbacks(this);
+                    wrong_3 = false
+                    calibrateBtnThree.isEnabled = true
+                    calibrateBtnThree.isEnabled = true
+                    phGraph.isEnabled = true
+                    phMvTable.isEnabled = true
+                    printCalibData.isEnabled = true
+                    calibSpinner.isEnabled = true
+                    spin.isEnabled = true
+                }
+                Source.calibratingNow = true
+                if (line_3 == -1) {
+                    log1_3.setBackgroundColor(Color.WHITE)
+                    log2_3.setBackgroundColor(Color.WHITE)
+                    log3_3.setBackgroundColor(Color.WHITE)
+                    wrong_3 = false
+                }
+                if (line_3 == 0) {
+                    log1_3.setBackgroundColor(Color.GRAY)
+                    log2_3.setBackgroundColor(Color.WHITE)
+                    log3_3.setBackgroundColor(Color.WHITE)
+                    jsonData = JSONObject()
+                    try {
+                        jsonData.put("B_2", ph1_3.text.toString())
+                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                        Log.e("ThisIsNotAnError", jsonData.getString("B_2"))
+                        WebSocketManager.sendMessage(jsonData.toString())
+                    } catch (e: JSONException) {
+                        throw java.lang.RuntimeException(e)
+                    }
+
+                }
+                if (line_3 == 1) {
+                    log1_3.setBackgroundColor(Color.WHITE)
+                    log2_3.setBackgroundColor(Color.GRAY)
+                    log3_3.setBackgroundColor(Color.WHITE)
+                    jsonData = JSONObject()
+                    try {
+                        jsonData.put("B_3", ph2_3.text.toString())
+                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                        Log.e("ThisIsNotAnError", jsonData.getString("B_3"))
+                        WebSocketManager.sendMessage(jsonData.toString())
+                    } catch (e: JSONException) {
+                        throw java.lang.RuntimeException(e)
+                    }
+
+                }
+                if (line_3 == 2) {
+                    log1_3.setBackgroundColor(Color.WHITE)
+                    log2_3.setBackgroundColor(Color.WHITE)
+                    log3_3.setBackgroundColor(Color.GRAY)
+                    jsonData = JSONObject()
+                    try {
+                        jsonData.put("B_4", ph3_3.text.toString())
+                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                        Log.e("ThisIsNotAnError", jsonData.getString("B_4"))
+                        WebSocketManager.sendMessage(jsonData.toString())
+                    } catch (e: JSONException) {
+                        throw java.lang.RuntimeException(e)
+                    }
+
+
+                }
+                if (line_3 > 2) {
+                    log1_3.setBackgroundColor(Color.WHITE)
+                    log2_3.setBackgroundColor(Color.WHITE)
+                    log3_3.setBackgroundColor(Color.WHITE)
+                    wrong_3 = false
+                }
+                wrong_3 = false
+            }
+
+            override fun onFinish() {
+                runnable33 = object : Runnable {
+                    override fun run() {
+                        try {
+                            Source.calibratingNow = false
+                            phGraph.isEnabled = true
+                            phMvTable.isEnabled = true
+                            printCalibData.isEnabled = true
+                            calibSpinner.isEnabled = true
+                            spin.isEnabled = true
+                            if (!wrong_3) {
+                                wrong_3 = false
+                                line_3 = currentBufThree + 1
+                                if (currentBufThree == 2) {
+                                    val date123 =
+                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    val time123 =
+                                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    dt3_3.text = "$date123 $time123"
+                                    jsonData = JSONObject()
+                                    val `object` = JSONObject()
+                                    jsonData.put("DT_4", "$date123 $time123")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+                                    //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_4").setValue(date123 + " " + time123);
+                                    calibrateBtnThree.isEnabled = false
+                                    Source.calib_completed_by = Source.logUserName
+                                    calibrateBtnThree.text = "DONE"
+                                    startTimer3()
+                                }
+                                if (currentBufThree == 0) {
+                                    val date123 =
+                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    val time123 =
+                                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    dt1_3.text = "$date123 $time123"
+                                    jsonData = JSONObject()
+                                    val `object` = JSONObject()
+                                    jsonData.put("DT_2", "$date123 $time123")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+                                    //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_2").setValue(date123 + " " + time123);
+                                    log1_3.setBackgroundColor(Color.WHITE)
+                                    log2_3.setBackgroundColor(Color.GRAY)
+                                    log3_3.setBackgroundColor(Color.WHITE)
+                                }
+                                if (currentBufThree == 1) {
+                                    val date123 =
+                                        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    val time123 =
+                                        SimpleDateFormat("HH:mm", Locale.getDefault()).format(
+                                            Date()
+                                        )
+                                    dt2_3.text = "$date123 $time123"
+                                    jsonData = JSONObject()
+                                    jsonData.put("DT_3", "$date123 $time123")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+                                    //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_3").setValue(date123 + " " + time123);
+                                    log1_3.setBackgroundColor(Color.WHITE)
+                                    log2_3.setBackgroundColor(Color.WHITE)
+                                    log3_3.setBackgroundColor(Color.GRAY)
+                                }
+                                calibrateBtnThree.isEnabled = true
+                                tvTimerThree.visibility = View.INVISIBLE
+                                val currentTime = SimpleDateFormat(
+                                    "yyyy-MM-dd HH:mm", Locale.getDefault()
+                                ).format(
+                                    Date()
+                                )
+                                bufferListThree.add(BufferData(null, null, currentTime))
+                                //                        bufferListThree.add(new BufferData(null, null, currentTime));
+                                jsonData = JSONObject()
+                                jsonData.put(
+                                    "CAL", (calValuesThree[currentBufThree] + 1).toString()
+                                )
+                                jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                WebSocketManager.sendMessage(jsonData.toString())
+
+//                                deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(calValuesThree[currentBufThree] + 1);
+                                Log.e("cValue", currentBufThree.toString() + "")
+
+//                                int b = currentBuf < 0 ? 4 : currentBuf;
+                                val b = currentBufThree
+                                Log.e("cValue2", currentBufThree.toString() + "")
+                                Log.e("bValue", b.toString() + "")
+                                val sharedPreferences = fragmentContext.getSharedPreferences(
+                                    "CalibPrefs", Context.MODE_PRIVATE
+                                )
+                                val myEdit = sharedPreferences.edit()
+                                if (b == 0) {
+                                    myEdit.putString("tem1_3", tvTempCurr.text.toString())
+                                    myEdit.commit()
+                                    jsonData = JSONObject()
+                                    jsonData.put("CALIBRATION_STAT", "incomplete")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+                                    //                                    deviceRef.child("Data").child("CALIBRATION_STAT").setValue("incomplete");
+//                                    calibData3();
+
+//                                    CalibDatClass calibDatClass1 = new CalibDatClass(1, PH1_3, MV1_3, SLOPE1_3, DT1_3, BFD1_3, pHAC1_3, t1_3, DT1_3.length() >= 15 ? DT1_3.substring(0, 10) : "--", DT1_3.length() >= 15 ? DT1_3.substring(11, 16) : "--");
+                                    val calibDatClass1 = CalibDatClass(
+                                        1,
+                                        ph1_3.text.toString(),
+                                        mv1_3.text.toString(),
+                                        slope1_3.text.toString(),
+                                        dt1_3.text.toString(),
+                                        bufferD1_3.text.toString(),
+                                        phAfterCalib1_3.text.toString(),
+
+                                        tvTempCurr.text.toString(),
+                                        if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                            .substring(0, 10) else "--",
+                                        if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                            .substring(11, 16) else "--"
+                                    )
+                                    databaseHelper.updateClbOffDataThree(calibDatClass1)
+                                    temp1_3.text = tvTempCurr.text
+                                } else if (b == 1) {
+                                    myEdit.putString("tem2_3", tvTempCurr.text.toString())
+                                    myEdit.commit()
+                                    //                                    calibData3();
+
+//                                    CalibDatClass calibDatClass2 = new CalibDatClass(2, PH2_3, MV2_3, SLOPE2_3, DT2_3, BFD2_3, pHAC2_3, t2_3, DT2_3.length() >= 15 ? DT2_3.substring(0, 10) : "--", DT2_3.length() >= 15 ? DT2_3.substring(11, 16) : "--");
+                                    val calibDatClass2 = CalibDatClass(
+                                        2,
+                                        ph2_3.text.toString(),
+                                        mv2_3.text.toString(),
+                                        slope2_3.text.toString(),
+                                        dt2_3.text.toString(),
+                                        bufferD2_3.text.toString(),
+                                        phAfterCalib2_3.text.toString(),
+                                        tvTempCurr.text.toString(),
+                                        if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                            .substring(0, 10) else "--",
+                                        if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                            .substring(11, 16) else "--"
+                                    )
+                                    databaseHelper.updateClbOffDataThree(calibDatClass2)
+                                    temp2_3.text = tvTempCurr.text
+                                } else if (b == 2) {
+                                    myEdit.putString("tem3_3", tvTempCurr.text.toString())
+                                    myEdit.commit()
+                                    temp3_3.text = tvTempCurr.text
+                                    jsonData = JSONObject()
+                                    jsonData.put("CALIBRATION_STAT", "ok")
+                                    jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                                    WebSocketManager.sendMessage(jsonData.toString())
+                                    //                                    deviceRef.child("Data").child("CALIBRATION_STAT").setValue("ok");
+//                                    calibData3()
+                                    //                                    CalibDatClass calibDatClass3 = new CalibDatClass(3, PH3_3, MV3_3, SLOPE3_3, DT3_3, BFD3_3, pHAC3_3, t3_3, DT3_3.length() >= 15 ? DT3_3.substring(0, 10) : "--", DT3_3.length() >= 15 ? DT3_3.substring(11, 16) : "--");
+                                    val calibDatClass3 = CalibDatClass(
+                                        3,
+                                        ph3_3.text.toString(),
+                                        mv3_3.text.toString(),
+                                        slope3_3.text.toString(),
+                                        dt3_3.text.toString(),
+                                        bufferD3_3.text.toString(),
+                                        phAfterCalib3_3.text.toString(),
+                                        tvTempCurr.text.toString(),
+                                        if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                            .substring(0, 10) else "--",
+                                        if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                            .substring(11, 16) else "--"
+                                    )
+                                    databaseHelper.updateClbOffDataThree(calibDatClass3)
+
+                                    databaseHelper.insertCalibrationOfflineAllData(
+                                        ph1_3.text.toString(),
+                                        mv1_3.text.toString(),
+                                        slope1_3.text.toString(),
+                                        dt1_3.text.toString(),
+                                        bufferD1_3.text.toString(),
+                                        phAfterCalib1_3.text.toString(),
+                                        tvTempCurr.text.toString(),
+                                        if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                            .substring(0, 10) else "--",
+                                        if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                            .substring(11, 16) else "--"
+                                    )
+                                    databaseHelper.insertCalibrationOfflineAllData(
+                                        ph2_3.text.toString(),
+                                        mv2_3.text.toString(),
+                                        slope2_3.text.toString(),
+                                        dt2_3.text.toString(),
+                                        bufferD2_3.text.toString(),
+                                        phAfterCalib2_3.text.toString(),
+                                        tvTempCurr.text.toString(),
+                                        if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                            .substring(0, 10) else "--",
+                                        if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                            .substring(11, 16) else "--"
+                                    )
+                                    databaseHelper.insertCalibrationOfflineAllData(
+                                        ph3_3.text.toString(),
+                                        mv3_3.text.toString(),
+                                        slope3_3.text.toString(),
+                                        dt3_3.text.toString(),
+                                        bufferD3_3.text.toString(),
+                                        phAfterCalib3_3.text.toString(),
+                                        tvTempCurr.text.toString(),
+                                        if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                            .substring(0, 10) else "--",
+                                        if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                            .substring(11, 16) else "--"
+                                    )
+
+
+                                }
+                                currentBufThree += 1
+//                                calibData3()
+                                deleteAllOfflineCalibData()
+                                databaseHelper.insertCalibrationOfflineData(
+                                    ph1_3.text.toString(),
+                                    mv1_3.text.toString(),
+                                    slope1_3.text.toString(),
+                                    dt1_3.text.toString(),
+                                    bufferD1_3.text.toString(),
+                                    phAfterCalib1_3.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+                                databaseHelper.insertCalibrationOfflineData(
+                                    ph2_3.text.toString(),
+                                    mv2_3.text.toString(),
+                                    slope2_3.text.toString(),
+                                    dt2_3.text.toString(),
+                                    bufferD2_3.text.toString(),
+                                    phAfterCalib2_3.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+                                databaseHelper.insertCalibrationOfflineData(
+                                    ph3_3.text.toString(),
+                                    mv3_3.text.toString(),
+                                    slope3_3.text.toString(),
+                                    dt3_3.text.toString(),
+                                    bufferD3_3.text.toString(),
+                                    phAfterCalib3_3.text.toString(),
+                                    tvTempCurr.text.toString(),
+                                    if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                        .substring(0, 10) else "--",
+                                    if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                        .substring(11, 16) else "--"
+                                )
+                            } else {
+//                            --line_3;
+//                            --currentBufThree;
+                                timer3!!.cancel()
+                                handler33.removeCallbacks(this)
+                                wrong_3 = false
+                                calibrateBtnThree.isEnabled = true
+                                showAlertDialogButtonClicked()
+                            }
+                        } catch (e: JSONException) {
+                            e.printStackTrace()
+                        }
+                    }
+                }
+                runnable33.run()
+            }
+        }
+        try {
+            jsonData = JSONObject()
+            jsonData.put("CAL", calValuesThree[currentBufThree].toString())
+            jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+            WebSocketManager.sendMessage(jsonData.toString())
+            timer3!!.start()
+        } catch (e: JSONException) {
+            e.printStackTrace()
+        }
+//        if (!wrong_3) {
+//        deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(calValuesThree[currentBufThree]).addOnSuccessListener(t -> {
+//            timer3.start();
+//        });
+    }
+
+
+    lateinit var handler2: Handler
+    lateinit var runnable2: Runnable
+
+    private fun startTimer3() {
+        calibrateBtnThree.isEnabled = false
+        LOG_INTERVAL_3 = 5f
+        tvTimerThree.text = LOG_INTERVAL_3.toString()
+        handler2 = Handler()
+        runnable2 = object : Runnable {
+            override fun run() {
+                Log.d("Runnable", "Handler is working")
+                calibrateBtnThree.isEnabled = false
+                if (LOG_INTERVAL_3 == 0f) { // just remove call backs
+                    tvTimerThree.text = LOG_INTERVAL_3.toString()
+                    handler2.removeCallbacks(this)
+                    calibrateBtnThree.isEnabled = true
+                    calibrateBtnThree.text = "Start"
+                    currentBufThree = 0
+                    PhCalibTemp.line_3 = 0
+                    log1_3.setBackgroundColor(Color.GRAY)
+                    log2_3.setBackgroundColor(Color.WHITE)
+                    log3_3.setBackgroundColor(Color.WHITE)
+                    tvTimerThree.text = "00:45"
+                    Log.d("Runnable", "ok")
+                } else { // post again
+                    --LOG_INTERVAL_3
+                    tvTimerThree.text = "00:0" + LOG_INTERVAL_3.toString().substring(0, 1)
+                    handler2.postDelayed(this, 1000)
+                }
+            }
+        }
+        runnable2.run()
     }
 
 
@@ -3039,8 +3386,9 @@ class PhCalibFragmentNew : Fragment() {
 
 
         if (Constants.OFFLINE_DATA) {
-            PH_MODE = "3"
+            PH_MODE = "5"
         }
+        threePointCalib.visibility = View.GONE
 
 
         when (PH_MODE) {
@@ -3080,20 +3428,24 @@ class PhCalibFragmentNew : Fragment() {
                 override fun onItemSelected(
                     parent: AdapterView<*>?, view: View?, position: Int, id: Long
                 ) {
-
+                    Log.d("SpinnerSelection", "Parent: $parent")
+                    Log.d("SpinnerSelection", "View: $view")
+                    Log.d("SpinnerSelection", "Position: $position")
+                    Log.d("SpinnerSelection", "Id: $id")
                     view ?: return
 
                     when (position) {
                         0 -> {
-
-                            PhCalibFragmentNew.ph_mode_selected = 5
-                            Log.d("SpinnerSelection", "Selected: $ph_mode_selected")
-
                             mode = "5"
                             Source.calibMode = 0
-
+                            fivePointCalib.visibility = View.VISIBLE
+                            threePointCalib.visibility = View.GONE
+                            threePointCalibStart.visibility = View.GONE
+                            fivePointCalibStart.visibility = View.VISIBLE
                             currentBuf = 0
-                            PhCalibFragmentNew.line = 0
+                            currentBufThree = 0
+                            PhCalibTemp.line = 0
+                            PhCalibTemp.line_3 = 0
                             if (Constants.OFFLINE_MODE) {
                                 try {
                                     jsonData = JSONObject()
@@ -3103,17 +3455,18 @@ class PhCalibFragmentNew : Fragment() {
                                 } catch (e: JSONException) {
                                     throw java.lang.RuntimeException(e)
                                 }
+                            } else {
+//                            deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL")
+//                                .setValue(0)
                             }
-
+                            log1_3.setBackgroundColor(Color.GRAY)
+                            log2_3.setBackgroundColor(Color.WHITE)
+                            log3_3.setBackgroundColor(Color.WHITE)
                             log1.setBackgroundColor(Color.GRAY)
                             log2.setBackgroundColor(Color.WHITE)
                             log3.setBackgroundColor(Color.WHITE)
                             log4.setBackgroundColor(Color.WHITE)
                             log5.setBackgroundColor(Color.WHITE)
-
-                            log1.visibility = View.VISIBLE
-                            log5.visibility = View.VISIBLE
-
                             addUserAction(
                                 "username: " + Source.userName + ", Role: " + Source.userRole +
                                         ", switched ph calib mode to 5", "", "", "", ""
@@ -3122,14 +3475,17 @@ class PhCalibFragmentNew : Fragment() {
                         }
 
                         1 -> {
-                            PhCalibFragmentNew.ph_mode_selected = 3
-                            Log.d("SpinnerSelection", "Selected: $ph_mode_selected")
-
                             mode = "3"
                             Source.calibMode = 1
-
-                            currentBuf = 1
-                            PhCalibFragmentNew.line = 1
+                            fivePointCalib.visibility = View.GONE
+                            fivePointCalibStart.visibility = View.GONE
+                            threePointCalib.visibility = View.VISIBLE
+                            threePointCalibStart.visibility = View.VISIBLE
+                            //                        currentBufThree = 0;
+                            currentBuf = 0
+                            currentBufThree = 0
+                            PhCalibTemp.line = 0
+                            PhCalibTemp.line_3 = 0
                             if (Constants.OFFLINE_MODE) {
                                 try {
                                     jsonData = JSONObject()
@@ -3139,13 +3495,16 @@ class PhCalibFragmentNew : Fragment() {
                                 } catch (e: JSONException) {
                                     throw java.lang.RuntimeException(e)
                                 }
+                            } else {
                             }
-                            log1.visibility = View.GONE
-                            log5.visibility = View.GONE
-
-                            log2.setBackgroundColor(Color.GRAY)
+                            log1_3.setBackgroundColor(Color.GRAY)
+                            log2_3.setBackgroundColor(Color.WHITE)
+                            log3_3.setBackgroundColor(Color.WHITE)
+                            log1.setBackgroundColor(Color.GRAY)
+                            log2.setBackgroundColor(Color.WHITE)
                             log3.setBackgroundColor(Color.WHITE)
                             log4.setBackgroundColor(Color.WHITE)
+                            log5.setBackgroundColor(Color.WHITE)
                             addUserAction(
                                 "username: " + Source.userName + ", Role: " + Source.userRole +
                                         ", switched ph calib mode to 3", "", "", "", ""
@@ -3171,8 +3530,53 @@ class PhCalibFragmentNew : Fragment() {
 
     private fun offlineDataFeeding() {
         val db = databaseHelper.writableDatabase
+        val calibCSV3: Cursor = db.rawQuery("SELECT * FROM CalibOfflineDataThree", null)
         val calibCSV5: Cursor = db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
         var index = 0
+        if (calibCSV3.count == 0) {
+            databaseHelper.insertCalibrationOfflineDataThree(
+                1,
+                ph1_3.text.toString(),
+                mv1_3.text.toString(),
+                slope1_3.text.toString(),
+                dt1_3.text.toString(),
+                bufferD1_3.text.toString(),
+                phAfterCalib1_3.text.toString(),
+                tvTempCurr.text.toString(),
+                if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                    .substring(0, 10) else "--",
+                if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                    .substring(11, 16) else "--"
+            )
+            databaseHelper.insertCalibrationOfflineDataThree(
+                2,
+                ph2_3.text.toString(),
+                mv2_3.text.toString(),
+                slope2_3.text.toString(),
+                dt2_3.text.toString(),
+                bufferD2_3.text.toString(),
+                phAfterCalib2_3.text.toString(),
+                tvTempCurr.text.toString(),
+                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                    .substring(0, 10) else "--",
+                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                    .substring(11, 16) else "--"
+            )
+            databaseHelper.insertCalibrationOfflineDataThree(
+                3,
+                ph3_3.text.toString(),
+                mv3_3.text.toString(),
+                slope3_3.text.toString(),
+                dt3_3.text.toString(),
+                bufferD3_3.text.toString(),
+                phAfterCalib3_3.text.toString(),
+                tvTempCurr.text.toString(),
+                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                    .substring(0, 10) else "--",
+                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                    .substring(11, 16) else "--"
+            )
+        }
         if (calibCSV5.count == 0) {
             databaseHelper.insertCalibrationOfflineDataFive(
                 1,
@@ -3326,7 +3730,57 @@ class PhCalibFragmentNew : Fragment() {
             }
             index5++
         }
-
+        while (calibCSV3.moveToNext()) {
+            val ph = calibCSV3.getString(calibCSV3.getColumnIndex("PH"))
+            val mv = calibCSV3.getString(calibCSV3.getColumnIndex("MV"))
+            val date = calibCSV3.getString(calibCSV3.getColumnIndex("DT"))
+            val slope = calibCSV3.getString(calibCSV3.getColumnIndex("SLOPE"))
+            val pHAC = calibCSV3.getString(calibCSV3.getColumnIndex("pHAC"))
+            val temperature1 = calibCSV3.getString(calibCSV3.getColumnIndex("temperature"))
+            if (index == 0) {
+                ph1_3.text = ph
+                mv1_3.text = mv
+                slope1_3.text = slope
+                dt1_3.text = date
+                phAfterCalib1_3.text = pHAC
+                temp1_3.text = temperature1
+                PH1_3 = ph
+                MV1_3 = mv
+                SLOPE1_3 = slope
+                DT1_3 = date
+                pHAC1_3 = pHAC
+                t1_3 = temperature1
+            }
+            if (index == 1) {
+                ph2_3.text = ph
+                mv2_3.text = mv
+                slope2_3.text = slope
+                dt2_3.text = date
+                phAfterCalib2_3.text = pHAC
+                temp2_3.text = temperature1
+                PH2_3 = ph
+                MV2_3 = mv
+                SLOPE2_3 = slope
+                DT2_3 = date
+                pHAC2_3 = pHAC
+                t2_3 = temperature1
+            }
+            if (index == 2) {
+                ph3_3.text = ph
+                mv3_3.text = mv
+                slope3_3.text = slope
+                dt3_3.text = date
+                phAfterCalib3_3.text = pHAC
+                temp3_3.text = temperature1
+                PH3_3 = ph
+                MV3_3 = mv
+                SLOPE3_3 = slope
+                DT3_3 = date
+                pHAC3_3 = pHAC
+                t3_3 = temperature1
+            }
+            index++
+        }
     }
 
 
@@ -3598,12 +4052,164 @@ class PhCalibFragmentNew : Fragment() {
                 dialog5.show(parentFragmentManager, null)
             }
 
+            R.id.phEdit1_3 -> {
+                val dialog_3 = EditPhBufferDialog { ph ->
+                    updateBufferValue(ph)
+                    println("1")
+                    if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
+                        try {
+                            jsonData = JSONObject()
+                            jsonData.put("B_2", java.lang.String.valueOf(ph))
+                            jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                            WebSocketManager.sendMessage(jsonData.toString())
+                            ph1_3.setText(java.lang.String.valueOf(ph))
+                            val calibDatClass1 = CalibDatClass(
+                                1,
+                                ph1_3.text.toString(),
+                                mv1_3.text.toString(),
+                                slope1_3.text.toString(),
+                                dt1_3.text.toString(),
+                                bufferD1_3.text.toString(),
+                                phAfterCalib1_3.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt1_3.text.toString().length >= 15) dt1_3.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataThree(calibDatClass1)
+
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_1 value to " + ph + ", in calibmode 3",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
+                        } catch (e: JSONException) {
+                            throw RuntimeException(e)
+                        }
+                    } else {
+                        if (Constants.OFFLINE_DATA) {
+                            Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
+                                .show()
+                        } else {
+
+                        }
+                    }
+                }
+                dialog_3.show(parentFragmentManager, null)
+            }
+
+            R.id.phEdit2_3 -> {
+                val dialog1_3 = EditPhBufferDialog { ph ->
+                    updateBufferValue(ph)
+                    println("2")
+                    if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
+                        try {
+                            jsonData = JSONObject()
+                            jsonData.put("B_3", java.lang.String.valueOf(ph))
+                            jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                            WebSocketManager.sendMessage(jsonData.toString())
+                            ph2_3.setText(java.lang.String.valueOf(ph))
+                            val calibDatClass2 = CalibDatClass(
+                                2,
+                                ph2_3.text.toString(),
+                                mv2_3.text.toString(),
+                                slope2_3.text.toString(),
+                                dt2_3.text.toString(),
+                                bufferD2_3.text.toString(),
+                                phAfterCalib2_3.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt2_3.text.toString().length >= 15) dt2_3.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataThree(calibDatClass2)
+
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_2 value to " + ph + ", in calibmode 3",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
+                        } catch (e: JSONException) {
+                            throw RuntimeException(e)
+                        }
+                    } else {
+                        if (Constants.OFFLINE_DATA) {
+                            Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
+                                .show()
+                        } else {
+
+                        }
+                    }
+                }
+                dialog1_3.show(parentFragmentManager, null)
+            }
+
+            R.id.phEdit3_3 -> {
+                val dialog2_3 = EditPhBufferDialog { ph ->
+                    updateBufferValue(ph)
+                    println("3")
+                    if (Constants.OFFLINE_MODE && Constants.OFFLINE_DATA) {
+                        try {
+                            jsonData = JSONObject()
+                            jsonData.put("B_4", java.lang.String.valueOf(ph))
+                            jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                            WebSocketManager.sendMessage(jsonData.toString())
+                            ph3_3.setText(java.lang.String.valueOf(ph))
+                            val calibDatClass3 = CalibDatClass(
+                                3,
+                                ph3_3.text.toString(),
+                                mv3_3.text.toString(),
+                                slope3_3.text.toString(),
+                                dt3_3.text.toString(),
+                                bufferD3_3.text.toString(),
+                                phAfterCalib3_3.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt3_3.text.toString().length >= 15) dt3_3.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataThree(calibDatClass3)
+
+                            addUserAction(
+                                "username: " + Source.userName + ", Role: " + Source.userRole +
+                                        ", changed ph_buffer_3 value to " + ph + ", in calibmode 3",
+                                "",
+                                "",
+                                "",
+                                ""
+                            )
+                        } catch (e: JSONException) {
+                            throw RuntimeException(e)
+                        }
+                    } else {
+                        if (Constants.OFFLINE_DATA) {
+                            Toast.makeText(fragmentContext, "You can't edit", Toast.LENGTH_SHORT)
+                                .show()
+                        } else {
+
+                        }
+                    }
+                }
+                dialog2_3.show(parentFragmentManager, null)
+            }
+
             R.id.qr1 -> openQRActivity("qr1")
             R.id.qr2 -> openQRActivity("qr2")
             R.id.qr3 -> openQRActivity("qr3")
             R.id.qr4 -> openQRActivity("qr4")
             R.id.qr5 -> openQRActivity("qr5")
-
+            R.id.qr1_3 -> openQRActivity("qr2")
+            R.id.qr2_3 -> openQRActivity("qr3")
+            R.id.qr3_3 -> openQRActivity("qr4")
             else -> {}
         }
     }
@@ -3641,23 +4247,32 @@ class PhCalibFragmentNew : Fragment() {
     private fun initializeAllViews(view: View) {
         fivePointCalib = view.findViewById<CardView>(R.id.fivePointCalib)
         finalSlope = view.findViewById<TextView>(R.id.finalSlope)
+        threePointCalib = view.findViewById<CardView>(R.id.threePointCalib)
         phMvTable = view.findViewById<Button>(R.id.phMvTable)
         phGraph = view.findViewById<Button>(R.id.phGraph)
         printCalibData = view.findViewById<Button>(R.id.printCalibData)
         printAllCalibData = view.findViewById<Button>(R.id.printAllCalibData)
         calibrateBtn = view.findViewById<Button>(R.id.startBtn)
+        calibrateBtnThree = view.findViewById<Button>(R.id.startBtnThree)
         modeText = view.findViewById<TextView>(R.id.modeText)
         tvTimer = view.findViewById<TextView>(R.id.tvTimer)
+        tvTimerThree = view.findViewById<TextView>(R.id.tvTimerThree)
         calibSpinner = view.findViewById<LinearLayout>(R.id.calibSpinner)
         spin = view.findViewById<Spinner>(R.id.calibMode)
+        log1_3 = view.findViewById<LinearLayout>(R.id.log1_3)
+        log2_3 = view.findViewById<LinearLayout>(R.id.log2_3)
+        log3_3 = view.findViewById<LinearLayout>(R.id.log3_3)
         resetCalibFive = view.findViewById<Button>(R.id.resetCalibFive)
+        resetCalibThree = view.findViewById<Button>(R.id.resetCalibThree)
         syncOfflineData = view.findViewById<Button>(R.id.syncOfflineData)
         fivePointCalibStart = view.findViewById(R.id.fivePointCalibStart)
+        threePointCalibStart = view.findViewById<LinearLayout>(R.id.threePointCalibStart)
         log1 = view.findViewById<LinearLayout>(R.id.log1)
         log2 = view.findViewById<LinearLayout>(R.id.log2)
         log3 = view.findViewById<LinearLayout>(R.id.log3)
         log4 = view.findViewById<LinearLayout>(R.id.log4)
         log5 = view.findViewById<LinearLayout>(R.id.log5)
+        log3point = view.findViewById<LinearLayout>(R.id.log3point)
         log5point = view.findViewById<LinearLayout>(R.id.log5Point)
         ph1 = view.findViewById<TextView>(R.id.ph1)
         ph2 = view.findViewById<TextView>(R.id.ph2)
@@ -3709,9 +4324,37 @@ class PhCalibFragmentNew : Fragment() {
         dt3 = view.findViewById<TextView>(R.id.dt3)
         dt4 = view.findViewById<TextView>(R.id.dt4)
         dt5 = view.findViewById<TextView>(R.id.dt5)
-
+        ph1_3 = view.findViewById<TextView>(R.id.ph1_3)
+        ph2_3 = view.findViewById<TextView>(R.id.ph2_3)
+        ph3_3 = view.findViewById<TextView>(R.id.ph3_3)
+        phAfterCalib1_3 = view.findViewById<TextView>(R.id.phAfterCalib1_3)
+        phAfterCalib2_3 = view.findViewById<TextView>(R.id.phAfterCalib2_3)
+        phAfterCalib3_3 = view.findViewById<TextView>(R.id.phAfterCalib3_3)
+        mv1_3 = view.findViewById<TextView>(R.id.mv1_3)
+        mv2_3 = view.findViewById<TextView>(R.id.mv2_3)
+        mv3_3 = view.findViewById<TextView>(R.id.mv3_3)
+        temp1_3 = view.findViewById<TextView>(R.id.temp1_3)
+        temp2_3 = view.findViewById<TextView>(R.id.temp2_3)
+        temp3_3 = view.findViewById<TextView>(R.id.temp3_3)
+        qr1_3 = view.findViewById<TextView>(R.id.qr1_3)
+        qr2_3 = view.findViewById<TextView>(R.id.qr2_3)
+        qr3_3 = view.findViewById<TextView>(R.id.qr3_3)
+        bufferD1_3 = view.findViewById<TextView>(R.id.bufferD1_3)
+        bufferD2_3 = view.findViewById<TextView>(R.id.bufferD2_3)
+        bufferD3_3 = view.findViewById<TextView>(R.id.bufferD3_3)
+        slope1_3 = view.findViewById<TextView>(R.id.slope1_3)
+        slope2_3 = view.findViewById<TextView>(R.id.slope2_3)
+        slope3_3 = view.findViewById<TextView>(R.id.slope3_3)
+        bufferD1_3.setSelected(true)
+        bufferD2_3.setSelected(true)
+        bufferD3_3.setSelected(true)
         calibRecyclerView = view.findViewById<RecyclerView>(R.id.rvCalibFileView)
-
+        phEdit1_3 = view.findViewById<TextView>(R.id.phEdit1_3)
+        phEdit2_3 = view.findViewById<TextView>(R.id.phEdit2_3)
+        phEdit3_3 = view.findViewById<TextView>(R.id.phEdit3_3)
+        dt1_3 = view.findViewById<TextView>(R.id.dt1_3)
+        dt2_3 = view.findViewById<TextView>(R.id.dt2_3)
+        dt3_3 = view.findViewById<TextView>(R.id.dt3_3)
         tvTempCurr = view.findViewById<TextView>(R.id.tvTempCurr)
         tvPhCurr = view.findViewById<TextView>(R.id.tvPhCurr)
         phView = view.findViewById(R.id.phView)
@@ -3766,7 +4409,36 @@ class PhCalibFragmentNew : Fragment() {
                 v!!
             )
         })
-
+        phEdit1_3.setOnClickListener(View.OnClickListener { v: View? ->
+            this.onClick(
+                v!!
+            )
+        })
+        phEdit2_3.setOnClickListener(View.OnClickListener { v: View? ->
+            this.onClick(
+                v!!
+            )
+        })
+        phEdit3_3.setOnClickListener(View.OnClickListener { v: View? ->
+            this.onClick(
+                v!!
+            )
+        })
+        qr1_3.setOnClickListener(View.OnClickListener { v: View? ->
+            this.onClick(
+                v!!
+            )
+        })
+        qr2_3.setOnClickListener(View.OnClickListener { v: View? ->
+            this.onClick(
+                v!!
+            )
+        })
+        qr3_3.setOnClickListener(View.OnClickListener { v: View? ->
+            this.onClick(
+                v!!
+            )
+        })
         if (Constants.OFFLINE_MODE || Constants.OFFLINE_DATA) {
             syncOfflineData.setVisibility(View.GONE)
         } else {
@@ -3779,22 +4451,28 @@ class PhCalibFragmentNew : Fragment() {
 
 
     private lateinit var fivePointCalibStart: LinearLayout
+    private lateinit var threePointCalibStart: LinearLayout
     private var connectedWebsocket = false
     private lateinit var log1: LinearLayout
     private lateinit var log2: LinearLayout
     private lateinit var log3: LinearLayout
     private lateinit var log4: LinearLayout
     private lateinit var log5: LinearLayout
-
+    private lateinit var log1_3: LinearLayout
+    private lateinit var log2_3: LinearLayout
+    private lateinit var log3_3: LinearLayout
+    private lateinit var log3point: LinearLayout
     private lateinit var log5point: LinearLayout
     private lateinit var calibSpinner: LinearLayout
     private lateinit var spin: Spinner
     private lateinit var tvTimer: TextView
+    private lateinit var tvTimerThree: TextView
     private lateinit var tvTempCurr: TextView
     private lateinit var tvPhCurr: TextView
     private lateinit var modeText: TextView
     private lateinit var finalSlope: TextView
     private lateinit var calibrateBtn: Button
+    private lateinit var calibrateBtnThree: Button
     private lateinit var printCalibData: Button
     private lateinit var phMvTable: Button
     private lateinit var phGraph: Button
@@ -3896,8 +4574,40 @@ class PhCalibFragmentNew : Fragment() {
     private lateinit var SLOPE4: String
     private lateinit var SLOPE5: String
 
+    private lateinit var MV1_3: String
+    private lateinit var MV2_3: String
+    private lateinit var MV3_3: String
+
+    private lateinit var PH1_3: String
+    private lateinit var PH2_3: String
+    private lateinit var PH3_3: String
+
+    private lateinit var DT1_3: String
+    private lateinit var DT2_3: String
+    private lateinit var DT3_3: String
+
+    private lateinit var BFD1_3: String
+    private lateinit var BFD2_3: String
+    private lateinit var BFD3_3: String
+
+    private lateinit var t1_3: String
+    private lateinit var t2_3: String
+    private lateinit var t3_3: String
+
+    private lateinit var pHAC1_3: String
+    private lateinit var pHAC2_3: String
+    private lateinit var pHAC3_3: String
+
+    private lateinit var mV1_3: String
+    private lateinit var mV2_3: String
+    private lateinit var mV3_3: String
+
+    private lateinit var SLOPE1_3: String
+    private lateinit var SLOPE2_3: String
+    private lateinit var SLOPE3_3: String
 
     private lateinit var fivePointCalib: CardView
+    private lateinit var threePointCalib: CardView
 
 
     private val bufferLabels = arrayOf("B_1", "B_2", "B_3", "B_4", "B_5")
@@ -3909,6 +4619,7 @@ class PhCalibFragmentNew : Fragment() {
     private val coeffLabelsThree = arrayOf("VAL_2", "VAL_3", "VAL_4")
 
     lateinit var resetCalibFive: Button
+    lateinit var resetCalibThree: Button
     lateinit var syncOfflineData: Button
 
 
@@ -3939,7 +4650,41 @@ class PhCalibFragmentNew : Fragment() {
     private lateinit var qr4: TextView
     private lateinit var qr5: TextView
 
+    private lateinit var ph1_3: TextView
+    private lateinit var ph2_3: TextView
+    private lateinit var ph3_3: TextView
 
+    private lateinit var phAfterCalib1_3: TextView
+    private lateinit var phAfterCalib2_3: TextView
+    private lateinit var phAfterCalib3_3: TextView
+
+    private lateinit var slope1_3: TextView
+    private lateinit var slope2_3: TextView
+    private lateinit var slope3_3: TextView
+
+    private lateinit var temp1_3: TextView
+    private lateinit var temp2_3: TextView
+    private lateinit var temp3_3: TextView
+
+    private lateinit var mv1_3: TextView
+    private lateinit var mv2_3: TextView
+    private lateinit var mv3_3: TextView
+
+    private lateinit var dt1_3: TextView
+    private lateinit var dt2_3: TextView
+    private lateinit var dt3_3: TextView
+
+    private lateinit var bufferD1_3: TextView
+    private lateinit var bufferD2_3: TextView
+    private lateinit var bufferD3_3: TextView
+
+    private lateinit var phEdit1_3: TextView
+    private lateinit var phEdit2_3: TextView
+    private lateinit var phEdit3_3: TextView
+
+    private lateinit var qr1_3: TextView
+    private lateinit var qr2_3: TextView
+    private lateinit var qr3_3: TextView
     lateinit var phView: PhView
     lateinit var tvEcCurr: TextView
 

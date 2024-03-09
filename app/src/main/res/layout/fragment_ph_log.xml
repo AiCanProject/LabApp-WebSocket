@@ -123,15 +123,27 @@
                 android:layout_height="match_parent"
                 android:orientation="horizontal">
 
+
+                <Spinner
+                    android:id="@+id/productSpinner"
+                    android:layout_width="200dp"
+                    android:layout_height="45dp"
+                    android:background="@drawable/update_background"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="8dp" />
+
+
                 <com.google.android.material.card.MaterialCardView
                     android:layout_width="200dp"
                     android:layout_height="wrap_content"
                     android:layout_marginRight="10dp"
+                    android:visibility="gone"
                     app:cardCornerRadius="10dp"
                     app:strokeColor="@color/black"
                     app:strokeWidth="1dp">
 
                     <EditText
+
                         android:id="@+id/compound_name"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
@@ -225,7 +237,7 @@
                 android:id="@+id/submit"
                 android:layout_width="wrap_content"
                 android:layout_height="40dp"
-                android:layout_gravity="center"
+                android:layout_gravity="start"
                 android:text="Submit"
                 android:textAllCaps="false"
                 android:textSize="15sp"
@@ -265,14 +277,21 @@
             <Button
                 android:id="@+id/print"
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
+                android:layout_height="35dp"
                 android:layout_gravity="center"
-
-                android:text="Print"
+                android:text="Print PDF"
                 android:textAllCaps="false"
-                android:textSize="15sp"
+                android:textSize="12sp"
                 android:visibility="visible" />
-
+            <Button
+                android:id="@+id/printCSV"
+                android:layout_width="wrap_content"
+                android:layout_height="35dp"
+                android:layout_gravity="center"
+                android:text="Print CSV"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                android:visibility="visible" />
             <Button
                 android:id="@+id/clear"
                 android:layout_width="wrap_content"

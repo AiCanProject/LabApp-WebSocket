@@ -1,6 +1,9 @@
 package com.aican.aicanapp.utils;
 
 public class SharedKeys {
+
+    public static String LEFT_DESIGNATION_KEY = "LEFT_DESIGNATION";
+    public static String RIGHT_DESIGNATION_KEY = "RIGHT_DESIGNATION";
     public static String minMV1 = "minMV1" ;
     public static String minMV2 = "minMV2" ;
     public static String minMV3 = "minMV3" ;

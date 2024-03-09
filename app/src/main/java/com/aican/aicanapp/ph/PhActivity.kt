@@ -220,7 +220,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
     }
 
     override fun onClick(view: View) {
-        if (Source.auto_log === 0 && !Source.calibratingNow) {
+        if (Source.auto_log == 0 && !Source.calibratingNow) {
             val select2 = findViewById<TextView>(R.id.select2)
             select2.background = resources.getDrawable(R.drawable.backselect1)
             select2.visibility = View.INVISIBLE
