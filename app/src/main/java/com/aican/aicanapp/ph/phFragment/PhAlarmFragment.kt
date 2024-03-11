@@ -184,39 +184,46 @@ class PhAlarmFragment : Fragment() {
 
     public fun webSocketInit() {
         WebSocketManager.setMessageListener { message ->
-            requireActivity().runOnUiThread {
-                updateMessage(message)
 
-                try {
-                    jsonData = JSONObject(message)
-                    Log.d("JSONReceived:PHFragment", "onMessage: " + message)
-                    if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val battery: String = jsonData.getString("BATTERY")
+            if (requireActivity() != null) {
+
+                requireActivity().runOnUiThread {
+                    updateMessage(message)
+
+                    try {
+                        jsonData = JSONObject(message)
+                        Log.d("JSONReceived:PHFragment", "onMessage: " + message)
+                        if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val battery: String = jsonData.getString("BATTERY")
 //                        binding.batteryPercent.setText("$battery %")
-                        SharedPref.saveData(
-                            requireContext(),
-                            "battery" + PhActivity.DEVICE_ID,
-                            battery
-                        )
+                            SharedPref.saveData(
+                                requireContext(),
+                                "battery" + PhActivity.DEVICE_ID,
+                                battery
+                            )
 
+                        }
+                        if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val ph = jsonData.getString("PH_VAL").toFloat()
+                            val phForm =
+                                String.format(Locale.UK, "%.2f", ph)
+                            AlarmConstants.PH = ph
+                        }
+                        if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                            val temp = jsonData.getString("TEMP_VAL")
+                        }
+                    } catch (e: JSONException) {
+                        e.printStackTrace()
                     }
-                    if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val ph = jsonData.getString("PH_VAL").toFloat()
-                        val phForm =
-                            String.format(Locale.UK, "%.2f", ph)
-                        AlarmConstants.PH = ph
-                    }
-                    if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val temp = jsonData.getString("TEMP_VAL")
-                    }
-                } catch (e: JSONException) {
-                    e.printStackTrace()
                 }
             }
         }
         WebSocketManager.setErrorListener { error ->
-            requireActivity().runOnUiThread {
-                updateError(error.toString())
+            if (requireActivity() != null) {
+
+                requireActivity().runOnUiThread {
+                    updateError(error.toString())
+                }
             }
         }
         WebSocketManager.setCloseListener { i, s, b ->
