@@ -2682,71 +2682,113 @@ class PhCalibFragmentNew : Fragment() {
                         log3.setBackgroundColor(Color.WHITE)
                         log4.setBackgroundColor(Color.WHITE)
                     }
-                    databaseHelper.insertCalibrationAllDataOffline(
-                        ph1.text.toString(),
-                        mv1.text.toString(),
-                        slope1.text.toString(),
-                        dt1.text.toString(),
-                        bufferD1.text.toString(),
-                        phAfterCalib1.text.toString(),
-                        tvTempCurr.text.toString(),
-                        if (dt1.text.toString().length >= 15) dt1.text.toString()
-                            .substring(0, 10) else "--",
-                        if (dt1.text.toString().length >= 15) dt1.text.toString()
-                            .substring(11, 16) else "--"
-                    )
-                    databaseHelper.insertCalibrationAllDataOffline(
-                        ph2.text.toString(),
-                        mv2.text.toString(),
-                        slope2.text.toString(),
-                        dt2.text.toString(),
-                        bufferD2.text.toString(),
-                        phAfterCalib2.text.toString(),
-                        tvTempCurr.text.toString(),
-                        if (dt2.text.toString().length >= 15) dt2.text.toString()
-                            .substring(0, 10) else "--",
-                        if (dt2.text.toString().length >= 15) dt2.text.toString()
-                            .substring(11, 16) else "--"
-                    )
-                    databaseHelper.insertCalibrationAllDataOffline(
-                        ph3.text.toString(),
-                        mv3.text.toString(),
-                        slope3.text.toString(),
-                        dt3.text.toString(),
-                        bufferD3.text.toString(),
-                        phAfterCalib3.text.toString(),
-                        tvTempCurr.text.toString(),
-                        if (dt3.text.toString().length >= 15) dt3.text.toString()
-                            .substring(0, 10) else "--",
-                        if (dt3.text.toString().length >= 15) dt3.text.toString()
-                            .substring(11, 16) else "--"
-                    )
-                    databaseHelper.insertCalibrationAllDataOffline(
-                        ph4.text.toString(),
-                        mv4.text.toString(),
-                        slope4.text.toString(),
-                        dt4.text.toString(),
-                        bufferD4.text.toString(),
-                        phAfterCalib4.text.toString(),
-                        tvTempCurr.text.toString(),
-                        if (dt4.text.toString().length >= 15) dt4.text.toString()
-                            .substring(0, 10) else "--",
-                        if (dt4.text.toString().length >= 15) dt4.text.toString()
-                            .substring(11, 16) else "--"
-                    )
-                    databaseHelper.insertCalibrationAllDataOffline(
-                        ph5.text.toString(),
-                        mv5.text.toString(),
-                        slope5.text.toString(),
-                        dt5.text.toString(),
-                        bufferD5.text.toString(),
-                        phAfterCalib5.text.toString(),
-                        tvTempCurr.text.toString(),
-                        if (dt5.text.toString().length >= 15) dt5.text.toString()
-                            .substring(0, 10) else "--",
-                        if (dt5.text.toString().length >= 15) dt5.text.toString()
-                            .substring(11, 16) else "--"
-                    )
+                    if (ph_mode_selected == 5) {
+                        databaseHelper.insertCalibrationAllDataOffline(
+                            ph1.text.toString(),
+                            mv1.text.toString(),
+                            slope1.text.toString(),
+                            dt1.text.toString(),
+                            bufferD1.text.toString(),
+                            phAfterCalib1.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.insertCalibrationAllDataOffline(
+                            ph2.text.toString(),
+                            mv2.text.toString(),
+                            slope2.text.toString(),
+                            dt2.text.toString(),
+                            bufferD2.text.toString(),
+                            phAfterCalib2.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.insertCalibrationAllDataOffline(
+                            ph3.text.toString(),
+                            mv3.text.toString(),
+                            slope3.text.toString(),
+                            dt3.text.toString(),
+                            bufferD3.text.toString(),
+                            phAfterCalib3.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.insertCalibrationAllDataOffline(
+                            ph4.text.toString(),
+                            mv4.text.toString(),
+                            slope4.text.toString(),
+                            dt4.text.toString(),
+                            bufferD4.text.toString(),
+                            phAfterCalib4.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.insertCalibrationAllDataOffline(
+                            ph5.text.toString(),
+                            mv5.text.toString(),
+                            slope5.text.toString(),
+                            dt5.text.toString(),
+                            bufferD5.text.toString(),
+                            phAfterCalib5.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                    }else{
+                        databaseHelper.insertCalibrationAllDataOffline(
+                            ph2.text.toString(),
+                            mv2.text.toString(),
+                            slope2.text.toString(),
+                            dt2.text.toString(),
+                            bufferD2.text.toString(),
+                            phAfterCalib2.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.insertCalibrationAllDataOffline(
+                            ph3.text.toString(),
+                            mv3.text.toString(),
+                            slope3.text.toString(),
+                            dt3.text.toString(),
+                            bufferD3.text.toString(),
+                            phAfterCalib3.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.insertCalibrationAllDataOffline(
+                            ph4.text.toString(),
+                            mv4.text.toString(),
+                            slope4.text.toString(),
+                            dt4.text.toString(),
+                            bufferD4.text.toString(),
+                            phAfterCalib4.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                    }
                     databaseHelper.insertCalibrationAllDataOffline(
                         "calibration-ended", "-", "-", "-", "-", "-", "-", "-", "-"
                     )
