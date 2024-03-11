@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.StrictMode;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -113,39 +114,79 @@ public class CalibFileAdapter extends RecyclerView.Adapter<CalibFileAdapter.View
 
                             String path = new ContextWrapper(context).getExternalMediaDirs()[0] + "/LabApp/CalibrationData/" + selectedFile.getName();
                             File file = new File(path);
-
-                            try {
-//                                Intent mIntent = new Intent(Intent.ACTION_VIEW);
 //
-//                                mIntent.setData(Uri.fromFile(file));
-//                                mIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
-//                                mIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-//                                mIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-//                                mIntent.setClassName("csv.to.excel", "csv.to.excel.HomeActivity");
+//                            try {
+////                                Intent mIntent = new Intent(Intent.ACTION_VIEW);
+////
+////                                mIntent.setData(Uri.fromFile(file));
+////                                mIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+////                                mIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+////                                mIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+////                                mIntent.setClassName("csv.to.excel", "csv.to.excel.HomeActivity");
+////
+////                                Intent chooserIntent = Intent.createChooser(mIntent, "Convert PDF");
+////                                chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+////                                context.startActivity(chooserIntent);
 //
-//                                Intent chooserIntent = Intent.createChooser(mIntent, "Convert PDF");
+//                                Intent intentShare = new Intent(Intent.ACTION_SEND);
+//                                intentShare.setType("application/pdf");
+//                                intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//                                intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+//                                intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                                intentShare.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file));
+//
+////                                    Intent sharingIntent = new Intent(Intent.ACTION_VIEW);
+////                                    sharingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+////                                    sharingIntent.setData(Uri.fromFile(file));
+////
+//                                Intent chooserIntent = Intent.createChooser(intentShare, "Send file");
 //                                chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                                context.startActivity(chooserIntent);
-
-                                Intent intentShare = new Intent(Intent.ACTION_SEND);
-                                intentShare.setType("application/pdf");
-                                intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                                intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                intentShare.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file));
-
-//                                    Intent sharingIntent = new Intent(Intent.ACTION_VIEW);
-//                                    sharingIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                                    sharingIntent.setData(Uri.fromFile(file));
+////
+//                                context.getApplicationContext().startActivity(chooserIntent);
 //
-                                Intent chooserIntent = Intent.createChooser(intentShare, "Send file");
-                                chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                            } catch (Exception e) {
+//                                e.printStackTrace();
+//                            }
 //
-                                context.getApplicationContext().startActivity(chooserIntent);
+//                            String path;
+//                            File file = null;
 
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                            StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+                            StrictMode.setVmPolicy(builder.build());
+
+//                            // Determine the file path based on the activity
+//                            if (activity.equals("PhExport")) {
+//                                path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/Sensordata/" + selectedFile.getName();
+//                                file = new File(path);
+//                            } else if (activity.equals("EcExport")) {
+//                                path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/EcSensordata/" + selectedFile.getName();
+//                                file = new File(path);
+//                            }
+
+                            if (file != null && file.exists()) {
+                                try {
+                                    // Create intent to share the file
+                                    Intent intentShare = new Intent(Intent.ACTION_SEND);
+                                    intentShare.setType("application/pdf"); // Change type to "text/csv" for CSV files
+                                    intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                    intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                                    intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    intentShare.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+
+                                    // Create chooser intent to allow the user to select how to share the file
+                                    Intent chooserIntent = Intent.createChooser(intentShare, "Share file");
+                                    chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                                    // Start the chooser activity
+                                    context.startActivity(chooserIntent);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    Toast.makeText(context, "Error sharing file", Toast.LENGTH_SHORT).show();
+                                }
+                            } else {
+                                Toast.makeText(context, "File not found", Toast.LENGTH_SHORT).show();
                             }
+
 
                         }
 

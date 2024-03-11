@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.StrictMode;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
 import android.view.View;
@@ -14,7 +15,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
-import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aican.aicanapp.PDFViewer;
@@ -114,28 +114,71 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
                         }
                         if (item.getTitle().equals("SHARE")) {
 
-                            String path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/Sensordata/" + selectedFile.getName();
-                            File file = new File(path);
-
-                            try {
-
-
-                                Intent intentShare = new Intent(Intent.ACTION_SEND);
-                                intentShare.setType("application/pdf");
-                                intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                                intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                intentShare.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file));
-
-
-                                Intent chooserIntent = Intent.createChooser(intentShare, "Send file");
-                                chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                            String path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/Sensordata/" + selectedFile.getName();
+//                            File file = new File(path);
 //
-                                context.getApplicationContext().startActivity(chooserIntent);
+//                            StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+//                            StrictMode.setVmPolicy(builder.build());
+//
+//                            try {
+//
+//
+//                                Intent intentShare = new Intent(Intent.ACTION_SEND);
+//                                intentShare.setType("application/pdf");
+//                                intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+//                                intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+//                                intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+//                                intentShare.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file));
+//
+//
+//                                Intent chooserIntent = Intent.createChooser(intentShare, "Send file");
+//                                chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+////
+//                                context.getApplicationContext().startActivity(chooserIntent);
+//
+//                            } catch (Exception e) {
+//                                e.printStackTrace();
+//                            }
 
-                            } catch (Exception e) {
-                                e.printStackTrace();
+                            String path;
+                            File file = null;
+
+                            StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+                            StrictMode.setVmPolicy(builder.build());
+
+                            // Determine the file path based on the activity
+                            if (activity.equals("PhExport")) {
+                                path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/Sensordata/" + selectedFile.getName();
+                                file = new File(path);
+                            } else if (activity.equals("EcExport")) {
+                                path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/EcSensordata/" + selectedFile.getName();
+                                file = new File(path);
                             }
+
+                            if (file != null && file.exists()) {
+                                try {
+                                    // Create intent to share the file
+                                    Intent intentShare = new Intent(Intent.ACTION_SEND);
+                                    intentShare.setType("application/pdf"); // Change type to "text/csv" for CSV files
+                                    intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                                    intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                                    intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                    intentShare.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+
+                                    // Create chooser intent to allow the user to select how to share the file
+                                    Intent chooserIntent = Intent.createChooser(intentShare, "Share file");
+                                    chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+                                    // Start the chooser activity
+                                    context.startActivity(chooserIntent);
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                    Toast.makeText(context, "Error sharing file", Toast.LENGTH_SHORT).show();
+                                }
+                            } else {
+                                Toast.makeText(context, "File not found", Toast.LENGTH_SHORT).show();
+                            }
+
 
                         }
 
@@ -155,6 +198,9 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
                 String path;
                 File file = null;
 
+                StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
+                StrictMode.setVmPolicy(builder.build());
+
                 // Determine the file path based on the activity
                 if (activity.equals("PhExport")) {
                     path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/Sensordata/" + selectedFile.getName();
@@ -166,16 +212,13 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
 
                 if (file != null && file.exists()) {
                     try {
-                        // Get URI using FileProvider
-                        Uri fileUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
-
                         // Create intent to share the file
                         Intent intentShare = new Intent(Intent.ACTION_SEND);
                         intentShare.setType("application/pdf"); // Change type to "text/csv" for CSV files
                         intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                         intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                         intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        intentShare.putExtra(Intent.EXTRA_STREAM, fileUri);
+                        intentShare.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
 
                         // Create chooser intent to allow the user to select how to share the file
                         Intent chooserIntent = Intent.createChooser(intentShare, "Share file");
