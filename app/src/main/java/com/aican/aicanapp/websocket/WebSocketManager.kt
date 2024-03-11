@@ -36,6 +36,7 @@ object WebSocketManager {
                 override fun onClose(code: Int, reason: String?, remote: Boolean) {
                     closeListeners.invoke(code, reason, remote)
                     closeListener!!.invoke(code, reason, remote)
+                    Log.e("OnClose","OnClose")
                     setCloseListener(closeListeners)
 //                    disconnect(false)
                     clearListeners()
@@ -49,6 +50,8 @@ object WebSocketManager {
 
                 override fun onError(ex: Exception?) {
                     ex?.let {
+                        Log.e("ExceptionError","Error " + it)
+
                         errorListener?.invoke(it)
                     }
                 }
