@@ -127,8 +127,10 @@
                 android:layout_marginStart="20dp"
                 android:layout_marginTop="2dp"
                 android:layout_weight="1"
+                android:drawableEnd="@drawable/cancel"
+                android:drawableTint="@color/black"
                 android:gravity="center_vertical"
-                android:text="2022"
+                android:text="Not selected"
                 android:textColor="@color/black"
                 android:textSize="10dp" />
 
@@ -139,8 +141,10 @@
                 android:layout_marginStart="20dp"
                 android:layout_marginTop="2dp"
                 android:layout_weight="1"
+                android:drawableEnd="@drawable/cancel"
+                android:drawableTint="@color/black"
                 android:gravity="center_vertical"
-                android:text="2022"
+                android:text="Not selected"
                 android:textColor="@color/black"
                 android:textSize="10dp" />
 

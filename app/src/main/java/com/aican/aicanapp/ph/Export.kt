@@ -333,6 +333,18 @@ class Export : AppCompatActivity() {
             }
         }
 
+        binding.dateText.setOnClickListener {
+            binding.dateText.text = "Not selected"
+            startDateString = ""
+            endDateString = ""
+        }
+
+        binding.timeText.setOnClickListener {
+            binding.timeText.text = "Not selected"
+            startTimeString = ""
+            endTimeString = ""
+        }
+
         arNumBtn.setOnClickListener { arNumString = arNumEditText.text.toString() }
 
         batchNumBtn.setOnClickListener { batchNumString = batchNumEditText.text.toString() }
