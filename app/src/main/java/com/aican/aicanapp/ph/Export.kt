@@ -693,6 +693,9 @@ class Export : AppCompatActivity() {
             var rowCounter = 0
             val db = databaseHelper.writableDatabase
             val calibCSV = db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
+
+
+
             while (calibCSV.moveToNext()) {
                 val ph = calibCSV.getString(calibCSV.getColumnIndex("PH")) ?: "--"
                 val mv = calibCSV.getString(calibCSV.getColumnIndex("MV")) ?: "--"
@@ -701,16 +704,16 @@ class Export : AppCompatActivity() {
                 val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC")) ?: "--"
                 val temperature1 =
                     calibCSV.getString(calibCSV.getColumnIndex("temperature")) ?: "--"
-
-                val row = arrayOf(ph, pHAC, slope, mv, date, temperature1)
-                writer.writeNext(row)
-
-                rowCounter++
-                if (rowCounter % 5 == 0) {
+                if (ph == "calibration-ended") {
                     // Add the headers for the next set of rows
                     writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "")) // Blank row
                     writer.writeNext(calibHeaders)
+                } else {
+                    val row = arrayOf(ph, pHAC, slope, mv, date, temperature1)
+                    writer.writeNext(row)
                 }
+
+
             }
 
             writer.close()
