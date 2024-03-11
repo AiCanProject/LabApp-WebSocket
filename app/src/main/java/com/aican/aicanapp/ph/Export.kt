@@ -174,6 +174,8 @@ class Export : AppCompatActivity() {
 
         deviceID = PhActivity.DEVICE_ID!!
 
+        binding.DeviceId.text = deviceID
+
         companyNameEditText = findViewById<EditText>(R.id.companyName)
 
         companyNameEditText.addTextChangedListener(object : TextWatcher {
@@ -274,6 +276,10 @@ class Export : AppCompatActivity() {
                 val endDate = selection.second
                 startDateString = DateFormat.format("yyyy-MM-dd", Date(startDate)).toString()
                 endDateString = DateFormat.format("yyyy-MM-dd", Date(endDate)).toString()
+
+                binding.dateTimeText.text =
+                    "From: $startDateString [ $startTimeString ] to: $endDateString [ $endTimeString ]"
+
                 val date1 = "Start: $startDateString End: $endDateString"
                 Toast.makeText(this, date1, Toast.LENGTH_SHORT).show()
 
@@ -294,6 +300,8 @@ class Export : AppCompatActivity() {
                     calendar[Calendar.MINUTE] = startMinute
 
                     startTimeString = DateFormat.format("HH:mm", calendar).toString()
+                    binding.dateTimeText.text =
+                        "From: $startDateString [ $startTimeString ] to: $endDateString [ $endTimeString ]"
 
                     val timePicker2 = MaterialTimePicker.Builder()
                         .setTimeFormat(TimeFormat.CLOCK_24H)
@@ -312,6 +320,10 @@ class Export : AppCompatActivity() {
                         calendar2[Calendar.MINUTE] = endMinute
 
                         endTimeString = DateFormat.format("HH:mm", calendar2).toString()
+
+                        binding.dateTimeText.text =
+                            "From: $startDateString [ $startTimeString ] to: $endDateString [ $endTimeString ]"
+
                     }
                 }
             }
