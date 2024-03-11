@@ -63,9 +63,11 @@ class PDF_CSV_Adapter(
 
                 // Start CSVWebViewActivity to display the HTML content
                 val intent = Intent(context, CSVWebViewActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     putExtra("HtmlContent", htmlContent)
                 }
-                context.startActivity(intent)
+
+                context.applicationContext.startActivity(intent)
 //
 //                val file = File(context.getExternalFilesDir(null), path)
 //                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
