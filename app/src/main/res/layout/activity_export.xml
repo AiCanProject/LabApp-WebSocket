@@ -161,10 +161,10 @@
     <!--        app:layout_constraintTop_toBottomOf="@+id/dateEnd" />-->
 
     <EditText
-        android:id="@+id/compound_num_sort"
+        android:id="@+id/ar_num_sort"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:hint="Enter Product Name to get data"
+        android:hint="Enter AR Num Name to get data"
         android:textColor="#000"
         android:textColorHint="#676767"
         app:layout_constraintEnd_toStartOf="@+id/ar_text_button"
@@ -205,10 +205,10 @@
         app:layout_constraintTop_toBottomOf="@id/ar_text_button" />
 
     <EditText
-        android:id="@+id/ar_num_sort"
+        android:id="@+id/compound_num_sort"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:hint="Enter AR Num to get data"
+        android:hint="Enter Product to get data"
         android:textColor="#000"
         android:textColorHint="#676767"
         app:layout_constraintEnd_toStartOf="@+id/compound_text_button"
