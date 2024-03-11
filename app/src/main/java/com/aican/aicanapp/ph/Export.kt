@@ -36,7 +36,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import com.aican.aicanapp.R
-import com.aican.aicanapp.adapters.FileAdapter
+import com.aican.aicanapp.adapters.PDF_CSV_Adapter
 import com.aican.aicanapp.adapters.UserDataAdapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.ActivityExportBinding
@@ -131,7 +131,7 @@ class Export : AppCompatActivity() {
     lateinit var companyName: String
     lateinit var nullEntry: String
     lateinit var printAllCalibData: Button
-    lateinit var fAdapter: FileAdapter
+    lateinit var fAdapter: PDF_CSV_Adapter
     lateinit var uAdapter: UserDataAdapter
     lateinit var companyNameEditText: EditText
     lateinit var arNumEditText: EditText
@@ -330,7 +330,7 @@ class Export : AppCompatActivity() {
         val filesAndFoldersPDF = rootPDF.listFiles()
 
 
-        fAdapter = FileAdapter(
+        fAdapter = PDF_CSV_Adapter(
             applicationContext,
             reverseFileArray(filesAndFoldersPDF ?: arrayOfNulls<File>(0)),
             "PhExport"
@@ -471,7 +471,6 @@ class Export : AppCompatActivity() {
 //        }
 
 
-
         exportPDFAllLogDataBtn.setOnClickListener {
             companyName = companyNameEditText.text.toString()
             if (!companyName.isEmpty()) {
@@ -514,20 +513,20 @@ class Export : AppCompatActivity() {
         binding.printAllCalibData.visibility = View.VISIBLE
         exportPDFAllLogDataBtn.visibility = View.VISIBLE
         binding.printAllCalibDataCSV.visibility = View.VISIBLE
-        binding.printSensorCSV.visibility  = View.VISIBLE
+        binding.printSensorCSV.visibility = View.VISIBLE
 
-        if (Source.EXPORT_CSV){
+        if (Source.EXPORT_CSV) {
             binding.printAllCalibDataCSV.visibility = View.VISIBLE
-            binding.printSensorCSV.visibility  = View.VISIBLE
-        }else{
+            binding.printSensorCSV.visibility = View.VISIBLE
+        } else {
             binding.printAllCalibDataCSV.visibility = View.GONE
-            binding.printSensorCSV.visibility  = View.GONE
+            binding.printSensorCSV.visibility = View.GONE
         }
 
-        if (Source.EXPORT_PDF){
+        if (Source.EXPORT_PDF) {
             binding.printAllCalibData.visibility = View.VISIBLE
             exportPDFAllLogDataBtn.visibility = View.VISIBLE
-        }else{
+        } else {
             binding.printAllCalibData.visibility = View.GONE
             exportPDFAllLogDataBtn.visibility = View.GONE
         }
@@ -568,7 +567,7 @@ class Export : AppCompatActivity() {
             sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
 
         // Set up RecyclerView with adapter
-        fAdapter = FileAdapter(applicationContext, sortedFiles.toTypedArray(), "PhExport")
+        fAdapter = PDF_CSV_Adapter(applicationContext, sortedFiles.toTypedArray(), "PhExport")
 
         recyclerView.adapter = fAdapter
         fAdapter.notifyDataSetChanged()
@@ -1121,7 +1120,7 @@ class Export : AppCompatActivity() {
         return bitmap
     }
 
-    fun reverseFileArray(fileArray: Array<File?>?): Array<File?>? {
+    fun reverseFileArray(fileArray: Array<File>?): Array<File>? {
         if (fileArray != null) {
             for (i in 0 until fileArray.size / 2) {
                 val a = fileArray[i]

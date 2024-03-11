@@ -38,6 +38,7 @@ import androidx.room.Room
 import com.aican.aicanapp.ProbeScanner
 import com.aican.aicanapp.R
 import com.aican.aicanapp.adapters.CalibFileAdapter
+import com.aican.aicanapp.adapters.PDF_CSV_Adapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.dataClasses.BufferData
 import com.aican.aicanapp.dataClasses.CalibDatClass
@@ -226,7 +227,7 @@ class PhCalibFragmentNew : Fragment() {
             sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
 
         // Set up RecyclerView with adapter
-        calibFileAdapter = CalibFileAdapter(requireContext(), sortedFiles.toTypedArray())
+        calibFileAdapter = PDF_CSV_Adapter(requireContext(), sortedFiles.toTypedArray(), "PhCalib")
         calibRecyclerView.adapter = calibFileAdapter
         calibFileAdapter.notifyDataSetChanged()
         calibRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -247,8 +248,8 @@ class PhCalibFragmentNew : Fragment() {
         val rootPDF = File(pathPDF)
         fileNotWrite(root)
         val filesAndFoldersPDF = rootPDF.listFiles()
-        calibFileAdapter = CalibFileAdapter(
-            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF)
+        calibFileAdapter = PDF_CSV_Adapter(
+            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF), "PhCalib"
         )
         calibRecyclerView.adapter = calibFileAdapter
         calibFileAdapter.notifyDataSetChanged()
@@ -3426,7 +3427,7 @@ class PhCalibFragmentNew : Fragment() {
     }
 
 
-    fun reverseFileArray(fileArray: Array<File?>): Array<File?>? {
+    fun reverseFileArray(fileArray: Array<File>): Array<File>? {
         for (i in 0 until fileArray.size / 2) {
             val a = fileArray[i]
             fileArray[i] = fileArray[fileArray.size - i - 1]
@@ -3912,7 +3913,7 @@ class PhCalibFragmentNew : Fragment() {
     lateinit var binding: FragmentPhCalibNewBinding
 
     private lateinit var calibRecyclerView: RecyclerView
-    private lateinit var calibFileAdapter: CalibFileAdapter
+    private lateinit var calibFileAdapter: PDF_CSV_Adapter
 
     private var minMV1: Float = 0f
     private var minMV2: Float = 0f
