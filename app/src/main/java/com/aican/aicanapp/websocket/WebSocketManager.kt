@@ -79,10 +79,13 @@ object WebSocketManager {
         }
     }
 
-    fun reconnecting(){
-
+    fun reconnecting() {
+        // Check if WebSocketClient exists and WebSocket is not connected
+        if (webSocketClient != null && !webSocketClient!!.isOpen) {
+            // Attempt to reconnect
+            webSocketClient!!.connect()
+        }
     }
-
     fun setMessageListener(listener: (String) -> Unit) {
         messageListener = listener
     }

@@ -165,36 +165,37 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
             if (binding.offlineModeSwitch.isChecked){
                 isReconnecting = true
 
-                WebSocketManager.disconnect(true)
+                WebSocketManager.reconnecting()
+//                WebSocketManager.disconnect(true)
 
-                WebSocketManager.initializeWebSocket(uri,
-                    // Open listener
-                    {
-                        // WebSocket connection opened
-                        runOnUiThread {
-                            isReconnecting = false
-                            Source.SOCKET_CONNECTED = true
-                            binding.socketConnected.visibility = View.VISIBLE
-                            binding.socketDisconnected.visibility = View.GONE
-                        }
-
-
-
-                    },
-                    // Close listener
-                    { code, reason, remote ->
-                        // WebSocket connection closed
-                        // Handle UI or other actions as needed
-                        runOnUiThread {
-//                            Source.SOCKET_CONNECTED = false
-//                            binding.offlineModeSwitch.isChecked = false
-                            sharedViewModel.closeConnectionLiveData.value = "" + ""
-
-                            binding.socketConnected.visibility = View.GONE
-                            binding.socketDisconnected.visibility = View.VISIBLE
-                        }
-                    }
-                )
+//                WebSocketManager.initializeWebSocket(uri,
+//                    // Open listener
+//                    {
+//                        // WebSocket connection opened
+//                        runOnUiThread {
+//                            isReconnecting = false
+//                            Source.SOCKET_CONNECTED = true
+//                            binding.socketConnected.visibility = View.VISIBLE
+//                            binding.socketDisconnected.visibility = View.GONE
+//                        }
+//
+//
+//
+//                    },
+//                    // Close listener
+//                    { code, reason, remote ->
+//                        // WebSocket connection closed
+//                        // Handle UI or other actions as needed
+//                        runOnUiThread {
+////                            Source.SOCKET_CONNECTED = false
+////                            binding.offlineModeSwitch.isChecked = false
+//                            sharedViewModel.closeConnectionLiveData.value = "" + ""
+//
+//                            binding.socketConnected.visibility = View.GONE
+//                            binding.socketDisconnected.visibility = View.VISIBLE
+//                        }
+//                    }
+//                )
             }else{
 
             }
