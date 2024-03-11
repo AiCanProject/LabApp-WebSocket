@@ -177,10 +177,13 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                     {
                         // WebSocket connection opened
                         runOnUiThread {
+
                             isReconnecting = false
                             Source.SOCKET_CONNECTED = true
                             binding.socketConnected.visibility = View.VISIBLE
                             binding.socketDisconnected.visibility = View.GONE
+
+                            phFragment.webSocketInit()
                         }
 
 

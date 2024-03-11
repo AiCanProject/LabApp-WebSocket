@@ -243,7 +243,7 @@ class PhFragment : Fragment() {
     }
 
 
-    private fun webSocketInit() {
+    public fun webSocketInit() {
 
 
         if (Source.SOCKET_CONNECTED) {
