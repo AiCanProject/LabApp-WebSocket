@@ -39,6 +39,15 @@ interface AllLogsDataDao {
     ): List<AllLogsEntity>
 
     @Query(
+        "SELECT * FROM all_logs_data WHERE date BETWEEN :startDate AND :endDate"
+    )
+    fun getAllLogBy_Date(
+        startDate: String,
+        endDate: String
+    ): List<AllLogsEntity>
+
+
+    @Query(
         "SELECT * FROM all_logs_data WHERE (arnum = :arnum) AND (batchnum = :batchnum) AND (compound = :compound)"
     )
     fun getLogByBAC(
@@ -187,5 +196,82 @@ interface AllLogsDataDao {
         batchnum: String
     ): List<AllLogsEntity>
 
+    /////// only date
+
+    @Query(
+        "SELECT * FROM all_logs_data WHERE date BETWEEN :startDate AND :endDate AND" +
+                " (arnum = :arnum) AND (batchnum = :batchnum) AND (compound = :compound)"
+    )
+    fun getLogByBAC_Date(
+        startDate: String,
+        endDate: String,
+        arnum: String,
+        batchnum: String,
+        compound: String
+    ): List<AllLogsEntity>
+
+    @Query(
+        "SELECT * FROM all_logs_data WHERE date BETWEEN :startDate AND :endDate AND" +
+                " (batchnum = :batchnum)"
+    )
+    fun getLogByBatchnum_Date(
+        startDate: String,
+        endDate: String,
+        batchnum: String
+    ): List<AllLogsEntity>
+
+    @Query(
+        "SELECT * FROM all_logs_data WHERE date BETWEEN :startDate AND :endDate AND" +
+                " (arnum = :arnum)"
+    )
+    fun getLogByArnum_Date(
+        startDate: String,
+        endDate: String,
+        arnum: String
+    ): List<AllLogsEntity>
+
+    @Query(
+        "SELECT * FROM all_logs_data WHERE date BETWEEN :startDate AND :endDate AND" +
+                " (compound = :compound)"
+    )
+    fun getLogByProduct_Date(
+        startDate: String,
+        endDate: String,
+        compound: String
+    ): List<AllLogsEntity>
+
+    @Query(
+        "SELECT * FROM all_logs_data WHERE date BETWEEN :startDate AND :endDate AND" +
+                " (arnum = :arnum) AND (compound = :compound)"
+    )
+    fun getLogByArnumAndProduct_Date(
+        startDate: String,
+        endDate: String,
+        arnum: String,
+        compound: String
+    ): List<AllLogsEntity>
+
+
+    @Query(
+        "SELECT * FROM all_logs_data WHERE date BETWEEN :startDate AND :endDate AND" +
+                " (batchnum = :batchnum) AND (compound = :compound)"
+    )
+    fun getLogByBatchnumAndProduct_Date(
+        startDate: String,
+        endDate: String,
+        batchnum: String,
+        compound: String
+    ): List<AllLogsEntity>
+
+    @Query(
+        "SELECT * FROM all_logs_data WHERE date BETWEEN :startDate AND :endDate AND" +
+                " (arnum = :arnum) AND (batchnum = :batchnum)"
+    )
+    fun getLogByArnumAndBatchnum_Date(
+        startDate: String,
+        endDate: String,
+        arnum: String,
+        batchnum: String
+    ): List<AllLogsEntity>
 
 }

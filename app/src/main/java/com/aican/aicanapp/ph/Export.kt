@@ -277,54 +277,58 @@ class Export : AppCompatActivity() {
                 startDateString = DateFormat.format("yyyy-MM-dd", Date(startDate)).toString()
                 endDateString = DateFormat.format("yyyy-MM-dd", Date(endDate)).toString()
 
-                binding.dateTimeText.text =
-                    "From: $startDateString [ $startTimeString ] to: $endDateString [ $endTimeString ]"
+                binding.dateText.text =
+                    "From: $startDateString to: $endDateString"
 
                 val date1 = "Start: $startDateString End: $endDateString"
                 Toast.makeText(this, date1, Toast.LENGTH_SHORT).show()
 
-                val timePicker = MaterialTimePicker.Builder()
+            }
+        }
+
+        binding.materialTimeBtn.setOnClickListener {
+
+            val timePicker = MaterialTimePicker.Builder()
+                .setTimeFormat(TimeFormat.CLOCK_24H)
+                .setTitleText("Select Start Time")
+                .setHour(12)
+                .setMinute(10)
+                .build()
+            timePicker.show(supportFragmentManager, "time")
+
+            timePicker.addOnPositiveButtonClickListener {
+                startHour = timePicker.hour
+                startMinute = timePicker.minute
+
+                val calendar = Calendar.getInstance()
+                calendar[Calendar.HOUR_OF_DAY] = startHour
+                calendar[Calendar.MINUTE] = startMinute
+
+                startTimeString = DateFormat.format("HH:mm", calendar).toString()
+                binding.timeText.text =
+                    "From: $startDateString [ $startTimeString ] to: $endDateString [ $endTimeString ]"
+
+                val timePicker2 = MaterialTimePicker.Builder()
                     .setTimeFormat(TimeFormat.CLOCK_24H)
-                    .setTitleText("Select Start Time")
+                    .setTitleText("Select End Time")
                     .setHour(12)
                     .setMinute(10)
                     .build()
-                timePicker.show(supportFragmentManager, "time")
+                timePicker2.show(supportFragmentManager, "time")
 
-                timePicker.addOnPositiveButtonClickListener {
-                    startHour = timePicker.hour
-                    startMinute = timePicker.minute
+                timePicker2.addOnPositiveButtonClickListener { dialog2 ->
+                    endHour = timePicker2.hour
+                    endMinute = timePicker2.minute
 
-                    val calendar = Calendar.getInstance()
-                    calendar[Calendar.HOUR_OF_DAY] = startHour
-                    calendar[Calendar.MINUTE] = startMinute
+                    val calendar2 = Calendar.getInstance()
+                    calendar2[Calendar.HOUR_OF_DAY] = endHour
+                    calendar2[Calendar.MINUTE] = endMinute
 
-                    startTimeString = DateFormat.format("HH:mm", calendar).toString()
-                    binding.dateTimeText.text =
-                        "From: $startDateString [ $startTimeString ] to: $endDateString [ $endTimeString ]"
+                    endTimeString = DateFormat.format("HH:mm", calendar2).toString()
 
-                    val timePicker2 = MaterialTimePicker.Builder()
-                        .setTimeFormat(TimeFormat.CLOCK_24H)
-                        .setTitleText("Select End Time")
-                        .setHour(12)
-                        .setMinute(10)
-                        .build()
-                    timePicker2.show(supportFragmentManager, "time")
+                    binding.timeText.text =
+                        "From: $startTimeString to: $endTimeString"
 
-                    timePicker2.addOnPositiveButtonClickListener { dialog2 ->
-                        endHour = timePicker2.hour
-                        endMinute = timePicker2.minute
-
-                        val calendar2 = Calendar.getInstance()
-                        calendar2[Calendar.HOUR_OF_DAY] = endHour
-                        calendar2[Calendar.MINUTE] = endMinute
-
-                        endTimeString = DateFormat.format("HH:mm", calendar2).toString()
-
-                        binding.dateTimeText.text =
-                            "From: $startDateString [ $startTimeString ] to: $endDateString [ $endTimeString ]"
-
-                    }
                 }
             }
         }
@@ -1571,6 +1575,90 @@ class Export : AppCompatActivity() {
 
 
                 }
+            } else if (startDateString != "" && endDateString != "") {
+                if (arNumEditText.text.toString().isNotEmpty() || batchNumEditText.text.toString()
+                        .isNotEmpty()
+                    || compoundNameEditText.text.toString().isNotEmpty()
+                ) {
+
+                    if (arNumEditText.text.toString()
+                            .isNotEmpty() && batchNumEditText.text.toString()
+                            .isNotEmpty() && compoundNameEditText.text.toString().isNotEmpty()
+                    ) {
+                        allLogsArrayList = withContext(Dispatchers.IO) {
+                            allLogsDataDao.getLogByBAC_DNT(
+                                startDateString,
+                                endDateString,
+                                startTimeString,
+                                endTimeString,
+                                arNumEditText.text.toString(),
+                                batchNumEditText.text.toString(),
+                                compoundNameEditText.text.toString()
+                            )
+                        }
+                    } else if (arNumEditText.text.toString()
+                            .isNotEmpty() && batchNumEditText.text.toString().isNotEmpty()
+                    ) {
+                        allLogsArrayList = withContext(Dispatchers.IO) {
+                            allLogsDataDao.getLogByArnumAndBatchnum_Date(
+                                startDateString, endDateString,
+                                arNumEditText.text.toString(),
+                                batchNumEditText.text.toString()
+                            )
+                        }
+                    } else if (arNumEditText.text.toString()
+                            .isNotEmpty() && compoundNameEditText.text.toString().isNotEmpty()
+                    ) {
+                        allLogsArrayList = withContext(Dispatchers.IO) {
+
+                            allLogsDataDao.getLogByArnumAndProduct_Date(
+                                startDateString, endDateString,
+                                arNumEditText.text.toString(),
+                                compoundNameEditText.text.toString()
+                            )
+                        }
+                    } else if (batchNumEditText.text.toString()
+                            .isNotEmpty() && compoundNameEditText.text.toString().isNotEmpty()
+                    ) {
+                        allLogsArrayList = withContext(Dispatchers.IO) {
+
+                            allLogsDataDao.getLogByBatchnumAndProduct_Date(
+                                startDateString, endDateString,
+                                batchNumEditText.text.toString(),
+                                compoundNameEditText.text.toString()
+                            )
+                        }
+                    } else if (arNumEditText.text.toString().isNotEmpty()) {
+                        allLogsArrayList = withContext(Dispatchers.IO) {
+                            allLogsDataDao.getLogByArnum_Date(
+                                startDateString, endDateString,
+                                arNumEditText.text.toString(),
+                            )
+                        }
+                    } else if (batchNumEditText.text.toString().isNotEmpty()) {
+                        allLogsArrayList = withContext(Dispatchers.IO) {
+                            allLogsDataDao.getLogByBatchnum_Date(
+                                startDateString, endDateString,
+                                batchNumEditText.text.toString(),
+                            )
+                        }
+                    } else if (compoundNameEditText.text.toString().isNotEmpty()) {
+                        allLogsArrayList = withContext(Dispatchers.IO) {
+                            allLogsDataDao.getLogByProduct_Date(
+                                startDateString, endDateString,
+                                compoundNameEditText.text.toString(),
+                            )
+                        }
+                    } else {
+                        allLogsArrayList = withContext(Dispatchers.IO) {
+                            allLogsDataDao.getAllLogBy_Date(
+                                startDateString, endDateString,
+                            )
+                        }
+                    }
+
+
+                }
             } else {
                 if (arNumEditText.text.toString().isNotEmpty() || batchNumEditText.text.toString()
                         .isNotEmpty()
@@ -1650,103 +1738,156 @@ class Export : AppCompatActivity() {
 
             if (allLogsArrayList != null) {
                 Toast.makeText(this@Export, "" + allLogsArrayList.size, Toast.LENGTH_SHORT).show()
-                if (allLogsArrayList != null) {
-                    for (logs in allLogsArrayList) {
-                        val date = logs.date
-                        val time = logs.time
-                        val device = logs.deviceID
-                        val pH = logs.ph
-                        val temp = logs.temperature
-                        var batchnum = logs.batchnum
-                        var arnum = logs.arnum
-                        var comp = logs.compound
-                        table1.addCell(date)
-                        table1.addCell(time)
-                        table1.addCell(pH ?: "--")
-                        table1.addCell(temp ?: "--")
-                        if (batchnum == null) {
-                            batchnum = "--"
-                        }
-                        table1.addCell(
-                            if (batchnum != null && batchnum.length >= 8) stringSplitter(
-                                batchnum
-                            ) else batchnum
-                        )
-                        if (arnum == null) {
-                            arnum = "--"
-                        }
-                        table1.addCell(if (arnum != null && arnum.length >= 8) stringSplitter(arnum) else arnum)
-                        if (comp == null) {
-                            comp = "--"
-                        }
-                        table1.addCell(if (comp != null && comp.length >= 8) stringSplitter(comp) else comp)
-
-
+                for (logs in allLogsArrayList) {
+                    val date = logs.date
+                    val time = logs.time
+                    val device = logs.deviceID
+                    val pH = logs.ph
+                    val temp = logs.temperature
+                    var batchnum = logs.batchnum
+                    var arnum = logs.arnum
+                    var comp = logs.compound
+                    table1.addCell(date)
+                    table1.addCell(time)
+                    table1.addCell(pH ?: "--")
+                    table1.addCell(temp ?: "--")
+                    if (batchnum == null) {
+                        batchnum = "--"
                     }
-
-                    document.add(table1)
-
-                    document.add(Paragraph(""))
-
-
-                    val leftDesignationString =
-                        SharedPref.getSavedData(this@Export, SharedKeys.LEFT_DESIGNATION_KEY)
-                    val rightDesignationString =
-                        SharedPref.getSavedData(
-                            this@Export, SharedKeys.RIGHT_DESIGNATION_KEY
-                        )
-
-                    if (leftDesignationString != null && leftDesignationString != "") {
-
-                    } else {
-                        SharedPref.saveData(
-                            this@Export,
-                            SharedKeys.LEFT_DESIGNATION_KEY,
-                            "Operator Sign"
-                        )
+                    table1.addCell(
+                        if (batchnum != null && batchnum.length >= 8) stringSplitter(
+                            batchnum
+                        ) else batchnum
+                    )
+                    if (arnum == null) {
+                        arnum = "--"
                     }
-
-                    if (rightDesignationString != null && rightDesignationString != "") {
-                    } else {
-                        SharedPref.saveData(
-                            this@Export,
-                            SharedKeys.RIGHT_DESIGNATION_KEY,
-                            "Supervisor Sign"
-                        )
+                    table1.addCell(if (arnum != null && arnum.length >= 8) stringSplitter(arnum) else arnum)
+                    if (comp == null) {
+                        comp = "--"
                     }
+                    table1.addCell(if (comp != null && comp.length >= 8) stringSplitter(comp) else comp)
 
-                    if (leftDesignationString != null && leftDesignationString != "" &&
-                        rightDesignationString != null && rightDesignationString != ""
-                    ) {
-                        document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
-
-                    } else {
-                        document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
-
-                    }
-
-                    val imgBit1 = getSignImage()
-
-                    if (imgBit1 != null) {
-
-                        val byteArrayOutputStream = ByteArrayOutputStream()
-                        imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-                        val byteArray = byteArrayOutputStream.toByteArray()
-
-                        val imageData = ImageDataFactory.create(byteArray)
-                        val image = Image(imageData).setHeight(80f).setWidth(80f)
-                        document.add(image)
-
-                    } else {
-//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
-                    }
-                    document.close()
-                    Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
 
                 }
 
-            }
+                document.add(table1)
 
+                document.add(Paragraph(""))
+
+
+                val leftDesignationString =
+                    SharedPref.getSavedData(this@Export, SharedKeys.LEFT_DESIGNATION_KEY)
+                val rightDesignationString =
+                    SharedPref.getSavedData(
+                        this@Export, SharedKeys.RIGHT_DESIGNATION_KEY
+                    )
+
+                if (leftDesignationString != null && leftDesignationString != "") {
+
+                } else {
+                    SharedPref.saveData(
+                        this@Export,
+                        SharedKeys.LEFT_DESIGNATION_KEY,
+                        "Operator Sign"
+                    )
+                }
+
+                if (rightDesignationString != null && rightDesignationString != "") {
+                } else {
+                    SharedPref.saveData(
+                        this@Export,
+                        SharedKeys.RIGHT_DESIGNATION_KEY,
+                        "Supervisor Sign"
+                    )
+                }
+
+                if (leftDesignationString != null && leftDesignationString != "" &&
+                    rightDesignationString != null && rightDesignationString != ""
+                ) {
+                    document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
+
+                } else {
+                    document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+
+                }
+
+                val imgBit1 = getSignImage()
+
+                if (imgBit1 != null) {
+
+                    val byteArrayOutputStream = ByteArrayOutputStream()
+                    imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+                    val byteArray = byteArrayOutputStream.toByteArray()
+
+                    val imageData = ImageDataFactory.create(byteArray)
+                    val image = Image(imageData).setHeight(80f).setWidth(80f)
+                    document.add(image)
+
+                } else {
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
+                }
+                document.close()
+                Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
+
+            } else {
+                document.add(Paragraph(""))
+
+
+                val leftDesignationString =
+                    SharedPref.getSavedData(this@Export, SharedKeys.LEFT_DESIGNATION_KEY)
+                val rightDesignationString =
+                    SharedPref.getSavedData(
+                        this@Export, SharedKeys.RIGHT_DESIGNATION_KEY
+                    )
+
+                if (leftDesignationString != null && leftDesignationString != "") {
+
+                } else {
+                    SharedPref.saveData(
+                        this@Export,
+                        SharedKeys.LEFT_DESIGNATION_KEY,
+                        "Operator Sign"
+                    )
+                }
+
+                if (rightDesignationString != null && rightDesignationString != "") {
+                } else {
+                    SharedPref.saveData(
+                        this@Export,
+                        SharedKeys.RIGHT_DESIGNATION_KEY,
+                        "Supervisor Sign"
+                    )
+                }
+
+                if (leftDesignationString != null && leftDesignationString != "" &&
+                    rightDesignationString != null && rightDesignationString != ""
+                ) {
+                    document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
+
+                } else {
+                    document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+
+                }
+
+                val imgBit1 = getSignImage()
+
+                if (imgBit1 != null) {
+
+                    val byteArrayOutputStream = ByteArrayOutputStream()
+                    imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+                    val byteArray = byteArrayOutputStream.toByteArray()
+
+                    val imageData = ImageDataFactory.create(byteArray)
+                    val image = Image(imageData).setHeight(80f).setWidth(80f)
+                    document.add(image)
+
+                } else {
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
+                }
+                document.close()
+                Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
+            }
         }
 
 
