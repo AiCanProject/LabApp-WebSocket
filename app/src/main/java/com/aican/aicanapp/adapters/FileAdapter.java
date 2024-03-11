@@ -14,6 +14,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.FileProvider;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.aican.aicanapp.PDFViewer;
@@ -165,13 +166,16 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
 
                 if (file != null && file.exists()) {
                     try {
+                        // Get URI using FileProvider
+                        Uri fileUri = FileProvider.getUriForFile(context, context.getPackageName() + ".fileprovider", file);
+
                         // Create intent to share the file
                         Intent intentShare = new Intent(Intent.ACTION_SEND);
                         intentShare.setType("application/pdf"); // Change type to "text/csv" for CSV files
                         intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
                         intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
                         intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        intentShare.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
+                        intentShare.putExtra(Intent.EXTRA_STREAM, fileUri);
 
                         // Create chooser intent to allow the user to select how to share the file
                         Intent chooserIntent = Intent.createChooser(intentShare, "Share file");
