@@ -208,6 +208,16 @@
             android:textAllCaps="false"
             android:textSize="16dp" />
 
+        <Button
+            android:id="@+id/convertToXls"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginRight="25dp"
+            android:text="Convert to PDF"
+            android:textSize="12sp"
+            android:visibility="gone" />
+
+
     </LinearLayout>
 
     <View
