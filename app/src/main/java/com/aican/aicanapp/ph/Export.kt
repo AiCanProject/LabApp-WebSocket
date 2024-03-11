@@ -1649,16 +1649,16 @@ class Export : AppCompatActivity() {
                                 compoundNameEditText.text.toString(),
                             )
                         }
-                    } else {
-                        Log.e("NothingNoDate", "Ok")
-                        allLogsArrayList = withContext(Dispatchers.IO) {
-                            allLogsDataDao.getAllLogBy_Date(
-                                startDateString, endDateString
-                            )
-                        }
                     }
 
 
+                } else {
+                    Log.e("NothingNoDate", "Ok")
+                    allLogsArrayList = withContext(Dispatchers.IO) {
+                        allLogsDataDao.getAllLogBy_Date(
+                            startDateString, endDateString
+                        )
+                    }
                 }
             } else {
                 if (arNumEditText.text.toString().isNotEmpty() || batchNumEditText.text.toString()
