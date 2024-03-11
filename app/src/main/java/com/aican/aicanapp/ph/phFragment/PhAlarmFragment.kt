@@ -182,7 +182,7 @@ class PhAlarmFragment : Fragment() {
         }
     }
 
-    private fun webSocketInit() {
+    public fun webSocketInit() {
         WebSocketManager.setMessageListener { message ->
             requireActivity().runOnUiThread {
                 updateMessage(message)

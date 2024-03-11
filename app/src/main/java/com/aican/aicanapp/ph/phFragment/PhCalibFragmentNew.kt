@@ -264,7 +264,7 @@ class PhCalibFragmentNew : Fragment() {
         sharedViewModel.errorLiveData.value = error
     }
 
-    private fun websocketData() {
+    public fun websocketData() {
 
 
         WebSocketManager.setCloseListener { i, s, b ->

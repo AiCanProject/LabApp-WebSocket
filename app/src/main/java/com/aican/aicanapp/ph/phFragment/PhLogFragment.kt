@@ -909,7 +909,7 @@ class PhLogFragment : Fragment() {
     }
 
 
-    private fun webSocketConnection() {
+    public fun webSocketConnection() {
 
 
         WebSocketManager.setCloseListener { i, s, b ->

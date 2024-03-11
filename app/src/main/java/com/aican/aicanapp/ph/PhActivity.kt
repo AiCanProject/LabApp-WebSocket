@@ -184,6 +184,11 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                             binding.socketDisconnected.visibility = View.GONE
 
                             phFragment.webSocketInit()
+                            phCalibFragmentNew.websocketData()
+                            phLogFragment.webSocketConnection()
+                            phGraphFragment.webSocketInit()
+                            phAlarmFragment.webSocketInit()
+
                         }
 
 

@@ -220,7 +220,7 @@ class PhGraphFragment : Fragment() {
 
     }
 
-    private fun webSocketInit() {
+    public fun webSocketInit() {
 
         WebSocketManager.setCloseListener { i, s, b ->
             sharedViewModel.closeConnectionLiveData.value = s + ""
