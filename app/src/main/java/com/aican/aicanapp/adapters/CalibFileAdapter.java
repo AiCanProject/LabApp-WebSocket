@@ -111,7 +111,7 @@ public class CalibFileAdapter extends RecyclerView.Adapter<CalibFileAdapter.View
                         }
                         if (item.getTitle().equals("SHARE")) {
 
-                            String path = new ContextWrapper(context).getExternalMediaDirs()[0]+ "/LabApp/CalibrationData/" + selectedFile.getName();
+                            String path = new ContextWrapper(context).getExternalMediaDirs()[0] + "/LabApp/CalibrationData/" + selectedFile.getName();
                             File file = new File(path);
 
                             try {
@@ -157,6 +157,13 @@ public class CalibFileAdapter extends RecyclerView.Adapter<CalibFileAdapter.View
                 return true;
             }
         });
+
+        holder.shareBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+            }
+        });
     }
 
     @Override
@@ -166,12 +173,13 @@ public class CalibFileAdapter extends RecyclerView.Adapter<CalibFileAdapter.View
 
     public class ViewHolder extends RecyclerView.ViewHolder {
         TextView textView;
-        ImageView imageView;
+        ImageView imageView, shareBtn;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             textView = itemView.findViewById(R.id.file_name_text_view);
             imageView = itemView.findViewById(R.id.icon_view);
+            shareBtn = itemView.findViewById(R.id.shareBtn);
         }
     }
 }
