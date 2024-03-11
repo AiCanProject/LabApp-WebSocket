@@ -29,12 +29,34 @@ interface AllLogsDataDao {
     ): List<AllLogsEntity>
 
     @Query(
-        "SELECT * FROM all_logs_data WHERE (arnum = :arnum) AND (batchnum = :batchnum) AND (compound = :compound)"
+        "SELECT * FROM all_logs_data WHERE (arnum = :arnum) OR (batchnum = :batchnum) OR (compound = :compound)"
     )
     fun getLogByBAC(
         arnum: String,
         batchnum: String,
         compound: String
     ): List<AllLogsEntity>
+
+    @Query(
+        "SELECT * FROM all_logs_data WHERE (batchnum = :batchnum)"
+    )
+    fun getLogByBatchnum(
+        batchnum: String
+    ): List<AllLogsEntity>
+
+    @Query(
+        "SELECT * FROM all_logs_data WHERE (arnum = :arnum)"
+    )
+    fun getLogByArnum(
+        arnum: String
+    ): List<AllLogsEntity>
+
+    @Query(
+        "SELECT * FROM all_logs_data WHERE (compound = :compound)"
+    )
+    fun getLogByProduct(
+        compound: String
+    ): List<AllLogsEntity>
+
 
 }

@@ -1475,17 +1475,34 @@ class Export : AppCompatActivity() {
         GlobalScope.launch(Dispatchers.Main) {
             var allLogsArrayList: List<AllLogsEntity>? = null // Corrected initialization
 
-            if (arNumEditText.text.toString().isNotEmpty() && batchNumEditText.text.toString()
+            if (arNumEditText.text.toString().isNotEmpty() || batchNumEditText.text.toString()
                     .isNotEmpty()
-                && compoundNameEditText.text.toString().isNotEmpty()
+                || compoundNameEditText.text.toString().isNotEmpty()
             ) {
 
-                allLogsArrayList = withContext(Dispatchers.IO) {
-                    allLogsDataDao.getLogByBAC(
-                        arNumEditText.text.toString(),
-                        batchNumEditText.text.toString(), compoundNameEditText.text.toString()
-                    )
+                if (arNumEditText.text.toString().isNotEmpty() && batchNumEditText.text.toString()
+                        .isNotEmpty()
+                    && compoundNameEditText.text.toString().isNotEmpty()
+                ) {
+
+                    allLogsArrayList = withContext(Dispatchers.IO) {
+                        allLogsDataDao.getLogByBAC(
+                            arNumEditText.text.toString(),
+                            batchNumEditText.text.toString(), compoundNameEditText.text.toString()
+                        )
+                    }
                 }
+//                if (arNumEditText.text.toString().isNotEmpty()) {
+//
+//                    allLogsArrayList = withContext(Dispatchers.IO) {
+//                        allLogsDataDao.getLogByArnum(
+//                            arNumEditText.text.toString(),
+//                        )
+//                    }
+//                }
+//                if ( batchNumEditText.text.toString()
+//                    .isNotEmpty()
+//                        && compoundNameEditText.text.toString().isNotEmpty())
 
             } else {
                 allLogsArrayList = withContext(Dispatchers.IO) {
