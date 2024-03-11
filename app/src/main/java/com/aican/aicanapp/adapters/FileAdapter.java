@@ -21,17 +21,19 @@ import com.aican.aicanapp.PDFViewer;
 import com.aican.aicanapp.R;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
 
-    Context context;
-    File[] files;
-    String activity;
-    //ImageView imageView;
+    private Context context;
+    private List<File> fileList;
+    private String activity;
 
     public FileAdapter(Context context, File[] files, String activity) {
         this.context = context;
-        this.files = files;
+        this.fileList = new ArrayList<>(Arrays.asList(files));
         this.activity = activity;
     }
 
@@ -44,8 +46,7 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-
-        File selectedFile = files[position];
+        File selectedFile = fileList.get(position);
         holder.textView.setText(selectedFile.getName());
         holder.imageView.setImageResource(R.drawable.ic_baseline_insert_drive_file_24);
 
@@ -90,14 +91,12 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
 
                 } catch (Exception e) {
                     e.printStackTrace();
-                }
-            }
+                }            }
         });
 
         holder.itemView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
-
                 PopupMenu popupMenu = new PopupMenu(context, v);
                 popupMenu.getMenu().add("DELETE");
                 popupMenu.getMenu().add("SHARE");
@@ -109,79 +108,12 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
                             boolean deleted = selectedFile.delete();
                             if (deleted) {
                                 Toast.makeText(context.getApplicationContext(), "DELETED ", Toast.LENGTH_SHORT).show();
-                                v.setVisibility(View.GONE);
+                                fileList.remove(selectedFile);
+                                notifyDataSetChanged();
                             }
+                        } else if (item.getTitle().equals("SHARE")) {
+                            shareFile(selectedFile);
                         }
-                        if (item.getTitle().equals("SHARE")) {
-
-//                            String path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/Sensordata/" + selectedFile.getName();
-//                            File file = new File(path);
-//
-//                            StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
-//                            StrictMode.setVmPolicy(builder.build());
-//
-//                            try {
-//
-//
-//                                Intent intentShare = new Intent(Intent.ACTION_SEND);
-//                                intentShare.setType("application/pdf");
-//                                intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-//                                intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-//                                intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                                intentShare.putExtra(Intent.EXTRA_STREAM, Uri.parse("file://" + file));
-//
-//
-//                                Intent chooserIntent = Intent.createChooser(intentShare, "Send file");
-//                                chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-////
-//                                context.getApplicationContext().startActivity(chooserIntent);
-//
-//                            } catch (Exception e) {
-//                                e.printStackTrace();
-//                            }
-
-                            String path;
-                            File file = null;
-
-                            StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
-                            StrictMode.setVmPolicy(builder.build());
-
-                            // Determine the file path based on the activity
-                            if (activity.equals("PhExport")) {
-                                path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/Sensordata/" + selectedFile.getName();
-                                file = new File(path);
-                            } else if (activity.equals("EcExport")) {
-                                path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/EcSensordata/" + selectedFile.getName();
-                                file = new File(path);
-                            }
-
-                            if (file != null && file.exists()) {
-                                try {
-                                    // Create intent to share the file
-                                    Intent intentShare = new Intent(Intent.ACTION_SEND);
-                                    intentShare.setType("application/pdf"); // Change type to "text/csv" for CSV files
-                                    intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                                    intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                                    intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                    intentShare.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
-
-                                    // Create chooser intent to allow the user to select how to share the file
-                                    Intent chooserIntent = Intent.createChooser(intentShare, "Share file");
-                                    chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-                                    // Start the chooser activity
-                                    context.startActivity(chooserIntent);
-                                } catch (Exception e) {
-                                    e.printStackTrace();
-                                    Toast.makeText(context, "Error sharing file", Toast.LENGTH_SHORT).show();
-                                }
-                            } else {
-                                Toast.makeText(context, "File not found", Toast.LENGTH_SHORT).show();
-                            }
-
-
-                        }
-
                         return true;
                     }
                 });
@@ -191,57 +123,41 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
             }
         });
 
-
+        holder.shareBtn.setVisibility(View.VISIBLE);
         holder.shareBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                String path;
-                File file = null;
-
-                StrictMode.VmPolicy.Builder builder = new StrictMode.VmPolicy.Builder();
-                StrictMode.setVmPolicy(builder.build());
-
-                // Determine the file path based on the activity
-                if (activity.equals("PhExport")) {
-                    path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/Sensordata/" + selectedFile.getName();
-                    file = new File(path);
-                } else if (activity.equals("EcExport")) {
-                    path = new ContextWrapper(context).getExternalMediaDirs()[0] + File.separator + "/LabApp/EcSensordata/" + selectedFile.getName();
-                    file = new File(path);
-                }
-
-                if (file != null && file.exists()) {
-                    try {
-                        // Create intent to share the file
-                        Intent intentShare = new Intent(Intent.ACTION_SEND);
-                        intentShare.setType("application/pdf"); // Change type to "text/csv" for CSV files
-                        intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                        intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                        intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        intentShare.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
-
-                        // Create chooser intent to allow the user to select how to share the file
-                        Intent chooserIntent = Intent.createChooser(intentShare, "Share file");
-                        chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-                        // Start the chooser activity
-                        context.startActivity(chooserIntent);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        Toast.makeText(context, "Error sharing file", Toast.LENGTH_SHORT).show();
-                    }
-                } else {
-                    Toast.makeText(context, "File not found", Toast.LENGTH_SHORT).show();
-                }
+                shareFile(selectedFile);
             }
         });
+    }
 
+    private void shareFile(File file) {
+        String path = file.getAbsolutePath();
+        if (file != null && file.exists()) {
+            try {
+                Intent intentShare = new Intent(Intent.ACTION_SEND);
+                intentShare.setType("application/pdf"); // Change type to "text/csv" for CSV files
+                intentShare.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                intentShare.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                intentShare.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                intentShare.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(file));
 
+                Intent chooserIntent = Intent.createChooser(intentShare, "Share file");
+                chooserIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(chooserIntent);
+            } catch (Exception e) {
+                e.printStackTrace();
+                Toast.makeText(context, "Error sharing file", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(context, "File not found", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @Override
     public int getItemCount() {
-        return files == null ? 0 : files.length;
+        return fileList.size();
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
@@ -257,4 +173,3 @@ public class FileAdapter extends RecyclerView.Adapter<FileAdapter.ViewHolder> {
         }
     }
 }
-

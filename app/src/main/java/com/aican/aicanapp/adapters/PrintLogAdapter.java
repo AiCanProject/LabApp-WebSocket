@@ -166,6 +166,8 @@ public class PrintLogAdapter extends RecyclerView.Adapter<PrintLogAdapter.ViewHo
                 return true;
             }
         });
+
+
     }
 
     @Override
