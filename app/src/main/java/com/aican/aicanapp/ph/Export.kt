@@ -1480,29 +1480,88 @@ class Export : AppCompatActivity() {
                 || compoundNameEditText.text.toString().isNotEmpty()
             ) {
 
-//                if (arNumEditText.text.toString().isNotEmpty() && batchNumEditText.text.toString()
-//                        .isNotEmpty()
-//                    && compoundNameEditText.text.toString().isNotEmpty()
-//                ) {
-
+                if (arNumEditText.text.toString().isNotEmpty() && batchNumEditText.text.toString()
+                        .isNotEmpty() && compoundNameEditText.text.toString().isNotEmpty()
+                ) {
                     allLogsArrayList = withContext(Dispatchers.IO) {
                         allLogsDataDao.getLogByBAC(
                             arNumEditText.text.toString(),
                             batchNumEditText.text.toString(), compoundNameEditText.text.toString()
                         )
                     }
-//                }
-//                if (arNumEditText.text.toString().isNotEmpty()) {
-//
-//                    allLogsArrayList = withContext(Dispatchers.IO) {
-//                        allLogsDataDao.getLogByArnum(
-//                            arNumEditText.text.toString(),
-//                        )
-//                    }
-//                }
-//                if ( batchNumEditText.text.toString()
-//                    .isNotEmpty()
-//                        && compoundNameEditText.text.toString().isNotEmpty())
+                } else if (arNumEditText.text.toString()
+                        .isNotEmpty() && batchNumEditText.text.toString().isNotEmpty()
+                ) {
+                    allLogsArrayList = withContext(Dispatchers.IO) {
+                        allLogsDataDao.getLogByArnumAndBatchnum(
+                            arNumEditText.text.toString(),
+                            batchNumEditText.text.toString()
+                        )
+                    }
+                } else if (arNumEditText.text.toString()
+                        .isNotEmpty() && compoundNameEditText.text.toString().isNotEmpty()
+                ) {
+                    allLogsArrayList = withContext(Dispatchers.IO) {
+
+                        allLogsDataDao.getLogByArnumAndProduct(
+                            arNumEditText.text.toString(),
+                            compoundNameEditText.text.toString()
+                        )
+                    }
+                } else if (batchNumEditText.text.toString()
+                        .isNotEmpty() && compoundNameEditText.text.toString().isNotEmpty()
+                ) {
+                    allLogsArrayList = withContext(Dispatchers.IO) {
+
+                        allLogsDataDao.getLogByBatchnumAndProduct(
+                            batchNumEditText.text.toString(),
+                            compoundNameEditText.text.toString()
+                        )
+                    }
+                } else if (arNumEditText.text.toString().isNotEmpty()) {
+                    allLogsArrayList = withContext(Dispatchers.IO) {
+                        allLogsDataDao.getLogByArnum(
+                            arNumEditText.text.toString(),
+                        )
+                    }
+                } else if (batchNumEditText.text.toString().isNotEmpty()) {
+                    allLogsArrayList = withContext(Dispatchers.IO) {
+                        allLogsDataDao.getLogByBatchnum(
+                            batchNumEditText.text.toString(),
+                        )
+                    }
+                } else if (compoundNameEditText.text.toString().isNotEmpty()) {
+                    allLogsArrayList = withContext(Dispatchers.IO) {
+                        allLogsDataDao.getLogByProduct(
+                            compoundNameEditText.text.toString(),
+                        )
+                    }
+                }
+
+                if (arNumEditText.text.toString().isNotEmpty() && batchNumEditText.text.toString()
+                        .isNotEmpty()
+                    && compoundNameEditText.text.toString().isNotEmpty()
+                ) {
+
+
+                }
+                if (arNumEditText.text.toString().isNotEmpty()) {
+
+
+                }
+                if (batchNumEditText.text.toString()
+                        .isNotEmpty()
+                ) {
+
+
+                }
+
+                if (compoundNameEditText.text.toString()
+                        .isNotEmpty()
+                ) {
+
+
+                }
 
             } else {
                 allLogsArrayList = withContext(Dispatchers.IO) {
