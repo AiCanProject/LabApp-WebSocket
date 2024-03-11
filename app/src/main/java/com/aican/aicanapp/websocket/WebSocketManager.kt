@@ -15,7 +15,7 @@ object WebSocketManager {
     fun initializeWebSocket(
         uri: URI,
         openListener: () -> Unit,
-        closeListener: (Int, String?, Boolean) -> Unit
+        closeListeners: (Int, String?, Boolean) -> Unit
     ) {
         if (webSocketClient == null) {
             webSocketClient = object : WebSocketClient(uri) {
@@ -34,8 +34,9 @@ object WebSocketManager {
                 }
 
                 override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                    closeListener.invoke(code, reason, remote)
-                    setCloseListener(closeListener)
+                    closeListeners.invoke(code, reason, remote)
+                    closeListener!!.invoke(code, reason, remote)
+                    setCloseListener(closeListeners)
 //                    disconnect(false)
                     clearListeners()
                 }
@@ -57,7 +58,7 @@ object WebSocketManager {
         } else {
             // WebSocketClient is already initialized, reset listeners
             setOpenListener(openListener)
-            setCloseListener(closeListener)
+            setCloseListener(closeListener!!)
         }
     }
 

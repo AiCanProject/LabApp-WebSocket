@@ -3019,6 +3019,17 @@ class PhCalibFragmentNew : Fragment() {
 
     override fun onResume() {
         super.onResume()
+
+        binding.tvTimer.text = "Disconnected"
+
+        WebSocketManager.setCloseListener { i, s, b ->
+            requireActivity().runOnUiThread {
+                binding.tvTimer.text = "Disconnected"
+
+                Toast.makeText(requireContext(), "Closed", Toast.LENGTH_SHORT).show()
+            }
+        }
+
         updateMinMaxMVs()
         tempToggleSharedPref =
             SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)

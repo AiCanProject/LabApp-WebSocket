@@ -938,32 +938,19 @@ class Export : AppCompatActivity() {
             ).show()
         }
         while (calibCSV.moveToNext()) {
-            val ph = calibCSV.getString(calibCSV.getColumnIndex("PH"))
-            val mv = calibCSV.getString(calibCSV.getColumnIndex("MV"))
-            val date = calibCSV.getString(calibCSV.getColumnIndex("DT"))
-            val slope = calibCSV.getString(calibCSV.getColumnIndex("SLOPE"))
-            val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC"))
-            val temperature1 = calibCSV.getString(calibCSV.getColumnIndex("temperature"))
-            table.addCell(ph)
-            table.addCell(pHAC + "")
-            table.addCell(slope + "")
-            table.addCell(mv)
-            table.addCell(date)
-            table.addCell(temperature1)
-//            table.addCell(if (Source.calib_completed_by == null) "Unknown" else Source.calib_completed_by)
-            rowCounter++
-            if (rowCounter % 5 == 0) {
-                // Add the table to the document every 5 rows
-                document.add(table)
-                document.add(Paragraph("Calibration : " + "completed"))
+            val ph = calibCSV.getString(calibCSV.getColumnIndex("PH")) ?: ""
+            if (ph == "calibration-ended") {
+                // Start a new table
+                if (!table.isEmpty) {
+                    document.add(table)
+                }
+                document.add(Paragraph("Calibration: completed"))
                 if (leftDesignationString != null && leftDesignationString != "" &&
                     rightDesignationString != null && rightDesignationString != ""
                 ) {
                     document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
-
                 } else {
                     document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
-
                 }
                 document.add(Paragraph(""))
                 document.add(Paragraph(""))
@@ -972,7 +959,7 @@ class Export : AppCompatActivity() {
                 document.add(Paragraph(""))
                 document.add(Paragraph(""))
 
-                // Create a new table for the next set of 5 rows
+                // Create a new table for the next set of data
                 table = Table(columnWidth)
                 table.addCell("pH")
                 table.addCell("pH Aft Calib")
@@ -980,6 +967,19 @@ class Export : AppCompatActivity() {
                 table.addCell("mV")
                 table.addCell("Date & Time")
                 table.addCell("Temperature")
+            } else {
+                // Add data to the current table
+                val mv = calibCSV.getString(calibCSV.getColumnIndex("MV")) ?: ""
+                val date = calibCSV.getString(calibCSV.getColumnIndex("DT")) ?: ""
+                val slope = calibCSV.getString(calibCSV.getColumnIndex("SLOPE")) ?: ""
+                val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC")) ?: ""
+                val temperature1 = calibCSV.getString(calibCSV.getColumnIndex("temperature")) ?: ""
+                table.addCell(ph)
+                table.addCell(pHAC)
+                table.addCell(slope)
+                table.addCell(mv)
+                table.addCell(date)
+                table.addCell(temperature1)
             }
         }
 
