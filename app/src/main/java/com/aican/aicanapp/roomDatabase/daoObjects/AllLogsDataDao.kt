@@ -28,9 +28,13 @@ interface AllLogsDataDao {
         compound: String
     ): List<AllLogsEntity>
 
-    //                "SELECT * FROM LogUserdetails WHERE (DATE(date) BETWEEN '$startDateString'
-//                AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString')
-//                AND (arnum = '$compoundName') AND (batchnum = '$batchNumString') AND (compound = '$arNumString')",
-
+    @Query(
+        "SELECT * FROM all_logs_data WHERE (arnum = :arnum) AND (batchnum = :batchnum) AND (compound = :compound)"
+    )
+    fun getLogByBAC(
+        arnum: String,
+        batchnum: String,
+        compound: String
+    ): List<AllLogsEntity>
 
 }

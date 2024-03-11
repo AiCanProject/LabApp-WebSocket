@@ -43,6 +43,7 @@ import com.aican.aicanapp.databinding.ActivityExportBinding
 import com.aican.aicanapp.roomDatabase.daoObjects.AllLogsDataDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
+import com.aican.aicanapp.roomDatabase.entities.AllLogsEntity
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedKeys
 import com.aican.aicanapp.utils.SharedPref
@@ -405,70 +406,6 @@ class Export : AppCompatActivity() {
             companyLogo.setImageBitmap(comLo)
         }
 
-//        exportCSV.setOnClickListener {
-//            companyName = companyNameEditText.text.toString()
-//            if (!companyName.isEmpty()) {
-//                if (Constants.OFFLINE_MODE) {
-//                    val company_name =
-//                        getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
-//                    val editT = company_name.edit()
-//                    editT.putString("COMPANY_NAME", companyName)
-//                    editT.commit()
-//                } else {
-//
-//                }
-//            }
-//            try {
-//                generatePDF1()
-//            } catch (e: FileNotFoundException) {
-//                e.printStackTrace()
-//            }
-//            val pathPDF =
-//                ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/"
-//            val rootPDF = File(pathPDF)
-//            fileNotWrite(rootPDF)
-//            val filesAndFoldersPDF = rootPDF.listFiles()
-//            fAdapter =
-//                FileAdapter(applicationContext, reverseFileArray(filesAndFoldersPDF), "PhExport")
-//            recyclerView.adapter = fAdapter
-//            fAdapter.notifyDataSetChanged()
-//            recyclerView.layoutManager = LinearLayoutManager(applicationContext)
-//            convertToXls.visibility = View.INVISIBLE
-//        }
-//
-//        printAllCalibData.setOnClickListener { v: View? ->
-//            try {
-//                generateAllPDF()
-//            } catch (e: FileNotFoundException) {
-//                e.printStackTrace()
-//            }
-////                exportCalibData();
-//            val path = ContextWrapper(this@Export).externalMediaDirs[0]
-//                .toString() + File.separator + "/LabApp/CalibrationData"
-//            val root = File(path)
-//            val filesAndFolders = root.listFiles()
-//            if (filesAndFolders == null || filesAndFolders.size == 0) {
-//                return@setOnClickListener
-//            } else {
-//                for (i in filesAndFolders.indices) {
-//                    filesAndFolders[i].name.endsWith(".pdf")
-//                }
-//            }
-//            val pathPDF1 = ContextWrapper(this@Export).externalMediaDirs[0]
-//                .toString() + File.separator + "/LabApp/Sensordata/"
-//            val rootPDF1 = File(pathPDF1)
-//            fileNotWrite(root)
-//            val filesAndFoldersPDF1 = rootPDF1.listFiles()
-//            fAdapter = FileAdapter(
-//                applicationContext,
-//                reverseFileArray(filesAndFoldersPDF1),
-//                "PhExport"
-//            )
-//            recyclerView.adapter = fAdapter
-//            fAdapter.notifyDataSetChanged()
-//            recyclerView.layoutManager = LinearLayoutManager(applicationContext)
-//            convertToXls.visibility = View.INVISIBLE
-//        }
 
 
         exportPDFAllLogDataBtn.setOnClickListener {
@@ -1536,102 +1473,121 @@ class Export : AppCompatActivity() {
         table1.addCell("Product")
 
         GlobalScope.launch(Dispatchers.Main) {
-            val allLogsArrayList = withContext(Dispatchers.IO) {
-                allLogsDataDao.getAllLogs()
+            var allLogsArrayList: List<AllLogsEntity>? = null // Corrected initialization
+
+            if (arNumEditText.text.toString().isNotEmpty() && batchNumEditText.text.toString()
+                    .isNotEmpty()
+                && compoundNameEditText.text.toString().isNotEmpty()
+            ) {
+
+                allLogsArrayList = withContext(Dispatchers.IO) {
+                    allLogsDataDao.getLogByBAC(
+                        arNumEditText.text.toString(),
+                        batchNumEditText.text.toString(), compoundNameEditText.text.toString()
+                    )
+                }
+
+            } else {
+                allLogsArrayList = withContext(Dispatchers.IO) {
+                    allLogsDataDao.getAllLogs()
+                }
             }
-            Toast.makeText(this@Export, "" + allLogsArrayList.size, Toast.LENGTH_SHORT).show()
             if (allLogsArrayList != null) {
-                for (logs in allLogsArrayList) {
-                    val date = logs.date
-                    val time = logs.time
-                    val device = logs.deviceID
-                    val pH = logs.ph
-                    val temp = logs.temperature
-                    var batchnum = logs.batchnum
-                    var arnum = logs.arnum
-                    var comp = logs.compound
-                    table1.addCell(date)
-                    table1.addCell(time)
-                    table1.addCell(pH ?: "--")
-                    table1.addCell(temp ?: "--")
-                    if (batchnum == null) {
-                        batchnum = "--"
+                Toast.makeText(this@Export, "" + allLogsArrayList.size, Toast.LENGTH_SHORT).show()
+                if (allLogsArrayList != null) {
+                    for (logs in allLogsArrayList) {
+                        val date = logs.date
+                        val time = logs.time
+                        val device = logs.deviceID
+                        val pH = logs.ph
+                        val temp = logs.temperature
+                        var batchnum = logs.batchnum
+                        var arnum = logs.arnum
+                        var comp = logs.compound
+                        table1.addCell(date)
+                        table1.addCell(time)
+                        table1.addCell(pH ?: "--")
+                        table1.addCell(temp ?: "--")
+                        if (batchnum == null) {
+                            batchnum = "--"
+                        }
+                        table1.addCell(
+                            if (batchnum != null && batchnum.length >= 8) stringSplitter(
+                                batchnum
+                            ) else batchnum
+                        )
+                        if (arnum == null) {
+                            arnum = "--"
+                        }
+                        table1.addCell(if (arnum != null && arnum.length >= 8) stringSplitter(arnum) else arnum)
+                        if (comp == null) {
+                            comp = "--"
+                        }
+                        table1.addCell(if (comp != null && comp.length >= 8) stringSplitter(comp) else comp)
+
+
                     }
-                    table1.addCell(
-                        if (batchnum != null && batchnum.length >= 8) stringSplitter(
-                            batchnum
-                        ) else batchnum
-                    )
-                    if (arnum == null) {
-                        arnum = "--"
+
+                    document.add(table1)
+
+                    document.add(Paragraph(""))
+
+
+                    val leftDesignationString =
+                        SharedPref.getSavedData(this@Export, SharedKeys.LEFT_DESIGNATION_KEY)
+                    val rightDesignationString =
+                        SharedPref.getSavedData(
+                            this@Export, SharedKeys.RIGHT_DESIGNATION_KEY
+                        )
+
+                    if (leftDesignationString != null && leftDesignationString != "") {
+
+                    } else {
+                        SharedPref.saveData(
+                            this@Export,
+                            SharedKeys.LEFT_DESIGNATION_KEY,
+                            "Operator Sign"
+                        )
                     }
-                    table1.addCell(if (arnum != null && arnum.length >= 8) stringSplitter(arnum) else arnum)
-                    if (comp == null) {
-                        comp = "--"
+
+                    if (rightDesignationString != null && rightDesignationString != "") {
+                    } else {
+                        SharedPref.saveData(
+                            this@Export,
+                            SharedKeys.RIGHT_DESIGNATION_KEY,
+                            "Supervisor Sign"
+                        )
                     }
-                    table1.addCell(if (comp != null && comp.length >= 8) stringSplitter(comp) else comp)
 
+                    if (leftDesignationString != null && leftDesignationString != "" &&
+                        rightDesignationString != null && rightDesignationString != ""
+                    ) {
+                        document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
 
-                }
+                    } else {
+                        document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
 
-                document.add(table1)
+                    }
 
-                document.add(Paragraph(""))
+                    val imgBit1 = getSignImage()
 
+                    if (imgBit1 != null) {
 
-                val leftDesignationString =
-                    SharedPref.getSavedData(this@Export, SharedKeys.LEFT_DESIGNATION_KEY)
-                val rightDesignationString =
-                    SharedPref.getSavedData(
-                        this@Export, SharedKeys.RIGHT_DESIGNATION_KEY
-                    )
+                        val byteArrayOutputStream = ByteArrayOutputStream()
+                        imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+                        val byteArray = byteArrayOutputStream.toByteArray()
 
-                if (leftDesignationString != null && leftDesignationString != "") {
+                        val imageData = ImageDataFactory.create(byteArray)
+                        val image = Image(imageData).setHeight(80f).setWidth(80f)
+                        document.add(image)
 
-                } else {
-                    SharedPref.saveData(
-                        this@Export,
-                        SharedKeys.LEFT_DESIGNATION_KEY,
-                        "Operator Sign"
-                    )
-                }
-
-                if (rightDesignationString != null && rightDesignationString != "") {
-                } else {
-                    SharedPref.saveData(
-                        this@Export,
-                        SharedKeys.RIGHT_DESIGNATION_KEY,
-                        "Supervisor Sign"
-                    )
-                }
-
-                if (leftDesignationString != null && leftDesignationString != "" &&
-                    rightDesignationString != null && rightDesignationString != ""
-                ) {
-                    document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
-
-                } else {
-                    document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
-
-                }
-
-                val imgBit1 = getSignImage()
-
-                if (imgBit1 != null) {
-
-                    val byteArrayOutputStream = ByteArrayOutputStream()
-                    imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-                    val byteArray = byteArrayOutputStream.toByteArray()
-
-                    val imageData = ImageDataFactory.create(byteArray)
-                    val image = Image(imageData).setHeight(80f).setWidth(80f)
-                    document.add(image)
-
-                } else {
+                    } else {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
+                    }
+                    document.close()
+                    Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
+
                 }
-                document.close()
-                Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
 
             }
 
