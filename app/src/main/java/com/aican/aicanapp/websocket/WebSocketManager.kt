@@ -1,6 +1,7 @@
 package com.aican.aicanapp.websocket
 
 import android.util.Log
+import com.aican.aicanapp.ph.PhActivity
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.net.URI
@@ -23,6 +24,7 @@ object WebSocketManager {
         if (webSocketClient == null) {
             webSocketClient = object : WebSocketClient(uri) {
                 override fun onOpen(handshakedata: ServerHandshake?) {
+                    PhActivity.isReconnecting = false
                     WEBSOCKET_CONNECTED = true
                     openListener.invoke()
                 }
@@ -69,6 +71,12 @@ object WebSocketManager {
             // WebSocketClient is already initialized, reset listeners
             setOpenListener(openListener)
             setCloseListener(closeListener)
+        }
+    }
+
+    fun reconnect(){
+        if (webSocketClient != null){
+            webSocketClient!!.connect()
         }
     }
 

@@ -35,6 +35,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
     companion object {
         var DEVICE_ID: String? = null
+         var isReconnecting = false
         private const val CHECK_INTERVAL = 3000L // Check interval in milliseconds
     }
 
@@ -97,7 +98,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
-    private var isReconnecting = false
 
     lateinit var ph: TextView
     lateinit var calibrate: TextView
@@ -164,6 +164,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
             if (binding.offlineModeSwitch.isChecked){
                 isReconnecting = true
+                WebSocketManager.reconnect()
 
 //                WebSocketManager.reconnecting()
 //                WebSocketManager.disconnect(true)
