@@ -76,7 +76,7 @@ object WebSocketManager {
 
     fun reconnect(){
         if (webSocketClient != null){
-            webSocketClient!!.connect()
+            webSocketClient!!.reconnect()
         }
     }
 
