@@ -6,6 +6,9 @@ import org.java_websocket.handshake.ServerHandshake
 import java.net.URI
 
 object WebSocketManager {
+
+    public var WEBSOCKET_CONNECTED = false
+
     private var webSocketClient: WebSocketClient? = null
     private var messageListener: ((String) -> Unit)? = null
     private var errorListener: ((Exception) -> Unit)? = null
@@ -21,6 +24,7 @@ object WebSocketManager {
             webSocketClient = object : WebSocketClient(uri) {
                 override fun onOpen(handshakedata: ServerHandshake?) {
                     openListener.invoke()
+                    WEBSOCKET_CONNECTED = true
                 }
 
                 override fun onClosing(code: Int, reason: String?, remote: Boolean) {
@@ -28,6 +32,8 @@ object WebSocketManager {
 //                    disconnect()
                     Log.e("Disconnecting", "Closing.....")
                     clearListeners()
+                    WEBSOCKET_CONNECTED = false
+
                     if (!forceDisconnect) {
                         reconnect()
                     }
@@ -36,7 +42,8 @@ object WebSocketManager {
                 override fun onClose(code: Int, reason: String?, remote: Boolean) {
                     closeListeners.invoke(code, reason, remote)
                     closeListener!!.invoke(code, reason, remote)
-                    Log.e("OnClose","OnClose")
+                    Log.e("OnClose", "OnClose")
+                    WEBSOCKET_CONNECTED = false
                     setCloseListener(closeListeners)
 //                    disconnect(false)
                     clearListeners()
@@ -44,14 +51,15 @@ object WebSocketManager {
 
                 override fun onMessage(message: String?) {
                     message?.let {
+                        WEBSOCKET_CONNECTED = true
                         messageListener?.invoke(it)
                     }
                 }
 
                 override fun onError(ex: Exception?) {
                     ex?.let {
-                        Log.e("ExceptionError","Error " + it)
-
+                        Log.e("ExceptionError", "Error " + it)
+                        WEBSOCKET_CONNECTED = false
                         errorListener?.invoke(it)
                     }
                 }
