@@ -1565,15 +1565,15 @@ class Export : AppCompatActivity() {
                                 compoundNameEditText.text.toString(),
                             )
                         }
-                    } else {
-                        allLogsArrayList = withContext(Dispatchers.IO) {
-                            allLogsDataDao.getAllLogBy_DNT(
-                                startDateString, endDateString, startTimeString, endTimeString,
-                            )
-                        }
                     }
 
 
+                } else {
+                    allLogsArrayList = withContext(Dispatchers.IO) {
+                        allLogsDataDao.getAllLogBy_DNT(
+                            startDateString, endDateString, startTimeString, endTimeString,
+                        )
+                    }
                 }
             } else if (startDateString != "" && endDateString != "") {
                 if (arNumEditText.text.toString().isNotEmpty() || batchNumEditText.text.toString()
