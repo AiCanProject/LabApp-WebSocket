@@ -162,7 +162,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         binding.offlineModeSwitch.setOnClickListener {
             val uri = URI(Source.WEBSOCKET_URL)
 
-            if (binding.offlineModeSwitch.isChecked){
+            if (binding.offlineModeSwitch.isChecked && !WebSocketManager.WEBSOCKET_CONNECTED){
                 isReconnecting = true
 
 
@@ -184,10 +184,10 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                             binding.socketDisconnected.visibility = View.GONE
 
                             phFragment.webSocketInit()
-                            phCalibFragmentNew.websocketData()
-                            phLogFragment.webSocketConnection()
-                            phGraphFragment.webSocketInit()
-                            phAlarmFragment.webSocketInit()
+//                            phCalibFragmentNew.websocketData()
+//                            phLogFragment.webSocketConnection()
+//                            phGraphFragment.webSocketInit()
+//                            phAlarmFragment.webSocketInit()
 
                         }
 

@@ -179,8 +179,8 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         fetchWebSocketUrl()
 
 
-        binding.offlineModeSwitch.setOnCheckedChangeListener { _, isChecked ->
-            webSocketConnected = if (isChecked) {
+        binding.offlineModeSwitch.setOnClickListener {
+            webSocketConnected = if (binding.offlineModeSwitch.isChecked) {
 
 //                val uri = URI("wss://socketsbay.com/wss/v2/1/demo/")
 //                val uri = URI("ws://192.168.4.1:81")
@@ -719,6 +719,12 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
             runOnUiThread {
                 Log.e("ThisIsNotError", message)
             }
+        }
+        if (WebSocketManager.WEBSOCKET_CONNECTED == true){
+            binding.offlineModeSwitch.isChecked = true
+            Source.SOCKET_CONNECTED = true
+            binding.socketConnected.visibility = View.VISIBLE
+            binding.socketDisconnected.visibility = View.GONE
         }
     }
 

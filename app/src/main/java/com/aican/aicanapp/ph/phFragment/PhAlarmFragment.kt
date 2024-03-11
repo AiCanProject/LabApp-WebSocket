@@ -219,7 +219,7 @@ class PhAlarmFragment : Fragment() {
             }
         }
         WebSocketManager.setErrorListener { error ->
-            if (requireActivity() != null) {
+            if (activity != null && isAdded) {
 
                 requireActivity().runOnUiThread {
                     updateError(error.toString())
