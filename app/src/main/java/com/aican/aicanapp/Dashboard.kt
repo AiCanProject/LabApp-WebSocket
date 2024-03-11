@@ -189,11 +189,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
                 //{"DEVICE_ID": "EPT2020", "CAL_MODE": "1"}
 
-                val viewModelFactory = SocketViewModelFactory()
-                viewModel = ViewModelProvider(
-                    this@Dashboard,
-                    viewModelFactory
-                ).get(SocketViewModel::class.java)
+
 
 //
 //                WebSocketManager.disconnect()

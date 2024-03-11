@@ -818,7 +818,17 @@ class PhMvTable : AppCompatActivity() {
                     if (jsonData.has("VOLT") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         monitorValTxt.text = "Monitor Val : " + jsonData.getString("VOLT")
                     }
-                } catch (e: JSONException) {
+                    if (jsonData.has("A1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+
+                        binding.a1Txt.text = "A1 Value : " + jsonData.getString("A1")
+
+                    }
+                    if (jsonData.has("A0") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+
+                        binding.a0Txt.text = "A0 Value : " + jsonData.getString("A0")
+
+                    }
+                    } catch (e: JSONException) {
                     e.printStackTrace()
                 }
             }

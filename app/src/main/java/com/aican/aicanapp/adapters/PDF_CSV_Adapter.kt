@@ -1,8 +1,10 @@
 package com.aican.aicanapp.adapters
 
+import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.Intent
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -10,10 +12,13 @@ import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.RecyclerView
+import com.aican.aicanapp.CSVWebViewActivity
 import com.aican.aicanapp.PDFViewer
 import com.aican.aicanapp.R
 import com.aican.aicanapp.databinding.CustomFileItemsBinding
+import java.io.BufferedReader
 import java.io.File
+import java.io.FileReader
 
 class PDF_CSV_Adapter(
     val context: Context,
@@ -49,11 +54,39 @@ class PDF_CSV_Adapter(
                 "PhLog" -> ContextWrapper(context).externalMediaDirs[0].absolutePath + File.separator + "LabApp/Currentlog/" + selectedFile.name
                 else -> ""
             }
-            val intent = Intent(context.applicationContext, PDFViewer::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                putExtra("Path", path)
+            if (selectedFile.name.endsWith(".csv")){
+
+                val csvContent = readCsvFileContent(path)
+
+                // Convert CSV data to HTML
+                val htmlContent = convertCsvToHtml(csvContent)
+
+                // Start CSVWebViewActivity to display the HTML content
+                val intent = Intent(context, CSVWebViewActivity::class.java).apply {
+                    putExtra("HtmlContent", htmlContent)
+                }
+                context.startActivity(intent)
+//
+//                val file = File(context.getExternalFilesDir(null), path)
+//                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+//
+//                val intent = Intent(Intent.ACTION_VIEW)
+//                intent.setDataAndType(uri, "text/csv")
+//                intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+//
+//                try {
+//                    context.startActivity(intent)
+//                } catch (e: ActivityNotFoundException) {
+//                    // Handle case where no suitable viewer app is installed
+//                    Toast.makeText(context, "No app found to open CSV files", Toast.LENGTH_SHORT).show()
+//                }
+            }else {
+                val intent = Intent(context.applicationContext, PDFViewer::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    putExtra("Path", path)
+                }
+                context.applicationContext.startActivity(intent)
             }
-            context.applicationContext.startActivity(intent)
         }
 
         holder.itemView.setOnLongClickListener {
@@ -87,6 +120,41 @@ class PDF_CSV_Adapter(
 
         holder.binding.shareBtn.visibility = View.VISIBLE
         holder.binding.shareBtn.setOnClickListener { shareFile(selectedFile) }
+    }
+
+    fun readCsvFileContent(filePath: String): String {
+        val file = File(filePath)
+        val stringBuilder = StringBuilder()
+
+        try {
+            val bufferedReader = BufferedReader(FileReader(file))
+            var line: String?
+            while (bufferedReader.readLine().also { line = it } != null) {
+                stringBuilder.append(line).append("\n")
+            }
+            bufferedReader.close()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+
+        return stringBuilder.toString()
+    }
+    fun convertCsvToHtml(csvData: String): String {
+        val rows = csvData.split("\n")
+        val sb = StringBuilder()
+
+        sb.append("<table>")
+        for (row in rows) {
+            sb.append("<tr>")
+            val columns = row.split(",")
+            for (column in columns) {
+                sb.append("<td>").append(column).append("</td>")
+            }
+            sb.append("</tr>")
+        }
+        sb.append("</table>")
+
+        return sb.toString()
     }
 
     private fun shareFile(file: File) {

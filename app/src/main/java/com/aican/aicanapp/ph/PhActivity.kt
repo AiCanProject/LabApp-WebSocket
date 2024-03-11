@@ -165,7 +165,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
             if (binding.offlineModeSwitch.isChecked){
                 isReconnecting = true
 
-                WebSocketManager.reconnecting()
+//                WebSocketManager.reconnecting()
 //                WebSocketManager.disconnect(true)
 
 //                WebSocketManager.initializeWebSocket(uri,

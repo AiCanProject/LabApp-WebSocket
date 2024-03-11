@@ -40,11 +40,13 @@ class AdminSettings : AppCompatActivity() {
             startActivity(intnt)
         }
 
+
+
+        fetchWebSocketUrl()
+
         binding.webSocketUrl.setOnClickListener {
             openWebSocketDialog()
         }
-
-        fetchWebSocketUrl()
 
         fetchExportConditions()
 
@@ -180,9 +182,13 @@ class AdminSettings : AppCompatActivity() {
         val etWebSocketUrl = dialog.findViewById<TextInputEditText>(R.id.webSocketUrlTxt)
         val etPassword = dialog.findViewById<TextInputEditText>(R.id.devPassword)
 
+        etWebSocketUrl.setText(Source.WEBSOCKET_URL)
+
         btnSave.setOnClickListener {
             val webSocketUrl = etWebSocketUrl.text.toString()
             val password = etPassword.text.toString()
+
+
 
             if (webSocketUrl.isEmpty() || password.isEmpty()) {
                 if (webSocketUrl.isEmpty()) {

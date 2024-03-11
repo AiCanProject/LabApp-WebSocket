@@ -1,7 +1,6 @@
 package com.aican.aicanapp.websocket
 
 import android.util.Log
-import com.aican.aicanapp.websocket.webViewModel.SocketViewModel
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.net.URI
@@ -16,52 +15,41 @@ object WebSocketManager {
     private var openListener: (() -> Unit)? = null
     private var closeListener: ((Int, String?, Boolean) -> Unit)? = null
     private var forceDisconnect: Boolean = false
-    private var uri: URI? = null
-
     fun initializeWebSocket(
         uri: URI,
         openListener: () -> Unit,
-        closeListeners: (Int, String?, Boolean) -> Unit
+        closeListener: (Int, String?, Boolean) -> Unit
     ) {
-
-
-
         if (webSocketClient == null) {
-            createWebSocketClient()
-        } else {
-            // WebSocketClient is already initialized, reset listeners
-            setOpenListener(openListener)
-            setCloseListener(closeListeners)
-        }
-    }
-
-    private fun createWebSocketClient() {
-        uri?.let {
-            webSocketClient = object : WebSocketClient(it) {
+            webSocketClient = object : WebSocketClient(uri) {
                 override fun onOpen(handshakedata: ServerHandshake?) {
-                    openListener?.invoke()
                     WEBSOCKET_CONNECTED = true
+                    openListener.invoke()
                 }
 
                 override fun onClosing(code: Int, reason: String?, remote: Boolean) {
                     super.onClosing(code, reason, remote)
+//                    disconnect()
                     Log.e("Disconnecting", "Closing.....")
                     clearListeners()
                     WEBSOCKET_CONNECTED = false
+
                     if (!forceDisconnect) {
                         reconnect()
                     }
                 }
 
                 override fun onClose(code: Int, reason: String?, remote: Boolean) {
-                    closeListener?.invoke(code, reason, remote)
+                    closeListener.invoke(code, reason, remote)
+                    setCloseListener(closeListener)
                     WEBSOCKET_CONNECTED = false
+
+//                    disconnect(false)
                     clearListeners()
                 }
 
                 override fun onMessage(message: String?) {
                     message?.let {
-//                        viewModel.setMessage(it)
                         WEBSOCKET_CONNECTED = true
                         messageListener?.invoke(it)
                     }
@@ -69,23 +57,21 @@ object WebSocketManager {
 
                 override fun onError(ex: Exception?) {
                     ex?.let {
-                        WEBSOCKET_CONNECTED= false
-                        Log.e("ExceptionError", "Error " + it)
+                        WEBSOCKET_CONNECTED = false
+
                         errorListener?.invoke(it)
                     }
                 }
+
             }
             webSocketClient?.connect()
+        } else {
+            // WebSocketClient is already initialized, reset listeners
+            setOpenListener(openListener)
+            setCloseListener(closeListener)
         }
     }
 
-    fun reconnecting() {
-        // Check if WebSocketClient exists and WebSocket is not connected
-        if (webSocketClient != null && !webSocketClient!!.isOpen) {
-            // Attempt to reconnect
-            webSocketClient!!.connect()
-        }
-    }
     fun setMessageListener(listener: (String) -> Unit) {
         messageListener = listener
     }
@@ -119,7 +105,7 @@ object WebSocketManager {
     }
 
 
-    public fun clearListeners() {
+    private fun clearListeners() {
         webSocketClient = null
 
         messageListener = null
