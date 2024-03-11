@@ -1650,9 +1650,10 @@ class Export : AppCompatActivity() {
                             )
                         }
                     } else {
+                        Log.e("NothingNoDate", "Ok")
                         allLogsArrayList = withContext(Dispatchers.IO) {
                             allLogsDataDao.getAllLogBy_Date(
-                                startDateString, endDateString,
+                                startDateString, endDateString
                             )
                         }
                     }
