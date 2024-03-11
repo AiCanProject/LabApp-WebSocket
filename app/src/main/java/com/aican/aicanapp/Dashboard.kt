@@ -175,7 +175,6 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
         fetchWebSocketUrl()
 
-        fetchExportConditions()
 
         binding.offlineModeSwitch.setOnCheckedChangeListener { _, isChecked ->
             webSocketConnected = if (isChecked) {
@@ -494,14 +493,15 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         val exportPdfEnabled = SharedPref.getSavedData(this@Dashboard, "EXPORT_PDF")
 
         if (exportCsvEnabled != null && exportCsvEnabled != "") {
-            Source.EXPORT_CSV = true
+            Source.EXPORT_CSV = exportCsvEnabled == "true"
         }else{
             SharedPref.saveData(this@Dashboard,"EXPORT_CSV", "false")
             Source.EXPORT_CSV = false
         }
 
         if (exportPdfEnabled != null && exportPdfEnabled != "") {
-            Source.EXPORT_PDF = true
+            Source.EXPORT_PDF = exportPdfEnabled == "true"
+
         }else{
             Source.EXPORT_PDF = false
             SharedPref.saveData(this@Dashboard,"EXPORT_PDF", "true")
@@ -706,6 +706,8 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
     override fun onResume() {
         super.onResume()
+
+        fetchExportConditions()
 
         WebSocketManager.setMessageListener { message ->
             runOnUiThread {

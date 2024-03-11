@@ -1497,7 +1497,7 @@ class PhCalibFragmentNew : Fragment() {
                     table.addCell(date)
                     table.addCell(temperature1)
                 }
-            }else{
+            } else {
                 table.addCell(ph)
                 table.addCell(pHAC + "")
                 table.addCell(slope + "")
@@ -2008,19 +2008,19 @@ class PhCalibFragmentNew : Fragment() {
                                         jsonData.put("DT_4", "$date123 $time123")
                                         jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                                         WebSocketManager.sendMessage(jsonData.toString())
-                                        if (ph_mode_selected == 5){
+                                        if (ph_mode_selected == 5) {
                                             SharedPref.saveData(
                                                 requireContext(),
                                                 "CALIB_STAT" + PhActivity.DEVICE_ID,
                                                 "incomplete"
                                             )
-                                    }else {
-                                        SharedPref.saveData(
-                                            requireContext(),
-                                            "CALIB_STAT" + PhActivity.DEVICE_ID,
-                                            "incomplete"
-                                        )
-                                    }
+                                        } else {
+                                            SharedPref.saveData(
+                                                requireContext(),
+                                                "CALIB_STAT" + PhActivity.DEVICE_ID,
+                                                "incomplete"
+                                            )
+                                        }
                                         //                                    deviceRef.child("UI").child("PH").child("PH_CAL").child("DT_4").setValue(date123 + " " + time123);
                                         log1.setBackgroundColor(Color.WHITE)
                                         log2.setBackgroundColor(Color.WHITE)
