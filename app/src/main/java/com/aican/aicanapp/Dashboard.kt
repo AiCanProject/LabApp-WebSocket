@@ -32,6 +32,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -52,6 +53,8 @@ import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
+import com.aican.aicanapp.websocket.webViewModel.SocketViewModel
+import com.aican.aicanapp.websocket.webViewModel.SocketViewModelFactory
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.FirebaseApp
 import com.google.firebase.FirebaseOptions
@@ -148,7 +151,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
     lateinit var phDevices: java.util.ArrayList<PhDevice>
     lateinit var newPhDevices: ArrayList<PhDevice>
     private val sharedViewModel: SharedViewModel by viewModels()
-
+    lateinit var viewModel: SocketViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -186,9 +189,16 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
                 //{"DEVICE_ID": "EPT2020", "CAL_MODE": "1"}
 
+                val viewModelFactory = SocketViewModelFactory()
+                viewModel = ViewModelProvider(
+                    this@Dashboard,
+                    viewModelFactory
+                ).get(SocketViewModel::class.java)
+
 //
 //                WebSocketManager.disconnect()
                 WebSocketManager.initializeWebSocket(uri,
+//                    viewModel,
                     // Open listener
                     {
                         // WebSocket connection opened
@@ -494,17 +504,17 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
         if (exportCsvEnabled != null && exportCsvEnabled != "") {
             Source.EXPORT_CSV = exportCsvEnabled == "true"
-        }else{
-            SharedPref.saveData(this@Dashboard,"EXPORT_CSV", "false")
+        } else {
+            SharedPref.saveData(this@Dashboard, "EXPORT_CSV", "false")
             Source.EXPORT_CSV = false
         }
 
         if (exportPdfEnabled != null && exportPdfEnabled != "") {
             Source.EXPORT_PDF = exportPdfEnabled == "true"
 
-        }else{
+        } else {
             Source.EXPORT_PDF = false
-            SharedPref.saveData(this@Dashboard,"EXPORT_PDF", "true")
+            SharedPref.saveData(this@Dashboard, "EXPORT_PDF", "true")
         }
     }
 

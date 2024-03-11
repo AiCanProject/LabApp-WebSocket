@@ -1,6 +1,7 @@
 package com.aican.aicanapp.websocket
 
 import android.util.Log
+import com.aican.aicanapp.websocket.webViewModel.SocketViewModel
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
 import java.net.URI
@@ -20,7 +21,11 @@ object WebSocketManager {
         openListener: () -> Unit,
         closeListeners: (Int, String?, Boolean) -> Unit
     ) {
+
+
         if (webSocketClient == null) {
+
+
             webSocketClient = object : WebSocketClient(uri) {
                 override fun onOpen(handshakedata: ServerHandshake?) {
                     openListener.invoke()
@@ -51,6 +56,7 @@ object WebSocketManager {
 
                 override fun onMessage(message: String?) {
                     message?.let {
+//                        viewModel.setMessage(it)
                         WEBSOCKET_CONNECTED = true
                         messageListener?.invoke(it)
                     }
