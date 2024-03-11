@@ -145,7 +145,7 @@ class PDF_CSV_Adapter(
         val rows = csvData.split("\n")
         val sb = StringBuilder()
 
-        sb.append("<table>")
+        sb.append("<table border=\"1\">") // Adding border attribute
         for (row in rows) {
             sb.append("<tr>")
             val columns = row.split(",")
@@ -158,6 +158,7 @@ class PDF_CSV_Adapter(
 
         return sb.toString()
     }
+
 
     private fun shareFile(file: File) {
         val fileUri = FileProvider.getUriForFile(context, context.packageName + ".provider", file)
