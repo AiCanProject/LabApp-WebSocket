@@ -3,9 +3,10 @@ package com.aican.aicanapp.ph
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.View
-import android.widget.Switch
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.viewModels
@@ -33,7 +34,48 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
     companion object {
         var DEVICE_ID: String? = null
+        private const val CHECK_INTERVAL = 3000L // Check interval in milliseconds
     }
+
+    private val handler = Handler(Looper.getMainLooper())
+    private val checkWebSocketStatusRunnable = object : Runnable {
+        override fun run() {
+            // Check WebSocket status
+            val isWebSocketConnected = WebSocketManager.WEBSOCKET_CONNECTED
+            // Handle the WebSocket status as needed
+            handleWebSocketStatus(isWebSocketConnected)
+            // Repeat the check after a delay
+            handler.postDelayed(this, CHECK_INTERVAL)
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // Start checking WebSocket status when the activity is resumed
+        handler.post(checkWebSocketStatusRunnable)
+    }
+
+    override fun onPause() {
+        super.onPause()
+        // Stop checking WebSocket status when the activity is paused
+        handler.removeCallbacks(checkWebSocketStatusRunnable)
+    }
+
+    private fun handleWebSocketStatus(isConnected: Boolean) {
+        // Handle WebSocket status here
+        if (isConnected) {
+            binding.socketConnected.visibility = View.VISIBLE
+            binding.socketDisconnected.visibility = View.GONE
+            // WebSocket is connected
+            // Perform actions accordingly
+        } else {
+            binding.socketConnected.visibility = View.GONE
+            binding.socketDisconnected.visibility = View.VISIBLE
+            // WebSocket is not connected
+            // Perform actions accordingly
+        }
+    }
+
 
     lateinit var ph: TextView
     lateinit var calibrate: TextView
@@ -80,12 +122,11 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 //        }
 
 
-
         sharedViewModel.openConnectionLiveData.observe(this) {
-             runOnUiThread {
-            binding.socketConnected.visibility = View.VISIBLE
-            binding.socketDisconnected.visibility = View.GONE
-              }
+            runOnUiThread {
+                binding.socketConnected.visibility = View.VISIBLE
+                binding.socketDisconnected.visibility = View.GONE
+            }
         }
 
         sharedViewModel.messageLiveData.observe(this) { message ->
@@ -97,7 +138,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
             }
         }
 
-        sharedViewModel.closeConnectionLiveData.observe(this){
+        sharedViewModel.closeConnectionLiveData.observe(this) {
             runOnUiThread {
                 binding.socketConnected.visibility = View.GONE
                 binding.socketDisconnected.visibility = View.VISIBLE
@@ -181,13 +222,12 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         }
 
         binding.offlineModeSwitch.setOnClickListener {
-            if (binding.offlineModeSwitch.isChecked){
+            if (binding.offlineModeSwitch.isChecked) {
 
-            }else{
+            } else {
 
             }
         }
-
 
 
     }
