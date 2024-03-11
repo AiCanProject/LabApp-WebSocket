@@ -1480,10 +1480,10 @@ class Export : AppCompatActivity() {
                 || compoundNameEditText.text.toString().isNotEmpty()
             ) {
 
-                if (arNumEditText.text.toString().isNotEmpty() && batchNumEditText.text.toString()
-                        .isNotEmpty()
-                    && compoundNameEditText.text.toString().isNotEmpty()
-                ) {
+//                if (arNumEditText.text.toString().isNotEmpty() && batchNumEditText.text.toString()
+//                        .isNotEmpty()
+//                    && compoundNameEditText.text.toString().isNotEmpty()
+//                ) {
 
                     allLogsArrayList = withContext(Dispatchers.IO) {
                         allLogsDataDao.getLogByBAC(
@@ -1491,7 +1491,7 @@ class Export : AppCompatActivity() {
                             batchNumEditText.text.toString(), compoundNameEditText.text.toString()
                         )
                     }
-                }
+//                }
 //                if (arNumEditText.text.toString().isNotEmpty()) {
 //
 //                    allLogsArrayList = withContext(Dispatchers.IO) {
