@@ -45,6 +45,8 @@ class PDF_CSV_Adapter(
             val path = when (activity) {
                 "PhExport" -> ContextWrapper(context).externalMediaDirs[0].absolutePath + File.separator + "LabApp/Sensordata/" + selectedFile.name
                 "EcExport" -> ContextWrapper(context).externalMediaDirs[0].absolutePath + File.separator + "LabApp/EcSensordata/" + selectedFile.name
+                "PhCalib" -> ContextWrapper(context).externalMediaDirs[0].absolutePath + File.separator + "LabApp/CalibrationData/" + selectedFile.name
+                "PhLog" -> ContextWrapper(context).externalMediaDirs[0].absolutePath + File.separator + "LabApp/Currentlog/" + selectedFile.name
                 else -> ""
             }
             val intent = Intent(context.applicationContext, PDFViewer::class.java).apply {
@@ -70,7 +72,7 @@ class PDF_CSV_Adapter(
                                 Toast.LENGTH_SHORT
                             ).show()
                             files.toMutableList().remove(selectedFile)
-                            notifyDataSetChanged()
+                            notifyItemRemoved(position)
                         }
                     }
 

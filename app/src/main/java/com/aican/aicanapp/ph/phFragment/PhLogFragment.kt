@@ -38,6 +38,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import com.aican.aicanapp.R
 import com.aican.aicanapp.adapters.LogAdapter
+import com.aican.aicanapp.adapters.PDF_CSV_Adapter
 import com.aican.aicanapp.adapters.PrintLogAdapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.dataClasses.phData
@@ -162,7 +163,7 @@ class PhLogFragment : Fragment() {
     private lateinit var enterBtn: ImageButton
     private lateinit var batchBtn: ImageButton
     private lateinit var arBtn: ImageButton
-    private lateinit var plAdapter: PrintLogAdapter
+    private lateinit var plAdapter: PDF_CSV_Adapter
     private lateinit var compound_name_txt: EditText
     private lateinit var batch_number: EditText
     private lateinit var ar_number: EditText
@@ -840,7 +841,7 @@ class PhLogFragment : Fragment() {
             sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
 
         // Set up RecyclerView with adapter
-        plAdapter = PrintLogAdapter(requireContext(), sortedFiles.toTypedArray())
+        plAdapter = PDF_CSV_Adapter(requireContext(), sortedFiles.toTypedArray(), "PhLog")
         binding.recyclerViewCSVLog.adapter = plAdapter
         plAdapter.notifyDataSetChanged()
         binding.recyclerViewCSVLog.layoutManager = LinearLayoutManager(requireContext())
@@ -861,8 +862,8 @@ class PhLogFragment : Fragment() {
             }
         }
 
-        plAdapter = PrintLogAdapter(
-            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF)
+        plAdapter = PDF_CSV_Adapter(
+            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF), "PhLog"
         )
         binding.recyclerViewCSVLog.adapter = plAdapter
         plAdapter.notifyDataSetChanged()
@@ -1952,7 +1953,7 @@ class PhLogFragment : Fragment() {
         }
     }
 
-    fun reverseFileArray(fileArray: Array<File?>): Array<File?>? {
+    fun reverseFileArray(fileArray: Array<File>): Array<File>? {
         for (i in 0 until fileArray.size / 2) {
             val a = fileArray[i]
             fileArray[i] = fileArray[fileArray.size - i - 1]
