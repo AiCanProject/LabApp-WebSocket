@@ -24,6 +24,7 @@ import com.aican.aicanapp.ph.phFragment.PhLogFragment
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
+import com.aican.aicanapp.websocket.WebSocketManager
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -45,7 +46,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
     lateinit var offlineMode: TextView
     lateinit var onlineMode: TextView
     lateinit var deviceIDTxt: TextView
-    lateinit var offlineModeSwitch: Switch
 
 
     var phFragment: PhFragment = PhFragment()
@@ -121,7 +121,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
         databaseHelper = DatabaseHelper(this@PhActivity)
 
-        offlineModeSwitch = findViewById<Switch>(R.id.offlineModeSwitch)
         ph = binding.item1
         calibrate = binding.item2
         log = binding.item3
@@ -177,17 +176,19 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
             loadFragments(phFragment)
         }
 
+        WebSocketManager.setCloseListener { i, s, b ->
 
+        }
 
+        binding.offlineModeSwitch.setOnClickListener {
+            if (binding.offlineModeSwitch.isChecked){
 
-        if (Constants.OFFLINE_DATA) {
-            offlineModeSwitch.isChecked = true
-            offlineModeSwitch.text = "Connected"
-            offlineModeSwitch.setOnClickListener {
+            }else{
+
             }
         }
 
-        offlineModeSwitch.visibility = View.GONE
+
 
     }
 
@@ -227,7 +228,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
             tabItemPh.visibility = View.VISIBLE
             tabItemPh.background = resources.getDrawable(R.drawable.back_select2)
             if (view.getId() == R.id.item1) {
-                offlineModeSwitch.visibility = View.VISIBLE
                 tabItemPh.animate().x(0f).duration = 100
                 loadFragments(phFragment)
                 ph!!.setTextColor(Color.WHITE)
@@ -236,7 +236,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 graph.setTextColor(Color.parseColor("#FF24003A"))
                 alarm.setTextColor(Color.parseColor("#FF24003A"))
             } else if (view.getId() == R.id.item2) {
-                offlineModeSwitch.visibility = View.VISIBLE
 
 //                loadFragments(phCalibFragment);
                 loadFragments(phCalibFragmentNew)
@@ -248,7 +247,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 val size = calibrate.width
                 tabItemPh.animate().x(size.toFloat()).duration = 100
             } else if (view.getId() == R.id.item3) {
-                offlineModeSwitch.visibility = View.VISIBLE
                 loadFragments(phLogFragment)
                 log.setTextColor(Color.WHITE)
                 ph!!.setTextColor(Color.parseColor("#FF24003A"))
@@ -258,7 +256,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 val size = calibrate.width * 2
                 tabItemPh.animate().x(size.toFloat()).duration = 100
             } else if (view.getId() == R.id.item4) {
-                offlineModeSwitch.visibility = View.GONE
                 loadFragments(phGraphFragment)
                 graph.setTextColor(Color.WHITE)
                 ph!!.setTextColor(Color.parseColor("#FF24003A"))
@@ -268,7 +265,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 val size = calibrate.width * 3
                 tabItemPh.animate().x(size.toFloat()).duration = 100
             } else if (view.getId() == R.id.item5) {
-                offlineModeSwitch.visibility = View.GONE
                 loadFragments(phAlarmFragment)
                 alarm.setTextColor(Color.WHITE)
                 ph!!.setTextColor(Color.parseColor("#FF24003A"))
@@ -302,7 +298,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 Toast.LENGTH_SHORT
             ).show()
         }
-        offlineModeSwitch.visibility = View.GONE
     }
 
 }
