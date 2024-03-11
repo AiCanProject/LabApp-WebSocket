@@ -26,6 +26,7 @@ import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
+import java.net.URI
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -53,6 +54,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         super.onResume()
         // Start checking WebSocket status when the activity is resumed
         handler.post(checkWebSocketStatusRunnable)
+
+
     }
 
     override fun onPause() {
@@ -66,16 +69,35 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         if (isConnected) {
             binding.socketConnected.visibility = View.VISIBLE
             binding.socketDisconnected.visibility = View.GONE
+
+
+           binding.offlineModeSwitch.isChecked = true
+
             // WebSocket is connected
             // Perform actions accordingly
         } else {
             binding.socketConnected.visibility = View.GONE
             binding.socketDisconnected.visibility = View.VISIBLE
+
+
+
+//            binding.offlineModeSwitch.isEnabled = true
+
+            if (isReconnecting) {
+                // Delay to prevent immediate disconnection after reconnection
+
+            } else {
+                binding.offlineModeSwitch.isChecked = false
+
+            }
+
+
             // WebSocket is not connected
             // Perform actions accordingly
         }
     }
 
+    private var isReconnecting = false
 
     lateinit var ph: TextView
     lateinit var calibrate: TextView
@@ -126,8 +148,59 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
             runOnUiThread {
                 binding.socketConnected.visibility = View.VISIBLE
                 binding.socketDisconnected.visibility = View.GONE
+
+//                binding.offlineModeSwitch.isEnabled = false
+                binding.offlineModeSwitch.isChecked = true
+
+
             }
         }
+
+//        binding.offlineModeSwitch.isEnabled = !binding.offlineModeSwitch.isChecked
+
+
+        binding.offlineModeSwitch.setOnClickListener {
+            val uri = URI(Source.WEBSOCKET_URL)
+
+            if (binding.offlineModeSwitch.isChecked){
+                isReconnecting = true
+
+                WebSocketManager.disconnect(true)
+
+                WebSocketManager.initializeWebSocket(uri,
+                    // Open listener
+                    {
+                        // WebSocket connection opened
+                        runOnUiThread {
+                            isReconnecting = false
+                            Source.SOCKET_CONNECTED = true
+                            binding.socketConnected.visibility = View.VISIBLE
+                            binding.socketDisconnected.visibility = View.GONE
+                        }
+
+
+
+                    },
+                    // Close listener
+                    { code, reason, remote ->
+                        // WebSocket connection closed
+                        // Handle UI or other actions as needed
+                        runOnUiThread {
+//                            Source.SOCKET_CONNECTED = false
+//                            binding.offlineModeSwitch.isChecked = false
+                            sharedViewModel.closeConnectionLiveData.value = "" + ""
+
+                            binding.socketConnected.visibility = View.GONE
+                            binding.socketDisconnected.visibility = View.VISIBLE
+                        }
+                    }
+                )
+            }else{
+
+            }
+//            binding.offlineModeSwitch.isEnabled = !binding.offlineModeSwitch.isChecked
+        }
+
 
         sharedViewModel.messageLiveData.observe(this) { message ->
             runOnUiThread {
@@ -221,13 +294,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
         }
 
-        binding.offlineModeSwitch.setOnClickListener {
-            if (binding.offlineModeSwitch.isChecked) {
-
-            } else {
-
-            }
-        }
 
 
     }
