@@ -278,6 +278,7 @@ class PhLogFragment : Fragment() {
         submitBtn.setOnClickListener { saveDetails() }
 
         exportBtn.isEnabled = true
+        logBtn.isEnabled = true
         printBtn.isEnabled = true
 
         exportBtn.setOnClickListener {
@@ -487,6 +488,7 @@ class PhLogFragment : Fragment() {
                     try {
                         switchBtnClick.isChecked = false
                         switchHold.isChecked = false
+
                         jsonData = JSONObject()
                         enterTime.isEnabled = false
                         jsonData.put("AUTOLOG", "2")
@@ -1110,9 +1112,11 @@ class PhLogFragment : Fragment() {
         if (AutoLog == 0) {
             exportBtn.isEnabled = true
             printBtn.isEnabled = true
+            logBtn.isEnabled = true
         } else if (AutoLog == 1) {
             exportBtn.isEnabled = false
             printBtn.isEnabled = false
+            logBtn.isEnabled = false
             switchHold.isChecked = true
             switchInterval.isChecked = false
             switchBtnClick.isChecked = false
@@ -1120,6 +1124,7 @@ class PhLogFragment : Fragment() {
             exportBtn.isEnabled = false
             printBtn.isEnabled = false
             isAlertShow = false
+            logBtn.isEnabled = false
             switchHold.isChecked = false
             switchInterval.isChecked = true
             switchBtnClick.isChecked = false
@@ -1128,9 +1133,11 @@ class PhLogFragment : Fragment() {
             printBtn.isEnabled = false
             switchHold.isChecked = false
             switchInterval.isChecked = false
+            logBtn.isEnabled = false
             switchBtnClick.isChecked = true
         } else {
             exportBtn.isEnabled = true
+            logBtn.isEnabled = true
             printBtn.isEnabled = true
         }
     }
@@ -1830,16 +1837,16 @@ class PhLogFragment : Fragment() {
             addLogData(
                 ph, temp, batchnum, arnum, compound_name
             )
-            databaseHelper.insert_action_data(
-                time,
-                date,
-                "Log pressed : " + Source.logUserName,
-                ph,
-                temp,
-                mv,
-                compound_name,
-                PhActivity.DEVICE_ID
-            )
+//            databaseHelper.insert_action_data(
+//                time,
+//                date,
+//                "Log pressed : " + Source.logUserName,
+//                ph,
+//                temp,
+//                mv,
+//                compound_name,
+//                PhActivity.DEVICE_ID
+//            )
         }
         adapter = LogAdapter(context, getList())
         recyclerView.adapter = adapter
