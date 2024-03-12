@@ -57,6 +57,8 @@ class AdminLoginActivity : AppCompatActivity() {
                         logout()
                     } else if (checkFlag == "checkDatabase") {
                         userDatabase()
+                    } else if (checkFlag == "adminSettings") {
+                        openAdminSettings()
                     }
                 }
             }
