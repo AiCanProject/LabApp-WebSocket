@@ -111,13 +111,14 @@ class AdminLoginActivity : AppCompatActivity() {
 
     private fun openAdminSettings() {
         startActivity(Intent(this@AdminLoginActivity, AdminSettings::class.java))
-
+        finish()
     }
 
     private fun startSettingActivity() {
         val intent = Intent(this, AllUsers::class.java)
 //        val intent = Intent(this, SettingActivity::class.java)
         startActivity(intent)
+        finish()
     }
 
     private fun logout() {
@@ -137,6 +138,7 @@ class AdminLoginActivity : AppCompatActivity() {
     private fun userDatabase() {
         val intent = Intent(this, UserDatabase::class.java)
         startActivity(intent)
+        finish()
     }
 
 

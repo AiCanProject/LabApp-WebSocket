@@ -29,6 +29,7 @@ class AdminSettings : AppCompatActivity() {
         binding.adminSettings.setOnClickListener {
             val intnt = Intent(this@AdminSettings, AdminActivities::class.java)
             startActivity(intnt)
+
         }
 
         if (Source.cfr_mode){

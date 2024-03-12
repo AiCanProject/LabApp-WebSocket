@@ -32,15 +32,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.cardview.widget.CardView
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.DefaultItemAnimator
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.aican.aicanapp.AddDevice.AddDeviceOption
 import com.aican.aicanapp.Authentication.AdminLoginActivity
-import com.aican.aicanapp.FirebaseAccounts.DeviceAccount
 import com.aican.aicanapp.FirebaseAccounts.PrimaryAccount
-import com.aican.aicanapp.FirebaseAccounts.SecondaryAccount
 import com.aican.aicanapp.adapters.NewPhAdapter
 import com.aican.aicanapp.adapters.PhAdapter
 import com.aican.aicanapp.dataClasses.PhDevice
@@ -54,10 +51,8 @@ import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.aican.aicanapp.websocket.webViewModel.SocketViewModel
-import com.aican.aicanapp.websocket.webViewModel.SocketViewModelFactory
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.firebase.FirebaseApp
-import com.google.firebase.FirebaseOptions
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
@@ -69,7 +64,6 @@ import com.google.firebase.firestore.FirebaseFirestore
 import org.json.JSONObject
 import java.io.File
 import java.net.URI
-import java.util.concurrent.atomic.AtomicInteger
 
 
 class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNameChangedListener {
@@ -191,7 +185,6 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
                 val uri = URI(Source.WEBSOCKET_URL)
 
                 //{"DEVICE_ID": "EPT2020", "CAL_MODE": "1"}
-
 
 
 //
@@ -418,26 +411,8 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         jsonData = JSONObject()
 
 
-//        offlineMode.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-//            @Override
-//            public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-//                if (offlineMode.isChecked()) {
-//                    Constants.OFFLINE_MODE = true;
-//                    initiateSocketConnection();
-//
-//                } else {
-//                    Constants.OFFLINE_MODE = false;
-//                    webSocket1.cancel();
-//                }
-//            }
-//        });
-
         // battery percentage
-        val bm = applicationContext.getSystemService(BATTERY_SERVICE) as BatteryManager
-        if (VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            val tabBatteryPer = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
-            binding.batteryPercent.text = "$tabBatteryPer%"
-        }
+
 
         setUpNewPh()
         //showNetworkDialog();
@@ -723,7 +698,14 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
                 Log.e("ThisIsNotError", message)
             }
         }
-        if (WebSocketManager.WEBSOCKET_CONNECTED == true){
+
+        val bm = applicationContext.getSystemService(BATTERY_SERVICE) as BatteryManager
+        if (VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            val tabBatteryPer = bm.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
+            binding.batteryPercent.text = "$tabBatteryPer%"
+        }
+
+        if (WebSocketManager.WEBSOCKET_CONNECTED) {
             binding.offlineModeSwitch.isChecked = true
             Source.SOCKET_CONNECTED = true
             binding.socketConnected.visibility = View.VISIBLE
@@ -736,28 +718,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         menu.menuInflater.inflate(R.menu.device_options, menu.menu)
         menu.setOnMenuItemClickListener { item: MenuItem ->
             if (item.itemId == R.id.menuRemoveDevice) {
-                val uid =
-                    FirebaseAuth.getInstance(PrimaryAccount.getInstance(this)).uid
-                if (uid != null && deviceIdIds.containsKey(deviceId)) {
-                    FirebaseDatabase.getInstance(PrimaryAccount.getInstance(this)).reference
-                        .child("USERS").child(uid).child("DEVICES")
-                        .child(deviceIdIds[deviceId]!!).removeValue()
-                        .addOnSuccessListener { d: Void? ->
-                            FirebaseFirestore.getInstance().collection("Devices Registered")
-                                .document(
-                                    deviceId!!
-                                ).delete()
-                                .addOnSuccessListener {
-                                    Log.e("CallingTwMKTLKK", "CAA")
-                                }.addOnFailureListener { e ->
-                                    Log.w(
-                                        TAG,
-                                        "Error deleting document",
-                                        e
-                                    )
-                                }
-                        }
-                }
+
                 return@setOnMenuItemClickListener true
             } else if (item.itemId == R.id.menuRename) {
                 val dialog = EditNameDialog(
@@ -782,48 +743,6 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
     //Pump RC------------------------------------------------------------------------------------------------------
 
-
-    private fun getDeviceAccounts() {
-        val accountsLoaded = AtomicInteger()
-        val secondaryDatabase =
-            FirebaseDatabase.getInstance(SecondaryAccount.getInstance(this)).reference
-        for (id in deviceIds) {
-            secondaryDatabase.child(id).get().addOnSuccessListener { dataSnapshot: DataSnapshot ->
-                accountsLoaded.incrementAndGet()
-                val deviceAccount =
-                    dataSnapshot.getValue<DeviceAccount>(DeviceAccount::class.java)
-                        ?: return@addOnSuccessListener
-                deviceTypes[id] = deviceAccount.type
-                initialiseFirebaseForDevice(id, deviceAccount)
-                if (accountsLoaded.get() == deviceIds.size) {
-                    Log.e("CallingTw", "C")
-                    //                    Toast.makeText(Dashboard.this, "Loaded : " + deviceAccount, Toast.LENGTH_SHORT).show();
-//                    getDevices() // commented
-                }
-            }.addOnFailureListener { exception: Exception -> exception.printStackTrace() }
-                .addOnCanceledListener {
-                    Log.d(
-                        "TAG",
-                        "onCanceled: "
-                    )
-                }
-        }
-    }
-
-    private fun initialiseFirebaseForDevice(deviceId: String, deviceAccount: DeviceAccount) {
-        val firebaseOptions = FirebaseOptions.Builder()
-            .setApiKey(deviceAccount.api)
-            .setApplicationId(deviceAccount.app)
-            .setDatabaseUrl(deviceAccount.database)
-            .setProjectId(deviceAccount.project)
-            .build()
-        try {
-            val app = FirebaseApp.initializeApp(this, firebaseOptions, deviceId)
-            FirebaseDatabase.getInstance(app).setPersistenceEnabled(true)
-        } catch (e: IllegalStateException) {
-            //Ignore
-        }
-    }
 
     lateinit var device: PhDevice
 
