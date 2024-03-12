@@ -892,12 +892,12 @@ class Export : AppCompatActivity() {
 
             if (startDateString != "" && endDateString != "" && startTimeString != "" && endTimeString != "") {
                 calibCSV = db.rawQuery(
-                    "SELECT * FROM CalibAllDataOffline WHERE (date BETWEEN $startDateString AND $endDateString) AND (time BETWEEN $startTimeString AND $endTimeString)",
+                    "SELECT * FROM CalibAllDataOffline WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString')",
                     null
                 )
             } else if (startDateString != "" && endDateString != "") {
                 calibCSV = db.rawQuery(
-                    "SELECT * FROM CalibAllDataOffline WHERE date BETWEEN $startDateString AND $endDateString",
+                    "SELECT * FROM CalibAllDataOffline WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString')",
                     null
                 )
             } else {
