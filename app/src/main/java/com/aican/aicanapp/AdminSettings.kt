@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -28,6 +29,14 @@ class AdminSettings : AppCompatActivity() {
         binding.adminSettings.setOnClickListener {
             val intnt = Intent(this@AdminSettings, AdminActivities::class.java)
             startActivity(intnt)
+        }
+
+        if (Source.cfr_mode){
+            binding.addUsersBtn.visibility = View.VISIBLE
+            binding.allUsersBtn.visibility = View.VISIBLE
+        }else{
+            binding.addUsersBtn.visibility = View.GONE
+            binding.allUsersBtn.visibility = View.GONE
         }
 
         binding.addUsersBtn.setOnClickListener {

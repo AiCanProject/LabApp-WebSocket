@@ -9,12 +9,10 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.widget.addTextChangedListener
+import com.aican.aicanapp.AdminSettings
 import com.aican.aicanapp.FirebaseAccounts.PrimaryAccount
 import com.aican.aicanapp.R
-import com.aican.aicanapp.SettingActivity
 import com.aican.aicanapp.UserDatabase
-import com.aican.aicanapp.specificActivities.Users.AddNewUser
 import com.aican.aicanapp.specificActivities.Users.AllUsers
 import com.google.android.material.textfield.TextInputLayout
 import com.google.firebase.auth.AuthResult
@@ -45,13 +43,13 @@ class AdminLoginActivity : AppCompatActivity() {
         ilEmail = findViewById(R.id.inputLayoutEmail)
         ilPass = findViewById(R.id.inputLayoutPass)
 
-        mail.addTextChangedListener (object : TextWatcher{
+        mail.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
 
             }
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                if (s.toString() == "9315036599@Vishal"){
+                if (s.toString() == "9315036599@Vishal") {
                     val checkFlag = intent.getStringExtra("checkBtn")
                     if (checkFlag == "addUser") {
                         startSettingActivity()
@@ -85,6 +83,8 @@ class AdminLoginActivity : AppCompatActivity() {
                         logout()
                     } else if (checkFlag == "checkDatabase") {
                         userDatabase()
+                    } else if (checkFlag == "adminSettings") {
+                        openAdminSettings()
                     }
                 }.addOnFailureListener { exception: Exception ->
                     if (exception is FirebaseAuthInvalidUserException) {
@@ -104,6 +104,11 @@ class AdminLoginActivity : AppCompatActivity() {
             }
         }
 
+
+    }
+
+    private fun openAdminSettings() {
+        startActivity(Intent(this@AdminLoginActivity, AdminSettings::class.java))
 
     }
 

@@ -173,7 +173,10 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         phDev = binding.phDev
 
         binding.settingPage.setOnClickListener {
-            startActivity(Intent(this@Dashboard, AdminSettings::class.java))
+
+            val intent = Intent(this@Dashboard, AdminLoginActivity::class.java)
+            intent.putExtra("checkBtn", "adminSettings")
+            startActivity(intent)
         }
 
         fetchWebSocketUrl()
