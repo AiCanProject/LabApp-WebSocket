@@ -887,6 +887,30 @@ class Export : AppCompatActivity() {
 //                db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
 //            }
 
+        if (startDateString != "" || endDateString != "" || startTimeString != "" || endTimeString != "") {
+
+
+            if (startDateString != "" && endDateString != "" && startTimeString != "" && endTimeString != "") {
+                calibCSV = db.rawQuery(
+                    "SELECT * FROM CalibAllDataOffline WHERE date BETWEEN :startDateString AND :endDateString AND time BETWEEN :startTimeString AND :endTimeString",
+                    null
+                )
+            } else if (startDateString != "" && endDateString != "") {
+                calibCSV = db.rawQuery(
+                    "SELECT * FROM CalibAllDataOffline WHERE date BETWEEN :startDateString AND :endDateString",
+                    null
+                )
+            } else {
+                calibCSV = db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
+
+            }
+
+
+        } else {
+            calibCSV = db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
+
+        }
+
         val so = 1
         val columnWidth = floatArrayOf(200f, 210f, 190f, 170f, 340f, 170f)
         var table = Table(columnWidth)

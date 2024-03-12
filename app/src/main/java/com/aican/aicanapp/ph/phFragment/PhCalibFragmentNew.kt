@@ -2749,7 +2749,14 @@ class PhCalibFragmentNew : Fragment() {
                             if (dt5.text.toString().length >= 15) dt5.text.toString()
                                 .substring(11, 16) else "--"
                         )
-                    }else{
+                        databaseHelper.insertCalibrationAllDataOffline(
+                            "calibration-ended", "-", "-", "-", "-", "-", "-",
+                            if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                    } else {
                         databaseHelper.insertCalibrationAllDataOffline(
                             ph2.text.toString(),
                             mv2.text.toString(),
@@ -2789,10 +2796,15 @@ class PhCalibFragmentNew : Fragment() {
                             if (dt4.text.toString().length >= 15) dt4.text.toString()
                                 .substring(11, 16) else "--"
                         )
+                        databaseHelper.insertCalibrationAllDataOffline(
+                            "calibration-ended", "-", "-", "-", "-", "-", "-",
+                            if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                .substring(11, 16) else "--"
+                        )
                     }
-                    databaseHelper.insertCalibrationAllDataOffline(
-                        "calibration-ended", "-", "-", "-", "-", "-", "-", "-", "-"
-                    )
+
 //                    deviceRef.child("UI").child("PH").child("PH_CAL").child("CAL").setValue(0)
                     tvTimer.text = "00:45"
                     Log.d("Runnable", "ok")
