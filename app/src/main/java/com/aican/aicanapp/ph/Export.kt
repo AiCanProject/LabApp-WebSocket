@@ -437,43 +437,94 @@ class Export : AppCompatActivity() {
 
 
         exportPDFAllLogDataBtn.setOnClickListener {
-            companyName = companyNameEditText.text.toString()
-            if (!companyName.isEmpty()) {
-                if (Constants.OFFLINE_MODE) {
-                    val company_name = getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
-                    val editT = company_name.edit()
-                    editT.putString("COMPANY_NAME", companyName)
-                    editT.commit()
-                }
-            }
             try {
-                generateAllLogPDFs()
-//                generateAllLogCSV()
+
+                Source.showLoading(this@Export, false, false, "Generating pdf...",
+                    false)
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        companyName = companyNameEditText.text.toString()
+                        if (!companyName.isEmpty()) {
+                            if (Constants.OFFLINE_MODE) {
+                                val company_name = getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
+                                val editT = company_name.edit()
+                                editT.putString("COMPANY_NAME", companyName)
+                                editT.commit()
+                            }
+                        }
+//                        addUserAction(
+//                            "username: " + Source.userName + ", Role: " + Source.userRole +
+//                                    ", print calib report csv", "", "", "", ""
+//                        )
+                        generateAllLogPDFs()
+
+                        launch(Dispatchers.Main) {
+                            updateRecyclerView()
+                            convertToXls.visibility = View.INVISIBLE
+
+                            Source.cancelLoading()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        launch(Dispatchers.Main) {
+                            Source.cancelLoading()
+                            Toast.makeText(this@Export, "Failed to generate pdf", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
-            updateRecyclerView()
-            convertToXls.visibility = View.INVISIBLE
+
         }
 
         binding.printSensorCSV.setOnClickListener {
-            companyName = companyNameEditText.text.toString()
-            if (!companyName.isEmpty()) {
-                if (Constants.OFFLINE_MODE) {
-                    val company_name = getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
-                    val editT = company_name.edit()
-                    editT.putString("COMPANY_NAME", companyName)
-                    editT.commit()
-                }
-            }
+
             try {
-//                generateAllLogPDFs()
-                generateAllLogCSV()
+
+                Source.showLoading(this@Export, false, false, "Generating csv...",
+                    false)
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        companyName = companyNameEditText.text.toString()
+                        if (!companyName.isEmpty()) {
+                            if (Constants.OFFLINE_MODE) {
+                                val company_name = getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
+                                val editT = company_name.edit()
+                                editT.putString("COMPANY_NAME", companyName)
+                                editT.commit()
+                            }
+                        }
+//                        addUserAction(
+//                            "username: " + Source.userName + ", Role: " + Source.userRole +
+//                                    ", print calib report csv", "", "", "", ""
+//                        )
+                        generateAllLogCSV()
+
+                        launch(Dispatchers.Main) {
+                            updateRecyclerView()
+                            convertToXls.visibility = View.INVISIBLE
+
+                            Source.cancelLoading()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        launch(Dispatchers.Main) {
+                            Source.cancelLoading()
+                            Toast.makeText(this@Export, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
-            updateRecyclerView()
-            convertToXls.visibility = View.INVISIBLE
+
+
+
         }
         binding.printAllCalibData.visibility = View.VISIBLE
         exportPDFAllLogDataBtn.visibility = View.VISIBLE
@@ -498,22 +549,72 @@ class Export : AppCompatActivity() {
 
         printAllCalibData.setOnClickListener { v: View? ->
             try {
-                printAllCalibPDF()
+
+                Source.showLoading(this@Export, false, false, "Generating pdf...",
+                    false)
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+//                        addUserAction(
+//                            "username: " + Source.userName + ", Role: " + Source.userRole +
+//                                    ", print calib report csv", "", "", "", ""
+//                        )
+                        printAllCalibPDF()
+
+                        launch(Dispatchers.Main) {
+                            updateRecyclerView()
+                            convertToXls.visibility = View.INVISIBLE
+
+                            Source.cancelLoading()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        launch(Dispatchers.Main) {
+                            Source.cancelLoading()
+                            Toast.makeText(this@Export, "Failed to generate pdf", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
-            updateRecyclerView()
-            convertToXls.visibility = View.INVISIBLE
+
         }
 
         binding.printAllCalibDataCSV.setOnClickListener { v: View? ->
             try {
-                printAllCalibCSV()
+
+                Source.showLoading(this@Export, false, false, "Generating csv...",
+                    false)
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+//                        addUserAction(
+//                            "username: " + Source.userName + ", Role: " + Source.userRole +
+//                                    ", print calib report csv", "", "", "", ""
+//                        )
+                        printAllCalibCSV()
+
+                        launch(Dispatchers.Main) {
+                            updateRecyclerView()
+                            convertToXls.visibility = View.INVISIBLE
+
+                            Source.cancelLoading()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        launch(Dispatchers.Main) {
+                            Source.cancelLoading()
+                            Toast.makeText(this@Export, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
-            updateRecyclerView()
-            convertToXls.visibility = View.INVISIBLE
+
         }
     }
 
@@ -540,7 +641,7 @@ class Export : AppCompatActivity() {
     }
 
     fun printAllCalibCSV() {
-        Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
+//        Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
 
 
         val exportDir = File(ContextWrapper(this@Export).externalMediaDirs[0], "/LabApp/Sensordata")
@@ -682,20 +783,20 @@ class Export : AppCompatActivity() {
             }
 
             writer.close()
-            Toast.makeText(this@Export, "CSV file exported", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this@Export, "CSV file exported", Toast.LENGTH_SHORT).show()
         } catch (e: IOException) {
-            Toast.makeText(
-                this@Export,
-                "Error exporting CSV file: ${e.message}",
-                Toast.LENGTH_SHORT
-            ).show()
+//            Toast.makeText(
+//                this@Export,
+//                "Error exporting CSV file: ${e.message}",
+//                Toast.LENGTH_SHORT
+//            ).show()
             e.printStackTrace()
         }
     }
 
     @Throws(FileNotFoundException::class)
     private fun printAllCalibPDF() {
-        Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
+//        Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
 
         val company_name = "Company: $companyName"
         val user_name = "Report generated by: " + Source.logUserName
@@ -922,11 +1023,7 @@ class Export : AppCompatActivity() {
         table.addCell("Temperature")
         var rowCounter = 0 // To keep track of the number of rows processed
         runOnUiThread {
-            Toast.makeText(
-                this@Export,
-                "" + calibCSV.count + ", " + calibCSV.columnCount,
-                Toast.LENGTH_SHORT
-            ).show()
+
         }
         while (calibCSV.moveToNext()) {
             val ph = calibCSV.getString(calibCSV.getColumnIndex("PH")) ?: ""
@@ -1016,7 +1113,7 @@ class Export : AppCompatActivity() {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
         }
         document.close()
-        Toast.makeText(this, "Pdf generated", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(this, "Pdf generated", Toast.LENGTH_SHORT).show()
     }
 
     private fun showOptionDialog() {
@@ -1577,11 +1674,11 @@ class Export : AppCompatActivity() {
             }
 
         } catch (e: IOException) {
-            Toast.makeText(
-                this@Export,
-                "Error exporting CSV file: ${e.message}",
-                Toast.LENGTH_SHORT
-            ).show()
+//            Toast.makeText(
+//                this@Export,
+//                "Error exporting CSV file: ${e.message}",
+//                Toast.LENGTH_SHORT
+//            ).show()
             e.printStackTrace()
 
         }
@@ -1590,7 +1687,7 @@ class Export : AppCompatActivity() {
     @Throws(FileNotFoundException::class)
     fun generateAllLogPDFs() {
 
-        Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
+//        Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
 
 
         val device_id = "DeviceID: ${PhActivity.DEVICE_ID}"
@@ -2116,7 +2213,7 @@ class Export : AppCompatActivity() {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
                 }
                 document.close()
-                Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
 
             } else {
                 document.add(Paragraph(""))
@@ -2174,7 +2271,7 @@ class Export : AppCompatActivity() {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
                 }
                 document.close()
-                Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
+//                Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
             }
         }
 
@@ -2243,7 +2340,7 @@ class Export : AppCompatActivity() {
 
     @Throws(FileNotFoundException::class)
     fun generateUserActivityPDF() {
-        Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
+//        Toast.makeText(this@Export, "Printing...", Toast.LENGTH_LONG).show()
 
         if (SharedPref.getSavedData(
                 this@Export,
@@ -2479,7 +2576,7 @@ $slope  |  $tempe"""
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
             }
             document.close()
-            Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(this@Export, "Pdf generated", Toast.LENGTH_SHORT).show()
         }
 
     }

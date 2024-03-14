@@ -62,7 +62,7 @@ public class Source {
         return dateFormat.format(date);
     }
 
-    public static void showLoading(Activity context, boolean cancelable, boolean cancelOnTouchOutside, String message) {
+    public static void showLoading(Activity context, boolean cancelable, boolean cancelOnTouchOutside, String message, boolean cancelBtn) {
         if (!context.isFinishing()) {
             if (loadingDialog != null && loadingDialog.isShowing()) {
                 cancelLoading();
@@ -71,6 +71,14 @@ public class Source {
             loadingDialog.setContentView(R.layout.loading_dialog);
 
             ImageView closeDialog = loadingDialog.findViewById(R.id.closeDialog);
+
+            if (cancelBtn){
+
+                closeDialog.setVisibility(View.VISIBLE);
+            }else {
+                closeDialog.setVisibility(View.GONE);
+            }
+
             closeDialog.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {

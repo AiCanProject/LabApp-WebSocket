@@ -69,6 +69,7 @@ import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
 import com.opencsv.CSVWriter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
@@ -174,37 +175,75 @@ class PhCalibFragmentNew : Fragment() {
         // Set click listener for the button
         printCalibData.setOnClickListener {
             try {
-                generatePDF()
+                Source.showLoading(requireActivity(), false, false, "Generating pdf...",
+                    false)
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        addUserAction(
+                            "username: " + Source.userName + ", Role: " + Source.userRole +
+                                    ", print calib report pdf", "", "", "", ""
+                        )
+
+                        generatePDF()
+                        launch(Dispatchers.Main) {
+                            showCalibPDFs()
+
+                            Source.cancelLoading()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        launch(Dispatchers.Main) {
+                            Source.cancelLoading()
+                            Toast.makeText(fragmentContext, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+//                generatePDF()
 //                printCalibCSV()
 
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", print calib report pdf", "", "", "", ""
-                )
 
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
             // Call the function to show calibration PDFs after generating
-            showCalibPDFs()
         }
 
 
         binding.printCSV.setOnClickListener {
             try {
-//                generatePDF()
-                printCalibCSV()
+                Source.showLoading(requireActivity(), false, false, "Generating csv...",
+                    false)
 
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", print calib report csv", "", "", "", ""
-                )
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        addUserAction(
+                            "username: " + Source.userName + ", Role: " + Source.userRole +
+                                    ", print calib report csv", "", "", "", ""
+                        )
+                        printCalibCSV()
+
+                        launch(Dispatchers.Main) {
+                            showCalibPDFs()
+
+                            Source.cancelLoading()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        launch(Dispatchers.Main) {
+                            Source.cancelLoading()
+                            Toast.makeText(fragmentContext, "Failed to generate csv", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+//                generatePDF()
+
+
 
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
             // Call the function to show calibration PDFs after generating
-            showCalibPDFs()
         }
 
         /////
@@ -1289,15 +1328,15 @@ class PhCalibFragmentNew : Fragment() {
 
             writer.close()
 
-            Toast.makeText(requireContext(), "CSV file exported", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(requireContext(), "CSV file exported", Toast.LENGTH_SHORT).show()
 
 
         } catch (e: IOException) {
-            Toast.makeText(
-                requireContext(),
-                "Error exporting CSV file: ${e.message}",
-                Toast.LENGTH_SHORT
-            ).show()
+//            Toast.makeText(
+//                requireContext(),
+//                "Error exporting CSV file: ${e.message}",
+//                Toast.LENGTH_SHORT
+//            ).show()
             e.printStackTrace()
         }
     }
@@ -1305,7 +1344,7 @@ class PhCalibFragmentNew : Fragment() {
     @Throws(FileNotFoundException::class)
     private fun generatePDF() {
 
-        Toast.makeText(requireContext(), "Printing...", Toast.LENGTH_LONG).show()
+//        Toast.makeText(requireContext(), "Printing...", Toast.LENGTH_LONG).show()
 
         if (SharedPref.getSavedData(
                 getContext(), "COMPANY_NAME"
@@ -1579,7 +1618,7 @@ class PhCalibFragmentNew : Fragment() {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
         }
         document.close()
-        Toast.makeText(fragmentContext, "Pdf generated", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(fragmentContext, "Pdf generated", Toast.LENGTH_SHORT).show()
     }
 
 

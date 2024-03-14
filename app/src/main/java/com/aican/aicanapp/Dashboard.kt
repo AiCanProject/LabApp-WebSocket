@@ -331,7 +331,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         binding.batteryPercent.setOnClickListener {
             startActivity(Intent(this@Dashboard, MainActivity::class.java))
         }
-        Source.showLoading(this, false, false, "Loading Devices....")
+        Source.showLoading(this, false, false, "Loading Devices....", true)
 
         setUpNavDrawer()
         setUpToolBar()

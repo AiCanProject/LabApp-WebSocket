@@ -73,6 +73,7 @@ import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
 import com.opencsv.CSVWriter
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.json.JSONException
 import org.json.JSONObject
@@ -770,61 +771,98 @@ class PhLogFragment : Fragment() {
         // Set click listener for the printBtn
         printBtn.setOnClickListener {
             try {
-                generatePDF()
 
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", print log report pdf", "", "", "", ""
-                )
+                Source.showLoading(requireActivity(), false, false, "Generating pdf...",
+                    false)
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        addUserAction(
+                            "username: " + Source.userName + ", Role: " + Source.userRole +
+                                    ", print log report pdf", "", "", "", ""
+                        )
+                        generatePDF()
+
+                        launch(Dispatchers.Main) {
+                            val startsWith = "CurrentData"
+                            val path =
+                                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog"
+                            val root = File(path)
+                            val filesAndFolders = root.listFiles()
+
+                            if (filesAndFolders == null || filesAndFolders.isEmpty()) {
+                                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
+                            }
+
+                            // Call the function to show PDF files after generating
+                            showPdfFiles()
+                            Source.cancelLoading()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        launch(Dispatchers.Main) {
+                            Source.cancelLoading()
+                            Toast.makeText(requireActivity(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+
+
+
 
 //                exportLogCsv()
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
 
-            val startsWith = "CurrentData"
-            val path =
-                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog"
-            val root = File(path)
-            val filesAndFolders = root.listFiles()
 
-            if (filesAndFolders == null || filesAndFolders.isEmpty()) {
-                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // Call the function to show PDF files after generating
-            showPdfFiles()
         }
 
 
         binding.printCSV.setOnClickListener {
             try {
-//                generatePDF()
-                exportLogCsv()
 
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole +
-                            ", print log report csv", "", "", "", ""
-                )
+                Source.showLoading(requireActivity(), false, false, "Generating csv...",
+                    false)
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        addUserAction(
+                            "username: " + Source.userName + ", Role: " + Source.userRole +
+                                    ", print log report csv", "", "", "", ""
+                        )
+
+                        exportLogCsv()
+                        launch(Dispatchers.Main) {
+                            val startsWith = "CurrentData"
+                            val path =
+                                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog"
+                            val root = File(path)
+                            val filesAndFolders = root.listFiles()
+
+                            if (filesAndFolders == null || filesAndFolders.isEmpty()) {
+                                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
+                            }
+
+                            // Call the function to show PDF files after generating
+                            showPdfFiles()
+                            Source.cancelLoading()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        launch(Dispatchers.Main) {
+                            Source.cancelLoading()
+                            Toast.makeText(requireActivity(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                }
+//                generatePDF()
+
 
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
 
-            val startsWith = "CurrentData"
-            val path =
-                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog"
-            val root = File(path)
-            val filesAndFolders = root.listFiles()
 
-            if (filesAndFolders == null || filesAndFolders.isEmpty()) {
-                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
-            }
-
-            // Call the function to show PDF files after generating
-            showPdfFiles()
         }
     }
 
@@ -1187,7 +1225,7 @@ class PhLogFragment : Fragment() {
     @Throws(FileNotFoundException::class)
     private fun generatePDF() {
 
-        Toast.makeText(requireContext(), "Printing...", Toast.LENGTH_LONG).show()
+//        Toast.makeText(requireContext(), "Printing...", Toast.LENGTH_LONG).show()
 
         var company_name = ""
 
@@ -1511,12 +1549,12 @@ class PhLogFragment : Fragment() {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
-            Toast.makeText(
-                requireContext(), "Error : " + e.message, Toast.LENGTH_SHORT
-            ).show()
+//            Toast.makeText(
+//                requireContext(), "Error : " + e.message, Toast.LENGTH_SHORT
+//            ).show()
         }
         document.close()
-        Toast.makeText(context, "Pdf generated", Toast.LENGTH_SHORT).show()
+//        Toast.makeText(context, "Pdf generated", Toast.LENGTH_SHORT).show()
     }
 
 
@@ -1674,13 +1712,13 @@ class PhLogFragment : Fragment() {
             }
 
             writer.close()
-            Toast.makeText(requireContext(), "CSV file exported", Toast.LENGTH_SHORT).show()
+//            Toast.makeText(requireContext(), "CSV file exported", Toast.LENGTH_SHORT).show()
         } catch (e: IOException) {
-            Toast.makeText(
-                requireContext(),
-                "Error exporting CSV file: ${e.message}",
-                Toast.LENGTH_SHORT
-            ).show()
+//            Toast.makeText(
+//                requireContext(),
+//                "Error exporting CSV file: ${e.message}",
+//                Toast.LENGTH_SHORT
+//            ).show()
             e.printStackTrace()
         }
     }
