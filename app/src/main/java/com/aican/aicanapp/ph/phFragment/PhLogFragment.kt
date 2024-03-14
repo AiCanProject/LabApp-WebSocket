@@ -400,7 +400,7 @@ class PhLogFragment : Fragment() {
 
         switchInterval.setOnCheckedChangeListener { compoundButton, b ->
             if (switchInterval.isChecked) {
-                Constants.logIntervalActive = true
+//                Constants.logIntervalActive = true
                 autoLogggg = 2
                 updateAutoLog()
                 if (Constants.OFFLINE_MODE) {
