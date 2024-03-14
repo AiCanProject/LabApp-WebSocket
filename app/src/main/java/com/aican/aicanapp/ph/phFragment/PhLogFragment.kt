@@ -39,7 +39,6 @@ import androidx.room.Room
 import com.aican.aicanapp.R
 import com.aican.aicanapp.adapters.LogAdapter
 import com.aican.aicanapp.adapters.PDF_CSV_Adapter
-import com.aican.aicanapp.adapters.PrintLogAdapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.dataClasses.phData
 import com.aican.aicanapp.databinding.FragmentPhLogBinding
@@ -363,97 +362,6 @@ class PhLogFragment : Fragment() {
         }
 
 
-//        printBtn.setOnClickListener(View.OnClickListener { //                printBtn.setB
-//            try {
-//                generatePDF()
-//            } catch (e: FileNotFoundException) {
-//                e.printStackTrace()
-//            }
-//            //                exportSensorCsv();
-//
-//            // calibration
-//            // reset button
-//            // voltage recieve and
-//            val startsWith = "CurrentData"
-//            //                String path = requireContext().getExternalFilesDir(null).getAbsolutePath() + File.separator + "/LabApp/Currentlog";
-//            val path =
-//                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog"
-//            val root = File(path)
-//            val filesAndFolders = root.listFiles()
-//            Log.e("FileNameErrorDirRoot", root.path)
-//            if (filesAndFolders == null || filesAndFolders.size == 0) {
-//                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
-//                return@OnClickListener
-//            } else {
-//                for (i in filesAndFolders.indices) {
-//                    filesAndFolders[i].name.startsWith(startsWith)
-//                }
-//            }
-//
-//
-//            //                try {
-//            //                    Workbook workbook = new Workbook(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog/CurrentData.xlsx");
-//            //                    PdfSaveOptions options = new PdfSaveOptions();
-//            //                    SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault());
-//            //                    String currentDateandTime = sdf.format(new Date());
-//            //                    options.setCompliance(PdfCompliance.PDF_A_1_B);
-//            //
-//            ////                    File Pdfdir = new File(Environment.getExternalStorageDirectory()+"/LabApp/Currentlog/LogPdf");
-//            ////                    if (!Pdfdir.exists()) {
-//            ////                        if (!Pdfdir.mkdirs()) {
-//            ////                            Log.d("App", "failed to create directory");
-//            ////                        }
-//            ////                    }
-//            //                    String tempPath = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog";
-//            //                    File tempRoot = new File(tempPath);
-//            //                    fileNotWrite(tempRoot);
-//            //                    File[] tempFilesAndFolders = tempRoot.listFiles();
-//            //                    workbook.save(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + (tempFilesAndFolders.length - 1) + ".pdf", options);
-//            //
-//            //                    String path1 = Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog";
-//            //                    File root1 = new File(path1);
-//            //                    fileNotWrite(root1);
-//            //                    File[] filesAndFolders1 = root1.listFiles();
-//            //
-//            //                    if (filesAndFolders1 == null || filesAndFolders1.length == 0) {
-//            //
-//            //                        return;
-//            //                    } else {
-//            //                        for (int i = 0; i < filesAndFolders1.length; i++) {
-//            //                            if (filesAndFolders1[i].getName().endsWith(".csv") || filesAndFolders1[i].getName().endsWith(".xlsx")) {
-//            //                                filesAndFolders1[i].delete();
-//            //                            }
-//            //                        }
-//            //                    }
-//            //
-//            //                } catch (Exception e) {
-//            //                    e.printStackTrace();
-//            //                }
-//
-//
-//            //                String pathPDF = requireContext().getExternalFilesDir(null).getPath() + File.separator + "/LabApp/Currentlog/";
-//            val pathPDF =
-//                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog/"
-//            val rootPDF = File(pathPDF)
-//            fileNotWrite(root)
-//            val filesAndFoldersPDF = rootPDF.listFiles()
-//            val filesAndFoldersNewPDF = arrayOfNulls<File>(1)
-//            if (filesAndFoldersPDF == null || filesAndFoldersPDF.size == 0) {
-//                return@OnClickListener
-//            } else {
-//                for (i in filesAndFoldersPDF.indices) {
-//                    if (filesAndFoldersPDF[i].name.endsWith(".pdf")) {
-//                        filesAndFoldersNewPDF[0] = filesAndFoldersPDF[i]
-//                    }
-//                }
-//            }
-//            plAdapter = PrintLogAdapter(
-//                requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF)
-//            )
-//            csvRecyclerView.adapter = plAdapter
-//            plAdapter.notifyDataSetChanged()
-//            csvRecyclerView.layoutManager = LinearLayoutManager(requireContext().applicationContext)
-//        })
 
 
         recyclerView.setHasFixedSize(true)
@@ -463,14 +371,7 @@ class PhLogFragment : Fragment() {
         val path =
             ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog"
         val root = File(path)
-//        val filesAndFolders = root.listFiles()
-//
-//        plAdapter = PrintLogAdapter(requireContext().applicationContext, filesAndFolders)
-//        csvRecyclerView.adapter = plAdapter
-//        plAdapter.notifyDataSetChanged()
-//
 
-//        csvRecyclerView.layoutManager = LinearLayoutManager(requireContext().applicationContext)
         if (checkPermission()) {
             Toast.makeText(
                 requireContext().applicationContext, "Permission Granted", Toast.LENGTH_SHORT
@@ -479,6 +380,23 @@ class PhLogFragment : Fragment() {
             requestPermission()
         }
 
+
+        if (SharedPref.getSavedData(
+                requireContext(), "LOG_INTERVAL_A"
+            ) != null && SharedPref.getSavedData(requireContext(), "LOG_INTERVAL_A") !== ""
+        ) {
+            val d = SharedPref.getSavedData(requireContext(), "LOG_INTERVAL_A").toDouble() * 60000
+            Toast.makeText(
+                requireContext(),
+                "" + SharedPref.getSavedData(requireContext(), "LOG_INTERVAL_A"),
+                Toast.LENGTH_SHORT
+            ).show()
+            enterTime.setText(SharedPref.getSavedData(requireContext(), "LOG_INTERVAL_A"))
+            Constants.timeInSec = d.toInt()
+        } else {
+            SharedPref.saveData(requireContext(), "LOG_INTERVAL_A", "0.1")
+            Constants.timeInSec = 5000
+        }
 
         switchInterval.setOnCheckedChangeListener { compoundButton, b ->
             if (switchInterval.isChecked) {
@@ -502,17 +420,10 @@ class PhLogFragment : Fragment() {
                             mv,
                             compound_name
                         )
-                        Toast.makeText(
-                            requireContext(), "C " + Constants.timeInSec, Toast.LENGTH_SHORT
-                        ).show()
-                        if (Constants.timeInSec == 0) {
-                        } else {
-                            val f = Constants.timeInSec.toFloat() / 60000
-                            enterTime.setText("" + f)
-                            if (handler != null) handler!!.removeCallbacks(runnable)
-                            takeLog()
-                            handler()
-                        }
+//                        Toast.makeText(
+//                            requireContext(), "C " + Constants.timeInSec, Toast.LENGTH_SHORT
+//                        ).show()
+
                     } catch (e: JSONException) {
                         e.printStackTrace()
                     }
@@ -558,22 +469,6 @@ class PhLogFragment : Fragment() {
             }
         }
 
-        if (SharedPref.getSavedData(
-                requireContext(), "LOG_INTERVAL_A"
-            ) != null && SharedPref.getSavedData(requireContext(), "LOG_INTERVAL_A") !== ""
-        ) {
-            val d = SharedPref.getSavedData(requireContext(), "LOG_INTERVAL_A").toDouble() * 60000
-            Toast.makeText(
-                requireContext(),
-                "" + SharedPref.getSavedData(requireContext(), "LOG_INTERVAL_A"),
-                Toast.LENGTH_SHORT
-            ).show()
-            enterTime.setText(SharedPref.getSavedData(requireContext(), "LOG_INTERVAL_A"))
-            Constants.timeInSec = d.toInt()
-        } else {
-            SharedPref.saveData(requireContext(), "LOG_INTERVAL_A", "0.1")
-            Constants.timeInSec = 5000
-        }
 
         saveTimer.setOnClickListener {
             if (!enterTime.text.toString().isEmpty()) {
@@ -607,6 +502,14 @@ class PhLogFragment : Fragment() {
                                     WebSocketManager.sendMessage(jsonData.toString())
                                     LOG_INTERVAL = enterTime.text.toString().toFloat() * 60
                                     log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
+
+                                    if (Constants.timeInSec != 0) {
+                                        val f = Constants.timeInSec.toFloat() / 60000
+                                        enterTime.setText("" + f)
+                                        if (handler != null) handler!!.removeCallbacks(runnable)
+                                        takeLog()
+                                        handler()
+                                    }
 
                                     //                    startTimer();
 
@@ -755,15 +658,15 @@ class PhLogFragment : Fragment() {
         binding.printCSV.visibility = View.VISIBLE
         binding.print.visibility = View.VISIBLE
 
-        if (Source.EXPORT_CSV){
+        if (Source.EXPORT_CSV) {
             binding.printCSV.visibility = View.VISIBLE
-        }else{
+        } else {
             binding.printCSV.visibility = View.GONE
         }
 
-        if (Source.EXPORT_PDF){
+        if (Source.EXPORT_PDF) {
             binding.print.visibility = View.VISIBLE
-        }else{
+        } else {
             binding.print.visibility = View.GONE
 
         }
@@ -772,8 +675,10 @@ class PhLogFragment : Fragment() {
         printBtn.setOnClickListener {
             try {
 
-                Source.showLoading(requireActivity(), false, false, "Generating pdf...",
-                    false)
+                Source.showLoading(
+                    requireActivity(), false, false, "Generating pdf...",
+                    false
+                )
                 GlobalScope.launch(Dispatchers.IO) {
                     try {
                         addUserAction(
@@ -790,7 +695,11 @@ class PhLogFragment : Fragment() {
                             val filesAndFolders = root.listFiles()
 
                             if (filesAndFolders == null || filesAndFolders.isEmpty()) {
-                                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    requireContext(),
+                                    "No Files Found",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
 
                             // Call the function to show PDF files after generating
@@ -801,12 +710,14 @@ class PhLogFragment : Fragment() {
                         e.printStackTrace()
                         launch(Dispatchers.Main) {
                             Source.cancelLoading()
-                            Toast.makeText(requireActivity(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                requireActivity(),
+                                "Failed to generate PDF",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }
-
-
 
 
 //                exportLogCsv()
@@ -821,8 +732,10 @@ class PhLogFragment : Fragment() {
         binding.printCSV.setOnClickListener {
             try {
 
-                Source.showLoading(requireActivity(), false, false, "Generating csv...",
-                    false)
+                Source.showLoading(
+                    requireActivity(), false, false, "Generating csv...",
+                    false
+                )
 
                 GlobalScope.launch(Dispatchers.IO) {
                     try {
@@ -840,7 +753,11 @@ class PhLogFragment : Fragment() {
                             val filesAndFolders = root.listFiles()
 
                             if (filesAndFolders == null || filesAndFolders.isEmpty()) {
-                                Toast.makeText(requireContext(), "No Files Found", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    requireContext(),
+                                    "No Files Found",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
 
                             // Call the function to show PDF files after generating
@@ -851,7 +768,11 @@ class PhLogFragment : Fragment() {
                         e.printStackTrace()
                         launch(Dispatchers.Main) {
                             Source.cancelLoading()
-                            Toast.makeText(requireActivity(), "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                requireActivity(),
+                                "Failed to generate PDF",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }

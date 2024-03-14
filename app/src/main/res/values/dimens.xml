@@ -10,6 +10,7 @@
     <dimen name="pad2">15dp</dimen>
     <dimen name="your_line_width">2dp</dimen>
     <dimen name="table_item_size">10sp</dimen>
+    <dimen name="new_table_item_size">16sp</dimen>
     <dimen name="all_user_txt_size">16sp</dimen>
     <dimen name="focus_indicator_size">48dp</dimen>
     <dimen name="accInfo">12dp</dimen>
