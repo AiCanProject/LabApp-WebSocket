@@ -482,8 +482,10 @@ class PhLogFragment : Fragment() {
                     ).show()
                     log_interval_text.text = (Constants.timeInSec / 60000).toString() + ""
                     if (switchInterval.isChecked) {
+
                         if (Constants.OFFLINE_MODE) {
                             if (!Constants.logIntervalActive) {
+                                Constants.logIntervalActive = true
                                 try {
                                     val d = enterTime.text.toString().toDouble() * 60000
                                     Constants.timeInSec = d.toInt()
