@@ -3195,9 +3195,9 @@ class PhCalibFragmentNew : Fragment() {
         spin.adapter = adapter
 
 
-        if (Constants.OFFLINE_DATA) {
-            PH_MODE = "both"
-        }
+//        if (Constants.OFFLINE_DATA) {
+//            PH_MODE = "both"
+//        }
 
 
         when (PH_MODE) {
