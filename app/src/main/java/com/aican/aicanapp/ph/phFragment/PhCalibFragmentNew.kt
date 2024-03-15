@@ -1662,9 +1662,9 @@ class PhCalibFragmentNew : Fragment() {
                     ", started calibration mode 5, of buffer " + currentBuf, "", "", "", ""
         )
 
-        timer5 = object : CountDownTimer(5000, 1000) {
+        timer5 = object : CountDownTimer(45000, 1000) {
             //45000
-            //        timer5 = new CountDownTimer(5000, 1000) { //45000
+//                    timer5 = new CountDownTimer(5000, 1000) { //45000
             override fun onTick(millisUntilFinished: Long) {
                 var millisUntilFinished = millisUntilFinished
                 calibrateBtn.isEnabled = false
