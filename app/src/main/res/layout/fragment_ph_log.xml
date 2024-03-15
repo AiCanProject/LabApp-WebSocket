@@ -256,22 +256,22 @@
             <Button
                 android:id="@+id/logBtn"
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
+                android:layout_height="35dp"
                 android:layout_gravity="center"
                 android:backgroundTint="#3CEA43"
                 android:text="@string/log"
                 android:textAllCaps="false"
-                android:textSize="15sp"
+                android:textSize="12sp"
                 android:visibility="visible" />
 
             <Button
                 android:id="@+id/export"
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
+                android:layout_height="35dp"
                 android:layout_gravity="center"
                 android:text="@string/export"
                 android:textAllCaps="false"
-                android:textSize="15sp"
+                android:textSize="12sp"
                 android:visibility="visible" />
 
             <Button
@@ -292,14 +292,24 @@
                 android:textAllCaps="false"
                 android:textSize="12sp"
                 android:visibility="visible" />
+
+            <Button
+                android:id="@+id/printGraph"
+                android:layout_width="wrap_content"
+                android:layout_height="35dp"
+                android:layout_gravity="center"
+                android:text="Print Graph"
+                android:textAllCaps="false"
+                android:textSize="12sp"
+                android:visibility="visible" />
             <Button
                 android:id="@+id/clear"
                 android:layout_width="wrap_content"
-                android:layout_height="40dp"
+                android:layout_height="35dp"
                 android:layout_gravity="center"
                 android:text="Clear"
                 android:textAllCaps="false"
-                android:textSize="15sp"
+                android:textSize="12sp"
                 android:visibility="visible" />
 
 
