@@ -1161,7 +1161,7 @@ class PhLogFragment : Fragment() {
 
         }
 
-        val user_name = "Username: " + Source.logUserName
+        val user_name = "Username: " + Source.userName
         val device_id = "DeviceID: " + PhActivity.DEVICE_ID
         reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         reportTime = "Time: " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
@@ -1553,7 +1553,7 @@ class PhLogFragment : Fragment() {
 
             writer.writeNext(arrayOf(company_name1))
             if (Source.cfr_mode) {
-                writer.writeNext(arrayOf("Username: ${Source.logUserName}"))
+                writer.writeNext(arrayOf("Username: ${Source.userName}"))
             }
             writer.writeNext(arrayOf("Device ID: ${PhActivity.DEVICE_ID}"))
             writer.writeNext(

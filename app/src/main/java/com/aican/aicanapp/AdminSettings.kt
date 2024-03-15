@@ -72,11 +72,6 @@ class AdminSettings : AppCompatActivity() {
 
 
 
-        fetchWebSocketUrl()
-
-        binding.webSocketUrl.setOnClickListener {
-            openWebSocketDialog()
-        }
 
         fetchExportConditions()
 
@@ -353,72 +348,5 @@ class AdminSettings : AppCompatActivity() {
 
     }
 
-    private fun fetchWebSocketUrl() {
-        val websocketUrl = SharedPref.getSavedData(this@AdminSettings, "WEBSOCKET_URL")
-        if (websocketUrl != null) {
-            if (websocketUrl != "") {
-                Source.WEBSOCKET_URL = websocketUrl
-                binding.websocketUrlText.text = Source.WEBSOCKET_URL
 
-            } else {
-                Source.WEBSOCKET_URL = "ws://192.168.4.1:81"
-                binding.websocketUrlText.text = Source.WEBSOCKET_URL
-
-                SharedPref.saveData(this@AdminSettings, "WEBSOCKET_URL", "ws://192.168.4.1:81")
-            }
-        } else {
-            Source.WEBSOCKET_URL = "ws://192.168.4.1:81"
-
-            binding.websocketUrlText.text = Source.WEBSOCKET_URL
-            SharedPref.saveData(this@AdminSettings, "WEBSOCKET_URL", "ws://192.168.4.1:81")
-
-        }
-    }
-
-    private fun openWebSocketDialog() {
-        // In your activity or fragment
-        val dialog = Dialog(this)
-        dialog.setContentView(R.layout.developer_dialog)
-
-        val btnSave = dialog.findViewById<Button>(R.id.btnSave)
-        val etWebSocketUrl = dialog.findViewById<TextInputEditText>(R.id.webSocketUrlTxt)
-        val etPassword = dialog.findViewById<TextInputEditText>(R.id.devPassword)
-
-        etWebSocketUrl.setText(Source.WEBSOCKET_URL)
-
-        btnSave.setOnClickListener {
-            val webSocketUrl = etWebSocketUrl.text.toString()
-            val password = etPassword.text.toString()
-
-
-
-            if (webSocketUrl.isEmpty() || password.isEmpty()) {
-                if (webSocketUrl.isEmpty()) {
-                    etWebSocketUrl.error = "Enter websocket URL"
-                }
-
-                if (password.isEmpty()) {
-                    etPassword.error = "Enter developer password"
-                }
-            } else {
-                if (password == "12345678") {
-                    Source.WEBSOCKET_URL = webSocketUrl
-                    binding.websocketUrlText.text = webSocketUrl
-                    SharedPref.saveData(this@AdminSettings, "WEBSOCKET_URL", webSocketUrl)
-
-                    Toast.makeText(this, "URL saved", Toast.LENGTH_SHORT).show()
-                    dialog.dismiss()
-
-                } else {
-                    Toast.makeText(this, "Wrong password", Toast.LENGTH_SHORT).show()
-
-                }
-            }
-
-
-        }
-
-        dialog.show()
-
-    }
 }
