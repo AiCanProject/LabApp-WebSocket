@@ -45,7 +45,9 @@ import com.aican.aicanapp.databinding.ActivityDashboardBinding
 import com.aican.aicanapp.dialogs.EditNameDialog
 import com.aican.aicanapp.dialogs.EditNameDialog.OnNameChangedListener
 import com.aican.aicanapp.interfaces.DashboardListsOptionsClickListener
+import com.aican.aicanapp.ph.phFragment.PhCalibFragmentNew
 import com.aican.aicanapp.utils.Constants
+import com.aican.aicanapp.utils.SharedKeys
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
@@ -687,11 +689,44 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
             }
     }
 
+    private fun fetchPhMode() {
+        if (SharedPref.getSavedData(
+                this@Dashboard,
+                SharedKeys.Ph_Mode_Key
+            ) != null && SharedPref.getSavedData(
+                this@Dashboard,
+                SharedKeys.Ph_Mode_Key
+            ) != ""
+        ) {
+            val data =
+                SharedPref.getSavedData(this@Dashboard, SharedKeys.Ph_Mode_Key)
+
+            PhCalibFragmentNew.ph_mode_selected = data.toInt()
+
+            if (data.toInt() == 5) {
+                PhCalibFragmentNew.PH_MODE = "5"
+            }
+            if (data.toInt() == 3) {
+                PhCalibFragmentNew.PH_MODE = "3"
+            }
+
+        } else {
+            SharedPref.saveData(this@Dashboard, SharedKeys.Ph_Mode_Key, "5")
+            PhCalibFragmentNew.ph_mode_selected = 5
+            PhCalibFragmentNew.PH_MODE = "5"
+
+        }
+
+    }
+
+
 
     override fun onResume() {
         super.onResume()
 
         fetchExportConditions()
+
+        fetchPhMode()
 
         WebSocketManager.setMessageListener { message ->
             runOnUiThread {

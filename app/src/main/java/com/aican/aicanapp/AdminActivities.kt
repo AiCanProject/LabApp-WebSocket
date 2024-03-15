@@ -3,34 +3,21 @@ package com.aican.aicanapp
 import android.app.Dialog
 import android.os.Bundle
 import android.view.View
+import android.widget.AdapterView
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.room.Room
-import com.aican.aicanapp.adapters.ProductListAdapter
 import com.aican.aicanapp.databinding.ActivitiesAdminPageBinding
-import com.aican.aicanapp.ph.PhActivity
-import com.aican.aicanapp.ph.phFragment.PhFragment
-import com.aican.aicanapp.roomDatabase.daoObjects.ProductsListDao
-import com.aican.aicanapp.roomDatabase.database.AppDatabase
-import com.aican.aicanapp.roomDatabase.entities.ProductEntity
+import com.aican.aicanapp.ph.phFragment.PhCalibFragmentNew
+import com.aican.aicanapp.utils.SharedKeys
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
-import com.aican.aicanapp.viewModels.ProductViewModel
-import com.aican.aicanapp.viewModels.ProductViewModelFactory
-import com.aican.aicanapp.websocket.WebSocketManager
 import com.google.android.material.textfield.TextInputEditText
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import org.json.JSONException
-import org.json.JSONObject
 
 class AdminActivities : AppCompatActivity() {
 
     lateinit var binding: ActivitiesAdminPageBinding
+    val arrayOfInt = arrayOf(3, 5)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,6 +31,69 @@ class AdminActivities : AppCompatActivity() {
             openWebSocketDialog()
         }
 
+        fetchPhMode()
+
+        binding.noOfPartSpinner.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    val selectedItem = parent.getItemAtPosition(position) as Int
+
+                    SharedPref.saveData(
+                        this@AdminActivities,
+
+                        SharedKeys.Ph_Mode_Key,
+                        selectedItem.toString()
+                    )
+
+                    PhCalibFragmentNew.ph_mode_selected = selectedItem
+                    PhCalibFragmentNew.PH_MODE = selectedItem.toString()
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>) {
+                    // Do something when nothing is selected
+                }
+            }
+
+
+    }
+
+    private fun fetchPhMode() {
+        if (SharedPref.getSavedData(
+                this@AdminActivities,
+                SharedKeys.Ph_Mode_Key
+            ) != null && SharedPref.getSavedData(
+                this@AdminActivities,
+                SharedKeys.Ph_Mode_Key
+            ) != ""
+        ) {
+            val data =
+                SharedPref.getSavedData(this@AdminActivities, SharedKeys.Ph_Mode_Key)
+
+            PhCalibFragmentNew.ph_mode_selected = data.toInt()
+
+            if (data.toInt() == 5) {
+                PhCalibFragmentNew.PH_MODE = "5"
+            }
+            if (data.toInt() == 3) {
+                PhCalibFragmentNew.PH_MODE = "3"
+            }
+
+            for (d in arrayOfInt.indices) {
+                if (arrayOfInt[d].toString() == data) {
+                    binding.noOfPartSpinner.setSelection(d)
+                }
+            }
+        } else {
+            SharedPref.saveData(this@AdminActivities, SharedKeys.Ph_Mode_Key, "5")
+            PhCalibFragmentNew.ph_mode_selected = 5
+            PhCalibFragmentNew.PH_MODE = "5"
+
+        }
 
     }
 
@@ -115,7 +165,6 @@ class AdminActivities : AppCompatActivity() {
         dialog.show()
 
     }
-
 
 
 }
