@@ -2059,25 +2059,25 @@ class PhLogFragment : Fragment() {
         observeProductList()
 
 
-        if (Source.cfr_mode) {
-            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
-            userAuthDialog.showLoginDialog { isValidCredentials ->
-                if (isValidCredentials) {
-                    addUserAction(
-                        "username: " + Source.userName + ", Role: " + Source.userRole + ", entered ph log fragment",
-                        "",
-                        "",
-                        "",
-                        ""
-                    )
-                } else {
-                    requireActivity().runOnUiThread {
-                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
-                            .show()
-                    }
-                }
-            }
-        }
+//        if (Source.cfr_mode) {
+//            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
+//            userAuthDialog.showLoginDialog { isValidCredentials ->
+//                if (isValidCredentials) {
+//                    addUserAction(
+//                        "username: " + Source.userName + ", Role: " + Source.userRole + ", entered ph log fragment",
+//                        "",
+//                        "",
+//                        "",
+//                        ""
+//                    )
+//                } else {
+//                    requireActivity().runOnUiThread {
+//                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
+//                            .show()
+//                    }
+//                }
+//            }
+//        }
 
         Source.activeFragment = 2
         if (handler != null && runnable != null) {

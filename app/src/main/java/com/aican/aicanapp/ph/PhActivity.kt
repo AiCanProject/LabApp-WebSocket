@@ -12,20 +12,29 @@ import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
+import androidx.room.Room
 import com.aican.aicanapp.Dashboard
 import com.aican.aicanapp.ProbeScanner
 import com.aican.aicanapp.R
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.ActivityPhBinding
+import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.phFragment.PhAlarmFragment
 import com.aican.aicanapp.ph.phFragment.PhCalibFragmentNew
 import com.aican.aicanapp.ph.phFragment.PhFragment
 import com.aican.aicanapp.ph.phFragment.PhGraphFragment
 import com.aican.aicanapp.ph.phFragment.PhLogFragment
+import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
+import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
+import com.aican.aicanapp.roomDatabase.database.AppDatabase
+import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.net.URI
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -35,7 +44,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
     companion object {
         var DEVICE_ID: String? = null
-         var isReconnecting = false
+        var isReconnecting = false
         private const val CHECK_INTERVAL = 3000L // Check interval in milliseconds
     }
 
@@ -51,10 +60,27 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         }
     }
 
+    fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
+        lifecycleScope.launch(Dispatchers.IO) {
+
+            userActionDao.insertUserAction(
+                UserActionEntity(
+                    0, Source.getCurrentTime(), Source.getPresentDate(),
+                    action, ph, temp, mv, compound, DEVICE_ID.toString()
+                )
+            )
+        }
+    }
+
+    lateinit var userDao: UserDao
+    lateinit var userActionDao: UserActionDao
+
     override fun onResume() {
         super.onResume()
         // Start checking WebSocket status when the activity is resumed
         handler.post(checkWebSocketStatusRunnable)
+
+
 
 
     }
@@ -72,14 +98,13 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
             binding.socketDisconnected.visibility = View.GONE
 
 
-           binding.offlineModeSwitch.isChecked = true
+            binding.offlineModeSwitch.isChecked = true
 
             // WebSocket is connected
             // Perform actions accordingly
         } else {
             binding.socketConnected.visibility = View.GONE
             binding.socketDisconnected.visibility = View.VISIBLE
-
 
 
 //            binding.offlineModeSwitch.isEnabled = true
@@ -162,9 +187,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         binding.offlineModeSwitch.setOnClickListener {
             val uri = URI(Source.WEBSOCKET_URL)
 
-            if (binding.offlineModeSwitch.isChecked && !WebSocketManager.WEBSOCKET_CONNECTED){
+            if (binding.offlineModeSwitch.isChecked && !WebSocketManager.WEBSOCKET_CONNECTED) {
                 isReconnecting = true
-
 
 
 //                WebSocketManager.reconnect()
@@ -192,7 +216,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                         }
 
 
-
                     },
                     // Close listener
                     { code, reason, remote ->
@@ -208,7 +231,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                         }
                     }
                 )
-            }else{
+            } else {
 
             }
 //            binding.offlineModeSwitch.isEnabled = !binding.offlineModeSwitch.isChecked
@@ -307,6 +330,34 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
         }
 
+        userDao = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userDao()
+
+        userActionDao = Room.databaseBuilder(
+            applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().userActionDao()
+
+        if (Source.cfr_mode) {
+            val userAuthDialog = UserAuthDialog(this@PhActivity, userDao)
+            userAuthDialog.showLoginDialog { isValidCredentials ->
+                if (isValidCredentials) {
+                    addUserAction(
+                        "username: " + Source.userName + ", Role: " + Source.userRole +
+                                ", entered ph main fragment", "", "", "", ""
+                    )
+                } else {
+                    runOnUiThread {
+                        Toast.makeText(this@PhActivity, "Invalid credentials", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
+            }
+        }
 
 
     }
