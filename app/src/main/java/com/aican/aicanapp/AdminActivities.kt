@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.os.Bundle
 import android.view.View
 import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -23,6 +24,10 @@ class AdminActivities : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivitiesAdminPageBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, arrayOfInt)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.noOfPartSpinner.adapter = adapter
 
 
         fetchWebSocketUrl()
