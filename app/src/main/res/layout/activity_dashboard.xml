@@ -494,6 +494,8 @@
 
                             </LinearLayout>
 
+
+
                             <LinearLayout
                                 android:id="@+id/socketConnected"
                                 android:layout_width="wrap_content"

@@ -99,22 +99,22 @@ class PhFragment : Fragment() {
             "aican-database"
         ).build().userActionDao()
 
-        if (Source.cfr_mode) {
-            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
-            userAuthDialog.showLoginDialog { isValidCredentials ->
-                if (isValidCredentials) {
-                    addUserAction(
-                        "username: " + Source.userName + ", Role: " + Source.userRole +
-                                ", entered ph main fragment", "", "", "", ""
-                    )
-                } else {
-                    requireActivity().runOnUiThread {
-                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
-                            .show()
-                    }
-                }
-            }
-        }
+//        if (Source.cfr_mode) {
+//            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
+//            userAuthDialog.showLoginDialog { isValidCredentials ->
+//                if (isValidCredentials) {
+//                    addUserAction(
+//                        "username: " + Source.userName + ", Role: " + Source.userRole +
+//                                ", entered ph main fragment", "", "", "", ""
+//                    )
+//                } else {
+//                    requireActivity().runOnUiThread {
+//                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
+//                            .show()
+//                    }
+//                }
+//            }
+//        }
 
 
 
