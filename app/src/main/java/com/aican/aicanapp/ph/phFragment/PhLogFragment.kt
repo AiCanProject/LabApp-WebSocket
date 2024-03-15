@@ -295,7 +295,7 @@ class PhLogFragment : Fragment() {
             )
             val sh = requireContext().getSharedPreferences("RolePref", MODE_PRIVATE)
             val roleE = sh.edit()
-            val roleSuper = Source.logUserName
+            val roleSuper = Source.userName
             roleE.putString("roleSuper", roleSuper)
             roleE.commit()
             deleteAll()
