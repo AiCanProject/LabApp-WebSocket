@@ -41,6 +41,9 @@
         android:theme="@style/Theme.AICANLabApp"
         tools:targetApi="31">
         <activity
+            android:name=".ph.PhLogGraph"
+            android:exported="false" />
+        <activity
             android:name=".ec.EcActivity"
             android:exported="false" />
         <activity

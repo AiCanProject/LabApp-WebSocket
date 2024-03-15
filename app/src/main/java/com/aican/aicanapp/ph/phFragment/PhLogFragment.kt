@@ -45,6 +45,7 @@ import com.aican.aicanapp.databinding.FragmentPhLogBinding
 import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.Export
 import com.aican.aicanapp.ph.PhActivity
+import com.aican.aicanapp.ph.PhLogGraph
 import com.aican.aicanapp.ph.phAnim.PhView
 import com.aican.aicanapp.roomDatabase.daoObjects.AllLogsDataDao
 import com.aican.aicanapp.roomDatabase.daoObjects.ProductsListDao
@@ -280,6 +281,7 @@ class PhLogFragment : Fragment() {
         exportBtn.isEnabled = true
         logBtn.isEnabled = true
         printBtn.isEnabled = true
+        binding.printGraph.isEnabled = true
 
         exportBtn.setOnClickListener {
             Source.status_export = true
@@ -630,6 +632,18 @@ class PhLogFragment : Fragment() {
             }
         }
 
+        phDataModelList.clear()
+        val ar = ArrayList<phData>()
+        adapter = LogAdapter(context, ar)
+        recyclerView.adapter = adapter
+        val db = databaseHelper.writableDatabase
+        val curCSV: Cursor? = db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+        if (curCSV != null && curCSV.getCount() > 0) {
+            deleteAllLogs()
+        } else {
+//                    Toast.makeText(requireContext(), "Database is empty, please insert values", Toast.LENGTH_SHORT).show();
+        }
+
         clearBtn.setOnClickListener {
             phDataModelList.clear()
             val ar = ArrayList<phData>()
@@ -787,6 +801,36 @@ class PhLogFragment : Fragment() {
 
 
         }
+
+        binding.printGraph.setOnClickListener {
+            printGraph()
+        }
+
+
+    }
+
+    private fun printGraph() {
+        val db = databaseHelper.writableDatabase
+        val curCSV: Cursor
+        curCSV = if (Constants.OFFLINE_MODE) {
+            db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+        } else {
+            db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+        }
+        PhLogGraph.phDataArrayList.clear()
+        while (curCSV.moveToNext()) {
+            val date = curCSV.getString(curCSV.getColumnIndex("date"))
+            val time = curCSV.getString(curCSV.getColumnIndex("time"))
+            val pH = curCSV.getString(curCSV.getColumnIndex("ph"))
+
+            if (PhFragment.validateNumber(pH)) {
+                PhLogGraph.phDataArrayList.add(pH.toFloat())
+            }
+        }
+
+        val inet = Intent(requireContext(), PhLogGraph::class.java)
+        startActivity(inet)
+
     }
 
     private fun showPdfFiles() {
@@ -1073,10 +1117,12 @@ class PhLogFragment : Fragment() {
         if (AutoLog == 0) {
             exportBtn.isEnabled = true
             printBtn.isEnabled = true
+            binding.printGraph.isEnabled = true
             logBtn.isEnabled = true
         } else if (AutoLog == 1) {
             exportBtn.isEnabled = false
             printBtn.isEnabled = false
+            binding.printGraph.isEnabled = false
             logBtn.isEnabled = false
             switchHold.isChecked = true
             switchInterval.isChecked = false
@@ -1084,6 +1130,7 @@ class PhLogFragment : Fragment() {
         } else if (AutoLog == 2) {
             exportBtn.isEnabled = false
             printBtn.isEnabled = false
+            binding.printGraph.isEnabled = false
             isAlertShow = false
             logBtn.isEnabled = false
             switchHold.isChecked = false
@@ -1092,6 +1139,7 @@ class PhLogFragment : Fragment() {
         } else if (AutoLog == 3) {
             exportBtn.isEnabled = false
             printBtn.isEnabled = false
+            binding.printGraph.isEnabled = false
             switchHold.isChecked = false
             switchInterval.isChecked = false
             logBtn.isEnabled = false
@@ -1100,6 +1148,7 @@ class PhLogFragment : Fragment() {
             exportBtn.isEnabled = true
             logBtn.isEnabled = true
             printBtn.isEnabled = true
+            binding.printGraph.isEnabled = true
         }
     }
 
