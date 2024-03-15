@@ -37,14 +37,12 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.room.Room
 import com.aican.aicanapp.ProbeScanner
 import com.aican.aicanapp.R
-import com.aican.aicanapp.adapters.CalibFileAdapter
 import com.aican.aicanapp.adapters.PDF_CSV_Adapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.dataClasses.BufferData
 import com.aican.aicanapp.dataClasses.CalibDatClass
 import com.aican.aicanapp.databinding.FragmentPhCalibNewBinding
 import com.aican.aicanapp.dialogs.EditPhBufferDialog
-import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.PHCalibGraph
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.ph.PhMvTable
@@ -141,12 +139,21 @@ class PhCalibFragmentNew : Fragment() {
         calibrateButtons()
 
         phMvTable.setOnClickListener {
-            addUserAction(
-                "username: " + Source.userName + ", Role: " + Source.userRole +
-                        ", clicked on PhMvTable button", "", "", "", ""
-            )
-            val intent = Intent(fragmentContext, PhMvTable::class.java)
-            startActivity(intent)
+            if (Source.userRole == "Operator") {
+                Toast.makeText(
+                    requireContext(),
+                    "You don't have permission to access this",
+                    Toast.LENGTH_SHORT
+                ).show()
+
+            } else {
+                addUserAction(
+                    "username: " + Source.userName + ", Role: " + Source.userRole +
+                            ", clicked on PhMvTable button", "", "", "", ""
+                )
+                val intent = Intent(fragmentContext, PhMvTable::class.java)
+                startActivity(intent)
+            }
         }
 
 
@@ -175,8 +182,10 @@ class PhCalibFragmentNew : Fragment() {
         // Set click listener for the button
         printCalibData.setOnClickListener {
             try {
-                Source.showLoading(requireActivity(), false, false, "Generating pdf...",
-                    false)
+                Source.showLoading(
+                    requireActivity(), false, false, "Generating pdf...",
+                    false
+                )
 
                 GlobalScope.launch(Dispatchers.IO) {
                     try {
@@ -195,7 +204,11 @@ class PhCalibFragmentNew : Fragment() {
                         e.printStackTrace()
                         launch(Dispatchers.Main) {
                             Source.cancelLoading()
-                            Toast.makeText(fragmentContext, "Failed to generate PDF", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                fragmentContext,
+                                "Failed to generate PDF",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }
@@ -212,8 +225,10 @@ class PhCalibFragmentNew : Fragment() {
 
         binding.printCSV.setOnClickListener {
             try {
-                Source.showLoading(requireActivity(), false, false, "Generating csv...",
-                    false)
+                Source.showLoading(
+                    requireActivity(), false, false, "Generating csv...",
+                    false
+                )
 
                 GlobalScope.launch(Dispatchers.IO) {
                     try {
@@ -232,12 +247,15 @@ class PhCalibFragmentNew : Fragment() {
                         e.printStackTrace()
                         launch(Dispatchers.Main) {
                             Source.cancelLoading()
-                            Toast.makeText(fragmentContext, "Failed to generate csv", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                fragmentContext,
+                                "Failed to generate csv",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }
 //                generatePDF()
-
 
 
             } catch (e: FileNotFoundException) {
@@ -1270,7 +1288,7 @@ class PhCalibFragmentNew : Fragment() {
 
             writer.writeNext(arrayOf(company_name1))
             if (Source.cfr_mode) {
-                writer.writeNext(arrayOf("Username: ${Source.logUserName}"))
+                writer.writeNext(arrayOf("Username: ${Source.userName}"))
             }
             writer.writeNext(arrayOf("Device ID: ${PhActivity.DEVICE_ID}"))
             writer.writeNext(
