@@ -16,6 +16,7 @@ import android.widget.RadioGroup
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.aican.aicanapp.R
@@ -128,7 +129,6 @@ class PhAlarmFragment : Fragment() {
             alarm.isEnabled = true
         }
 
-        webSocketInit()
 
 
     }
@@ -150,6 +150,8 @@ class PhAlarmFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+
+        webSocketInit()
 
         Source.activeFragment = 5
 
@@ -185,8 +187,8 @@ class PhAlarmFragment : Fragment() {
     }
 
     public fun webSocketInit() {
-        WebSocketManager.setMessageListener { message ->
 
+        WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
             if (requireActivity() != null) {
 
                 requireActivity().runOnUiThread {
@@ -219,6 +221,11 @@ class PhAlarmFragment : Fragment() {
                     }
                 }
             }
+        })
+
+        WebSocketManager.setMessageListener { message ->
+
+
         }
         WebSocketManager.setErrorListener { error ->
             if (activity != null && isAdded) {

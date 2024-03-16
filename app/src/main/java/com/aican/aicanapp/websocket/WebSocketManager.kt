@@ -19,6 +19,7 @@ object WebSocketManager {
     private var forceDisconnect: Boolean = false
 
     private val messageLiveData = MutableLiveData<String>()
+    private val errorLiveData = MutableLiveData<String>()
 
 
     fun initializeWebSocket(
@@ -66,7 +67,7 @@ object WebSocketManager {
                 override fun onError(ex: Exception?) {
                     ex?.let {
                         WEBSOCKET_CONNECTED = false
-
+                        errorLiveData.postValue(it.toString())
                         errorListener?.invoke(it)
                     }
                 }
@@ -81,6 +82,7 @@ object WebSocketManager {
     }
 
     fun getMessageLiveData() = messageLiveData
+    fun getErrorLiveData() = errorLiveData
 
     fun reconnect() {
         if (webSocketClient != null) {

@@ -14,6 +14,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.aican.aicanapp.R
@@ -164,13 +165,13 @@ class PhGraphFragment : Fragment() {
         super.onResume()
 
         Source.activeFragment = 4
+        webSocketInit()
 
 
         tempToggleSharedPref =
             SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
 
         setPreviousData()
-        webSocketInit()
 
         userDao = Room.databaseBuilder(
             requireContext().applicationContext,
@@ -240,7 +241,7 @@ class PhGraphFragment : Fragment() {
             }
         }
 
-        WebSocketManager.setMessageListener { message ->
+        WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
             requireActivity().runOnUiThread {
                 try {
                     updateMessage(message.toString())
@@ -277,15 +278,15 @@ class PhGraphFragment : Fragment() {
                     }
                     if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         var temp = jsonData.getString("TEMP_VAL")
-                            var tempval = 0.0f
-                            if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
-                                    jsonData.getString("TEMP_VAL")
-                                )
-                            ) {
-                                tempval = jsonData.getString("TEMP_VAL").toFloat()
+                        var tempval = 0.0f
+                        if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
+                                jsonData.getString("TEMP_VAL")
+                            )
+                        ) {
+                            tempval = jsonData.getString("TEMP_VAL").toFloat()
 
-                            }
-                            val temp1 = Math.round(tempval).toString()
+                        }
+                        val temp1 = Math.round(tempval).toString()
 
                         if (tempToggleSharedPref != null) {
                             if (tempToggleSharedPref == "true") {
@@ -320,6 +321,10 @@ class PhGraphFragment : Fragment() {
                     e.printStackTrace()
                 }
             }
+        })
+
+        WebSocketManager.setMessageListener { message ->
+
         }
     }
 
