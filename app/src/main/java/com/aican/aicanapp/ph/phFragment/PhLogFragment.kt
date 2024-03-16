@@ -33,6 +33,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -1443,9 +1444,11 @@ class PhLogFragment : Fragment() {
                 updateError(error.toString())
             }
         }
-        WebSocketManager.setMessageListener { message ->
 
 
+        WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
+            // Handle the received message here
+            Log.d("WebSocket", "Received message: $message")
             requireActivity().runOnUiThread {
                 try {
                     updateMessage(message)
@@ -1620,6 +1623,11 @@ class PhLogFragment : Fragment() {
                     e.printStackTrace()
                 }
             }
+            // Update UI or perform any other actions based on the received message
+        })
+
+        WebSocketManager.setMessageListener { message ->
+
 
         }
     }

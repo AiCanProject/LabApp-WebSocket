@@ -1,6 +1,7 @@
 package com.aican.aicanapp.websocket
 
 import android.util.Log
+import androidx.lifecycle.MutableLiveData
 import com.aican.aicanapp.ph.PhActivity
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
@@ -16,6 +17,10 @@ object WebSocketManager {
     private var openListener: (() -> Unit)? = null
     private var closeListener: ((Int, String?, Boolean) -> Unit)? = null
     private var forceDisconnect: Boolean = false
+
+    private val messageLiveData = MutableLiveData<String>()
+
+
     fun initializeWebSocket(
         uri: URI,
         openListener: () -> Unit,
@@ -53,6 +58,7 @@ object WebSocketManager {
                 override fun onMessage(message: String?) {
                     message?.let {
                         WEBSOCKET_CONNECTED = true
+                        messageLiveData.postValue(message!!) // Post the received message to LiveData
                         messageListener?.invoke(it)
                     }
                 }
@@ -74,8 +80,10 @@ object WebSocketManager {
         }
     }
 
-    fun reconnect(){
-        if (webSocketClient != null){
+    fun getMessageLiveData() = messageLiveData
+
+    fun reconnect() {
+        if (webSocketClient != null) {
             webSocketClient!!.reconnect()
         }
     }
