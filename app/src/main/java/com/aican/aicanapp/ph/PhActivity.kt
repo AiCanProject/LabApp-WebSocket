@@ -210,11 +210,27 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                             binding.socketConnected.visibility = View.VISIBLE
                             binding.socketDisconnected.visibility = View.GONE
 
-                            phFragment.webSocketInit()
-//                            phCalibFragmentNew.websocketData()
-//                            phLogFragment.webSocketConnection()
-//                            phGraphFragment.webSocketInit()
-//                            phAlarmFragment.webSocketInit()
+                            if (Source.fragmentActive == 1) {
+
+                                phFragment.webSocketInit()
+                            }
+                            if (Source.fragmentActive == 2) {
+                                phCalibFragmentNew.websocketData()
+
+                            }
+                            if (Source.fragmentActive == 3) {
+                                phLogFragment.webSocketConnection()
+
+                            }
+                            if (Source.fragmentActive == 4) {
+                                phGraphFragment.webSocketInit()
+
+                            }
+                            if (Source.fragmentActive == 5) {
+                                phAlarmFragment.webSocketInit()
+
+                            }
+
 
                         }
 
@@ -235,9 +251,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                         }
                     }
                 )
-            }
-
-            else {
+            } else {
                 binding.connectingLay.visibility = View.GONE
 
             }

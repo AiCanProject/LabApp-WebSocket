@@ -3134,6 +3134,9 @@ class PhCalibFragmentNew : Fragment() {
     override fun onResume() {
         super.onResume()
 
+        Source.activeFragment = 2
+
+
         binding.tvTimer.text = "Disconnected"
 
         WebSocketManager.setCloseListener { i, s, b ->

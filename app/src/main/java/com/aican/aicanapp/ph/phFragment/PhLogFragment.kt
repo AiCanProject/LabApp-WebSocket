@@ -2590,6 +2590,7 @@ class PhLogFragment : Fragment() {
     override fun onResume() {
         super.onResume()
 
+        Source.activeFragment = 3
         webSocketConnection()
 
         tempToggleSharedPref =
