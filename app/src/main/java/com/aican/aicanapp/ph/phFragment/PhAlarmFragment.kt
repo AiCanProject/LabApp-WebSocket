@@ -151,6 +151,8 @@ class PhAlarmFragment : Fragment() {
     override fun onResume() {
         super.onResume()
 
+        Source.activeFragment = 5
+
         userDao = Room.databaseBuilder(
             requireContext().applicationContext,
             AppDatabase::class.java,

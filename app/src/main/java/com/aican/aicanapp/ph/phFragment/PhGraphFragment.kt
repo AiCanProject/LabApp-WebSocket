@@ -99,6 +99,7 @@ class PhGraphFragment : Fragment() {
         spinnerAction()
         jsonData = JSONObject()
 
+
         tvGraphPH.text = "0"
 
         Constants.OFFLINE_MODE = true
@@ -161,6 +162,9 @@ class PhGraphFragment : Fragment() {
 
     override fun onResume() {
         super.onResume()
+
+        Source.activeFragment = 4
+
 
         tempToggleSharedPref =
             SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)

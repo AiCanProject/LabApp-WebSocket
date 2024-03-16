@@ -78,8 +78,9 @@ class PhFragment : Fragment() {
     override fun onResume() {
         super.onResume()
 
+        Source.activeFragment = 1
 
-         tempToggleSharedPref =
+        tempToggleSharedPref =
             SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
 
         getPreviousData()

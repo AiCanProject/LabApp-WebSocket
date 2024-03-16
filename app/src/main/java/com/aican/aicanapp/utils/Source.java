@@ -20,6 +20,7 @@ public class Source {
 
     public static boolean cfr_mode = false;
 
+    public static int fragmentActive = 1;
     public static String WEBSOCKET_URL = "ws://192.168.4.1:81";
 
     public static boolean EXPORT_CSV = false;
@@ -73,10 +74,10 @@ public class Source {
 
             ImageView closeDialog = loadingDialog.findViewById(R.id.closeDialog);
 
-            if (cancelBtn){
+            if (cancelBtn) {
 
                 closeDialog.setVisibility(View.VISIBLE);
-            }else {
+            } else {
                 closeDialog.setVisibility(View.GONE);
             }
 
