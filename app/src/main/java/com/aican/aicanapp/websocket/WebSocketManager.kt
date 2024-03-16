@@ -67,7 +67,7 @@ object WebSocketManager {
                 override fun onError(ex: Exception?) {
                     ex?.let {
                         WEBSOCKET_CONNECTED = false
-                        errorLiveData.postValue(it.toString())
+                        errorLiveData.postValue(it.message)
                         errorListener?.invoke(it)
                     }
                 }

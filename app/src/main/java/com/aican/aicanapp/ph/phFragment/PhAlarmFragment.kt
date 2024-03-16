@@ -21,7 +21,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.aican.aicanapp.R
 import com.aican.aicanapp.databinding.FragmentPhAlarmFragmentBinding
-import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
@@ -130,7 +129,6 @@ class PhAlarmFragment : Fragment() {
         }
 
 
-
     }
 
     fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
@@ -227,14 +225,21 @@ class PhAlarmFragment : Fragment() {
 
 
         }
-        WebSocketManager.setErrorListener { error ->
-            if (activity != null && isAdded) {
 
-                requireActivity().runOnUiThread {
-                    updateError(error.toString())
-                }
+        WebSocketManager.getErrorLiveData().observe(this, Observer { error ->
+            requireActivity().runOnUiThread {
+                updateError(error.toString())
             }
-        }
+        })
+
+//        WebSocketManager.setErrorListener { error ->
+//            if (activity != null && isAdded) {
+//
+//                requireActivity().runOnUiThread {
+//                    updateError(error.toString())
+//                }
+//            }
+//        }
         WebSocketManager.setCloseListener { i, s, b ->
             sharedViewModel.closeConnectionLiveData.value = s + ""
 

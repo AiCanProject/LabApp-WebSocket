@@ -1438,12 +1438,18 @@ class PhLogFragment : Fragment() {
             sharedViewModel.openConnectionLiveData.value = ""
         }
 
-        WebSocketManager.setErrorListener { error ->
-            requireActivity().runOnUiThread {
+//        WebSocketManager.setErrorListener { error ->
+//            requireActivity().runOnUiThread {
+//
+//                updateError(error.toString())
+//            }
+//        }
 
+        WebSocketManager.getErrorLiveData().observe(this, Observer { error ->
+            requireActivity().runOnUiThread {
                 updateError(error.toString())
             }
-        }
+        })
 
 
         WebSocketManager.getMessageLiveData().observe(this, Observer { message ->

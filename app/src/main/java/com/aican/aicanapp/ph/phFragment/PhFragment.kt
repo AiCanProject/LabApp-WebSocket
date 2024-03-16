@@ -8,7 +8,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CompoundButton
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
@@ -16,7 +15,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.FragmentPhBinding
-import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
@@ -119,10 +117,7 @@ class PhFragment : Fragment() {
 //        }
 
 
-
-
     }
-
 
 
     private fun turnAtcSwitch() {
@@ -348,7 +343,7 @@ class PhFragment : Fragment() {
                                         binding.switchAtc.setEnabled(true)
                                     }
                                 }
-                            }else{
+                            } else {
                                 binding.tvTempCurr.setText("$temp°C")
                                 SharedPref.saveData(
                                     requireContext(),
@@ -420,14 +415,24 @@ class PhFragment : Fragment() {
         }
 
         WebSocketManager.setErrorListener {
-            val activity: Activity? = requireActivity()
-            activity?.runOnUiThread {
-                updateError(it.message.toString())
-                Log.e("WebSocketErrorAican", it.message + "")
-            }
-
+//            val activity: Activity? = requireActivity()
+//            activity?.runOnUiThread {
+//                updateError(it.message.toString())
+//                Log.e("WebSocketErrorAican", it.message + "")
+//            }
+//
 
         }
+
+        WebSocketManager.getErrorLiveData().observe(this, Observer { error ->
+
+            val activity: Activity? = requireActivity()
+            activity?.runOnUiThread {
+                updateError(error.toString())
+                Log.e("WebSocketErrorAican", error + "")
+            }
+
+        })
 
     }
 
