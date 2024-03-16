@@ -1,12 +1,10 @@
 package com.aican.aicanapp
 
-import android.app.Dialog
 import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.view.View
-import android.widget.Button
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
@@ -27,7 +25,6 @@ import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.ProductViewModel
 import com.aican.aicanapp.viewModels.ProductViewModelFactory
 import com.aican.aicanapp.websocket.WebSocketManager
-import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONException
@@ -52,10 +49,10 @@ class AdminSettings : AppCompatActivity() {
 
         }
 
-        if (Source.cfr_mode){
+        if (Source.cfr_mode) {
             binding.addUsersBtn.visibility = View.VISIBLE
             binding.allUsersBtn.visibility = View.VISIBLE
-        }else{
+        } else {
             binding.addUsersBtn.visibility = View.GONE
             binding.allUsersBtn.visibility = View.GONE
         }
@@ -240,7 +237,8 @@ class AdminSettings : AppCompatActivity() {
         lifecycleScope.launch(Dispatchers.Main) {
 
             productViewModel.productListLiveData.observe(this@AdminSettings) { productList ->
-                productListAdapter = ProductListAdapter(this@AdminSettings, productList, productsListDao)
+                productListAdapter =
+                    ProductListAdapter(this@AdminSettings, productList, productsListDao)
                 runOnUiThread {
 //                    Toast.makeText(this@SettingPage, "" + productList.size, Toast.LENGTH_SHORT)
 //                        .show()
@@ -253,31 +251,45 @@ class AdminSettings : AppCompatActivity() {
 
 
     private fun fetchDesignations() {
-        val leftDesignationString = SharedPref.getSavedData(this@AdminSettings, SharedKeys.LEFT_DESIGNATION_KEY)
-        val rightDesignationString = SharedPref.getSavedData(this@AdminSettings, SharedKeys.RIGHT_DESIGNATION_KEY)
+        val leftDesignationString =
+            SharedPref.getSavedData(this@AdminSettings, SharedKeys.LEFT_DESIGNATION_KEY)
+        val rightDesignationString =
+            SharedPref.getSavedData(this@AdminSettings, SharedKeys.RIGHT_DESIGNATION_KEY)
 
 
-        if (leftDesignationString != null && leftDesignationString != ""){
+        if (leftDesignationString != null && leftDesignationString != "") {
             binding.leftDesignation.setText(leftDesignationString)
-        }else{
+        } else {
             binding.leftDesignation.setText("Operator Sign")
-            SharedPref.saveData(this@AdminSettings, SharedKeys.LEFT_DESIGNATION_KEY, "Operator Sign")
+            SharedPref.saveData(
+                this@AdminSettings,
+                SharedKeys.LEFT_DESIGNATION_KEY,
+                "Operator Sign"
+            )
         }
 
-        if (rightDesignationString != null && rightDesignationString != ""){
+        if (rightDesignationString != null && rightDesignationString != "") {
             binding.rightDesignation.setText(rightDesignationString)
-        }else{
+        } else {
             binding.rightDesignation.setText("Supervisor Sign")
-            SharedPref.saveData(this@AdminSettings, SharedKeys.RIGHT_DESIGNATION_KEY, "Supervisor Sign")
+            SharedPref.saveData(
+                this@AdminSettings,
+                SharedKeys.RIGHT_DESIGNATION_KEY,
+                "Supervisor Sign"
+            )
         }
 
-        binding.leftDesignation.addTextChangedListener(object : TextWatcher{
+        binding.leftDesignation.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
 
             }
 
             override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                SharedPref.saveData(this@AdminSettings, SharedKeys.LEFT_DESIGNATION_KEY, p0.toString())
+                SharedPref.saveData(
+                    this@AdminSettings,
+                    SharedKeys.LEFT_DESIGNATION_KEY,
+                    p0.toString()
+                )
 
             }
 
@@ -286,13 +298,17 @@ class AdminSettings : AppCompatActivity() {
 
         })
 
-        binding.rightDesignation.addTextChangedListener(object : TextWatcher{
+        binding.rightDesignation.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
 
             }
 
             override fun onTextChanged(p0: CharSequence?, p1: Int, p2: Int, p3: Int) {
-                SharedPref.saveData(this@AdminSettings, SharedKeys.RIGHT_DESIGNATION_KEY, p0.toString())
+                SharedPref.saveData(
+                    this@AdminSettings,
+                    SharedKeys.RIGHT_DESIGNATION_KEY,
+                    p0.toString()
+                )
 
             }
 
@@ -307,42 +323,63 @@ class AdminSettings : AppCompatActivity() {
 
         val exportCsvEnabled = SharedPref.getSavedData(this@AdminSettings, "EXPORT_CSV")
         val exportPdfEnabled = SharedPref.getSavedData(this@AdminSettings, "EXPORT_PDF")
+        val exportGraphEnabled = SharedPref.getSavedData(this@AdminSettings, "EXPORT_GRAPH")
+
+
 
         if (exportCsvEnabled != null && exportCsvEnabled != "") {
             binding.exportCsvSwitch.isChecked = exportCsvEnabled == "true"
-            Source.EXPORT_CSV = true
-        }else{
+            Source.EXPORT_CSV = exportCsvEnabled == "true"
+        } else {
             binding.exportCsvSwitch.isChecked = false
-            SharedPref.saveData(this@AdminSettings,"EXPORT_CSV", "false")
+            SharedPref.saveData(this@AdminSettings, "EXPORT_CSV", "false")
             Source.EXPORT_CSV = false
+        }
+
+        if (exportGraphEnabled != null && exportGraphEnabled != "") {
+            binding.exportGraphToggle.isChecked = exportGraphEnabled == "true"
+            Source.EXPORT_GRAPH = exportGraphEnabled == "true"
+        } else {
+            binding.exportGraphToggle.isChecked = false
+            SharedPref.saveData(this@AdminSettings, "EXPORT_GRAPH", "false")
+            Source.EXPORT_GRAPH = false
         }
 
         if (exportPdfEnabled != null && exportPdfEnabled != "") {
             binding.exportPdfSwitch.isChecked = exportPdfEnabled == "true"
-            Source.EXPORT_PDF = true
-        }else{
+            Source.EXPORT_PDF = exportPdfEnabled == "true"
+        } else {
             binding.exportPdfSwitch.isChecked = true
             Source.EXPORT_PDF = false
-            SharedPref.saveData(this@AdminSettings,"EXPORT_PDF", "true")
+            SharedPref.saveData(this@AdminSettings, "EXPORT_PDF", "true")
         }
 
         binding.exportCsvSwitch.setOnClickListener {
-            if (binding.exportCsvSwitch.isChecked){
+            if (binding.exportCsvSwitch.isChecked) {
                 Source.EXPORT_CSV = true
-                SharedPref.saveData(this@AdminSettings,"EXPORT_CSV", "true")
-            }else{
+                SharedPref.saveData(this@AdminSettings, "EXPORT_CSV", "true")
+            } else {
                 Source.EXPORT_CSV = false
-                SharedPref.saveData(this@AdminSettings,"EXPORT_CSV", "false")
+                SharedPref.saveData(this@AdminSettings, "EXPORT_CSV", "false")
+            }
+        }
+        binding.exportGraphToggle.setOnClickListener {
+            if (binding.exportGraphToggle.isChecked) {
+                Source.EXPORT_GRAPH = true
+                SharedPref.saveData(this@AdminSettings, "EXPORT_GRAPH", "true")
+            } else {
+                Source.EXPORT_GRAPH = false
+                SharedPref.saveData(this@AdminSettings, "EXPORT_GRAPH", "false")
             }
         }
 
         binding.exportPdfSwitch.setOnClickListener {
-            if (binding.exportPdfSwitch.isChecked){
+            if (binding.exportPdfSwitch.isChecked) {
                 Source.EXPORT_PDF = true
-                SharedPref.saveData(this@AdminSettings,"EXPORT_PDF", "true")
-            }else{
+                SharedPref.saveData(this@AdminSettings, "EXPORT_PDF", "true")
+            } else {
                 Source.EXPORT_PDF = false
-                SharedPref.saveData(this@AdminSettings,"EXPORT_PDF", "false")
+                SharedPref.saveData(this@AdminSettings, "EXPORT_PDF", "false")
             }
         }
 
