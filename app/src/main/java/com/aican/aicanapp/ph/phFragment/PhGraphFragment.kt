@@ -11,7 +11,6 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Spinner
 import android.widget.TextView
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
@@ -20,7 +19,6 @@ import androidx.room.Room
 import com.aican.aicanapp.R
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.FragmentPhGraphBinding
-import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
@@ -235,10 +233,14 @@ class PhGraphFragment : Fragment() {
             sharedViewModel.openConnectionLiveData.value = ""
         }
 
-        WebSocketManager.setErrorListener { error ->
+        WebSocketManager.getErrorLiveData().observe(this, Observer { error ->
             requireActivity().runOnUiThread {
                 updateError(error.toString())
             }
+        })
+
+        WebSocketManager.setErrorListener { error ->
+
         }
 
         WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
@@ -303,7 +305,7 @@ class PhGraphFragment : Fragment() {
                                 tvGraphTemp.text = "$temp°C"
 
                             }
-                        }else{
+                        } else {
                             temp = if (temp1.toInt() <= -127) {
 
                                 "NA"

@@ -334,11 +334,17 @@ class PhCalibFragmentNew : Fragment() {
         }
 
         WebSocketManager.setErrorListener { error ->
-            requireActivity().runOnUiThread {
+//            requireActivity().runOnUiThread {
+//
+//                updateError(error.toString())
+//            }
+        }
 
+        WebSocketManager.getErrorLiveData().observe(this, Observer { error ->
+            requireActivity().runOnUiThread {
                 updateError(error.toString())
             }
-        }
+        })
 
         WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
             connectedWebsocket = true
