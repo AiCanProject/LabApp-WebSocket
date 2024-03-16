@@ -11,6 +11,8 @@ import android.content.pm.PackageManager
 import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Paint
 import android.os.Bundle
 import android.os.Handler
 import android.util.Base64
@@ -42,7 +44,6 @@ import com.aican.aicanapp.adapters.PDF_CSV_Adapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.dataClasses.phData
 import com.aican.aicanapp.databinding.FragmentPhLogBinding
-import com.aican.aicanapp.dialogs.UserAuthDialog
 import com.aican.aicanapp.ph.Export
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.ph.PhLogGraph
@@ -874,7 +875,328 @@ class PhLogFragment : Fragment() {
         series.isDrawDataPoints = true
         series.setAnimated(true)
 
+        generateGraphPDF(graphView)
+
     }
+
+    private fun generateGraphPDF(graphView: GraphView) {
+        // Create a new PDF document
+        var company_name = ""
+
+        val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
+        if (companyname != null) {
+            company_name = "Company: $companyname"
+
+        } else {
+            company_name = "Company: N/A"
+
+        }
+
+        val user_name = "Username: " + Source.userName
+        val device_id = "DeviceID: " + PhActivity.DEVICE_ID
+        reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+        reportTime = "Time: " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        val shp = requireContext().getSharedPreferences("Extras", MODE_PRIVATE)
+        offset = "Offset: " + shp.getString("offset", "")
+        if (Constants.OFFLINE_DATA) {
+            offset = if (SharedPref.getSavedData(
+                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
+                ) != null && SharedPref.getSavedData(
+                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
+                ) !== ""
+            ) {
+                val data =
+                    SharedPref.getSavedData(requireContext(), "OFFSET_" + PhActivity.DEVICE_ID)
+                "Offset: $data"
+            } else {
+                "Offset: " + "0"
+            }
+        } else {
+        }
+        tempe = "Temperature: " + shp.getString("temp", "")
+        battery = "Battery: " + shp.getString("battery", "")
+        if (Constants.OFFLINE_DATA) {
+            slope = if (SharedPref.getSavedData(
+                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
+                ) != null && SharedPref.getSavedData(
+                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
+                ) !== ""
+            ) {
+                val data =
+                    SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
+                "Slope: $data"
+            } else {
+                "Slope: " + "0"
+            }
+            val tempData =
+                SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
+            tempe = if (SharedPref.getSavedData(
+                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
+                ) != null && SharedPref.getSavedData(
+                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
+                ) !== ""
+            ) {
+
+                "Temperature: $tempData"
+            } else {
+                "Temperature: " + "0"
+            }
+
+            val batteryVal =
+                SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
+            if (batteryVal != null) {
+                if (batteryVal != "") {
+                    battery = "Battery: $batteryVal %"
+                } else {
+                    battery = "Battery: 0 %"
+
+                }
+            }
+
+        } else {
+            slope = "Slope: " + shp.getString("slope", "")
+        }
+
+//        File exportDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog");
+//        if (!exportDir.exists()) {
+//            exportDir.mkdirs();
+//        }
+        val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
+        val currentDateandTime = sdf.format(Date())
+        //        String tempPath = requireContext().getExternalFilesDir(null).getAbsolutePath() + "/LabApp/Currentlog";
+        val tempPath =
+            ContextWrapper(requireContext()).externalMediaDirs[0].toString() + "/LabApp/Currentlog"
+        val tempRoot = File(tempPath)
+        fileNotWrite(tempRoot)
+        val tempFilesAndFolders = tempRoot.listFiles()
+
+//        Toast.makeText(requireContext(), "" + tempFilesAndFolders.length, Toast.LENGTH_SHORT).show();
+
+//        File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator
+//                + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders != null ? tempFilesAndFolders.length : 0) - 1)
+//                + ".pdf");
+        val filePath = ("" //                requireContext().getExternalFilesDir(null)
+                + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
+            ?: 0) - 1) + ".pdf")
+
+
+//        File file = new File(requireContext().getExternalFilesDir(null).getAbsolutePath(), filePath);
+        val file = File(ContextWrapper(requireContext()).externalMediaDirs[0], filePath)
+        Log.e("FileNameError", file.path)
+        Log.e("FileNameError", file.absolutePath)
+        val outputStream: OutputStream = FileOutputStream(file)
+        val writer = PdfWriter(file)
+        val pdfDocument = PdfDocument(writer)
+        val document = Document(pdfDocument)
+        try {
+            val imgBit = getCompanyLogo()
+//            if (imgBit != null) {
+//                val uri: Uri? = getImageUri(requireContext(), imgBit)
+//                try {
+//                    val add: String? = getPath(uri)
+//                    val imageData = ImageDataFactory.create(add)
+//                    val image: Image = Image(imageData).setHeight(80f).setWidth(80f)
+//                    //                table12.addCell(new Cell(2, 1).add(image));
+//                    // Adding image to the document
+//                    document.add(image)
+//                } catch (e: MalformedURLException) {
+//                    e.printStackTrace()
+//                }
+//            }
+            //
+
+            if (imgBit != null) {
+
+                val byteArrayOutputStream = ByteArrayOutputStream()
+                imgBit.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+                val byteArray = byteArrayOutputStream.toByteArray()
+
+// Create ImageData from byte array
+                val imageData = ImageDataFactory.create(byteArray)
+
+// Create an Image element
+                val image = Image(imageData).setHeight(80f).setWidth(80f)
+                document.add(image)
+
+            } else {
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
+            }
+            ///
+            if (Constants.OFFLINE_MODE) {
+//                document.add(new Paragraph("Offline Mode"));
+            }
+            if (Source.cfr_mode) {
+
+                document.add(
+                    Paragraph(
+                        """
+                $company_name
+                $user_name
+                $device_id
+                """.trimIndent()
+                    )
+                )
+            } else {
+                document.add(
+                    Paragraph(
+                        """
+                $company_name
+                $device_id
+                """.trimIndent()
+                    )
+                )
+            }
+            document.add(Paragraph(""))
+
+            document.add(
+                Paragraph(
+                    """$reportDate  |  $reportTime
+                                 $offset  |  $battery
+                                 $slope  |  $tempe"""
+                )
+            )
+
+
+            document.add(Paragraph(""))
+            document.add(Paragraph("Ph Log Graph"))
+
+
+            val bitmap =
+                Bitmap.createBitmap(graphView.width, graphView.height, Bitmap.Config.ARGB_8888)
+            val graphCanvas = Canvas(bitmap)
+            graphView.draw(graphCanvas)
+
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
+
+            val imageData = ImageDataFactory.create(byteArray)
+
+            val image = Image(imageData).setHeight(80f).setWidth(80f)
+            document.add(image)
+
+
+            val db = databaseHelper.writableDatabase
+            var calibCSV: Cursor? = null
+
+
+
+            document.add(Paragraph(""))
+            document.add(Paragraph("Log Table"))
+            val columnWidth1 = floatArrayOf(240f, 120f, 150f, 150f, 270f, 270f, 270f)
+            val table1 = Table(columnWidth1)
+            table1.addCell("Date")
+            table1.addCell("Time")
+            table1.addCell("pH")
+            table1.addCell("Temp")
+            table1.addCell("Batch No")
+            table1.addCell("AR No")
+            table1.addCell("Product")
+
+
+            val curCSV: Cursor
+            curCSV = if (Constants.OFFLINE_MODE) {
+                db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+            } else {
+                db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+            }
+            while (curCSV.moveToNext()) {
+                val date = curCSV.getString(curCSV.getColumnIndex("date"))
+                val time = curCSV.getString(curCSV.getColumnIndex("time"))
+                val pH = curCSV.getString(curCSV.getColumnIndex("ph"))
+                val temp = curCSV.getString(curCSV.getColumnIndex("temperature"))
+                val batchnum = curCSV.getString(curCSV.getColumnIndex("batchnum"))
+                val arnum = curCSV.getString(curCSV.getColumnIndex("arnum"))
+                val comp = curCSV.getString(curCSV.getColumnIndex("compound"))
+                var newBatchNum: String? = "--"
+                if (batchnum != null && batchnum.length >= 8) {
+                    newBatchNum = stringSplitter(batchnum)
+                } else {
+                    newBatchNum = batchnum
+                }
+                var newArum: String? = "--"
+                if (arnum != null && arnum.length >= 8) {
+                    newArum = stringSplitter(arnum)
+                } else {
+                    newArum = arnum
+                }
+                var newComp: String? = "--"
+                if (comp != null && comp.length >= 8) {
+                    newComp = stringSplitter(comp)
+                } else {
+                    newComp = comp
+                }
+                table1.addCell(date ?: "--")
+                table1.addCell(time ?: "--")
+                table1.addCell(pH ?: "--")
+                table1.addCell(temp ?: "--")
+                table1.addCell(newBatchNum ?: "--")
+                table1.addCell(newArum ?: "--")
+                table1.addCell(newComp ?: "--")
+            }
+            document.add(table1)
+
+            val leftDesignationString =
+                SharedPref.getSavedData(requireContext(), SharedKeys.LEFT_DESIGNATION_KEY)
+            val rightDesignationString =
+                SharedPref.getSavedData(requireContext(), SharedKeys.RIGHT_DESIGNATION_KEY)
+
+            if (leftDesignationString != null && leftDesignationString != "") {
+
+            } else {
+                SharedPref.saveData(
+                    requireContext(),
+                    SharedKeys.LEFT_DESIGNATION_KEY,
+                    "Operator Sign"
+                )
+            }
+
+            if (rightDesignationString != null && rightDesignationString != "") {
+            } else {
+                SharedPref.saveData(
+                    requireContext(),
+                    SharedKeys.RIGHT_DESIGNATION_KEY,
+                    "Supervisor Sign"
+                )
+            }
+
+            if (leftDesignationString != null && leftDesignationString != "" &&
+                rightDesignationString != null && rightDesignationString != ""
+            ) {
+                document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
+
+            } else {
+                document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+
+            }
+
+            val imgBit1: Bitmap? = getSignImage()
+
+            if (imgBit1 != null) {
+
+                val byteArrayOutputStream = ByteArrayOutputStream()
+                imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+                val byteArray = byteArrayOutputStream.toByteArray()
+
+// Create ImageData from byte array
+                val imageData = ImageDataFactory.create(byteArray)
+
+// Create an Image element
+                val image = Image(imageData).setHeight(80f).setWidth(80f)
+                document.add(image)
+
+            } else {
+//                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
+            }
+        } catch (e: Exception) {
+//            Toast.makeText(
+//                requireContext(), "Error : " + e.message, Toast.LENGTH_SHORT
+//            ).show()
+        }
+        document.close()
+
+    }
+
 
     private fun showPdfFiles() {
         val pathPDF =
