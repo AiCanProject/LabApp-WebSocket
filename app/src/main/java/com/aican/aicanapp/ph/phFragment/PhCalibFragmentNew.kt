@@ -387,7 +387,7 @@ class PhCalibFragmentNew : Fragment() {
 //                            finalSlope.text = finalSlopes
                         }
                     }
-                    if (spin.selectedItemPosition == 0) {
+                    if (true) {
                         if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                             var ph = 0.0f
                             if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
@@ -1082,7 +1082,8 @@ class PhCalibFragmentNew : Fragment() {
 //                                calibData()
                             }
                         }
-                    } else if (spin.selectedItemPosition == 1) {
+                    }
+                     if (true) {
                     }
 //                    if (Constants.OFFLINE_MODE) {
 //                        offlineDataFeeding();
