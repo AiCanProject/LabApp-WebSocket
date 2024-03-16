@@ -346,7 +346,7 @@ class PhCalibFragmentNew : Fragment() {
                 try {
                     updateMessage(message)
                     jsonData = JSONObject(message)
-                    Log.d("JSONReceived:PHFragment", "onMessage: $message")
+                    Log.d("JSONReceived:PHCalibFragment", "onMessage: $message")
 
                     if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         val battery: String = jsonData.getString("BATTERY")
