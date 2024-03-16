@@ -567,8 +567,18 @@
 
             <com.jjoe64.graphview.GraphView
                 android:id="@+id/graph"
+                android:visibility="gone"
                 android:layout_width="match_parent"
                 android:layout_height="500dp" />
+
+            <com.github.mikephil.charting.charts.LineChart
+                android:id="@+id/intensityChart"
+                android:layout_width="match_parent"
+                android:layout_height="@dimen/intensity_graph_height"
+                android:layout_marginStart="10dp"
+                android:layout_marginTop="0dp"
+                android:layout_marginEnd="10dp" />
+
         </LinearLayout>
 
     </ScrollView>

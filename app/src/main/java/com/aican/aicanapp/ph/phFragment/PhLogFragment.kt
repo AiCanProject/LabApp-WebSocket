@@ -12,6 +12,7 @@ import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
+import android.graphics.Color
 import android.os.Bundle
 import android.os.Handler
 import android.util.Base64
@@ -63,6 +64,11 @@ import com.aican.aicanapp.viewModels.ProductViewModel
 import com.aican.aicanapp.viewModels.ProductViewModelFactory
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.websocket.WebSocketManager
+import com.github.mikephil.charting.charts.LineChart
+import com.github.mikephil.charting.components.XAxis
+import com.github.mikephil.charting.data.Entry
+import com.github.mikephil.charting.data.LineData
+import com.github.mikephil.charting.data.LineDataSet
 import com.google.common.base.Splitter
 import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.pdf.PdfDocument
@@ -928,8 +934,53 @@ class PhLogFragment : Fragment() {
         series.isDrawDataPoints = true
         series.setAnimated(true)
 
+        setupLineChart()
+
         generateGraphPDF(graphView)
 
+    }
+
+    private fun setupLineChart() {
+        val lineChart = binding.intensityChart
+
+        // Create dummy data
+        val entries = ArrayList<Entry>()
+
+        var i = 1
+        for (data in PhLogGraph.phDataArrayList) {
+            entries.add(Entry(i.toFloat(), data.toFloat()))
+            i++
+        }
+
+
+        val dataSet = LineDataSet(entries, "Label") // Add entries to dataset
+        dataSet.color = Color.BLUE
+        dataSet.valueTextColor = Color.RED
+
+        val lineData = LineData(dataSet)
+        lineChart.data = lineData
+
+        // Customize chart
+        lineChart.description.isEnabled = false
+        lineChart.setDrawGridBackground(false)
+        lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
+        lineChart.axisRight.isEnabled = false
+
+        // Refresh chart
+        lineChart.invalidate()
+    }
+
+    private fun getLineChartBitmap(lineChart: LineChart): Bitmap {
+        // Create a Bitmap object with the dimensions of the LineChart
+        val bitmap = Bitmap.createBitmap(lineChart.width, lineChart.height, Bitmap.Config.ARGB_8888)
+
+        // Create a Canvas using the Bitmap
+        val canvas = Canvas(bitmap)
+
+        // Draw the LineChart onto the Canvas
+        lineChart.draw(canvas)
+
+        return bitmap
     }
 
     private fun generateGraphPDF(graphView: GraphView) {
@@ -1129,7 +1180,8 @@ class PhLogFragment : Fragment() {
 //            document.add(image)
 
 
-            val chartBitmap1 = getGraphViewBitmap(graphView)
+//            val chartBitmap1 = getGraphViewBitmap(graphView)
+            val chartBitmap1 = binding.intensityChart.chartBitmap
 
 
             val stream1 = ByteArrayOutputStream()
@@ -1275,7 +1327,6 @@ class PhLogFragment : Fragment() {
 
         return bitmap
     }
-
 
 
     private fun showPdfFiles() {
