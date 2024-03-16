@@ -12,7 +12,6 @@ import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
-import android.graphics.Paint
 import android.os.Bundle
 import android.os.Handler
 import android.util.Base64
@@ -830,7 +829,61 @@ class PhLogFragment : Fragment() {
         }
 
         binding.printGraph.setOnClickListener {
-            printGraph()
+
+            try {
+
+                Source.showLoading(
+                    requireActivity(), false, false, "Generating graph..",
+                    false
+                )
+
+                GlobalScope.launch(Dispatchers.IO) {
+                    try {
+                        addUserAction(
+                            "username: " + Source.userName + ", Role: " + Source.userRole +
+                                    ", print log graph report", "", "", "", ""
+                        )
+
+                        printGraph()
+                        launch(Dispatchers.Main) {
+                            val startsWith = "CurrentData"
+                            val path =
+                                ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog"
+                            val root = File(path)
+                            val filesAndFolders = root.listFiles()
+
+                            if (filesAndFolders == null || filesAndFolders.isEmpty()) {
+                                Toast.makeText(
+                                    requireContext(),
+                                    "No Files Found",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+
+                            // Call the function to show PDF files after generating
+                            showPdfFiles()
+                            Source.cancelLoading()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        launch(Dispatchers.Main) {
+                            Source.cancelLoading()
+                            Toast.makeText(
+                                requireActivity(),
+                                "Failed to generate PDF",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
+                }
+//                generatePDF()
+
+
+            } catch (e: FileNotFoundException) {
+                e.printStackTrace()
+            }
+
+
         }
 
 
