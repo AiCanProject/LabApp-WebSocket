@@ -57,6 +57,7 @@
             android:id="@+id/connectingLay"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginEnd="20dp"
             android:gravity="center"
             android:orientation="horizontal">
 
@@ -71,8 +72,8 @@
 
 
             <ProgressBar
-                android:layout_width="30dp"
-                android:layout_height="30dp"
+                android:layout_width="25dp"
+                android:layout_height="25dp"
                 android:indeterminateTint="@color/white" />
         </LinearLayout>
 
