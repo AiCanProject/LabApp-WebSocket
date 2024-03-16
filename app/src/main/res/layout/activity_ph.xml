@@ -53,6 +53,28 @@
             android:text="Connect "
             tools:ignore="UseSwitchCompatOrMaterialXml" />
 
+        <LinearLayout
+            android:id="@+id/connectingLay"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="5dp"
+                android:layout_marginEnd="4dp"
+                android:text="Connecting"
+                android:textColor="@color/ph3"
+                android:textSize="14dp" />
+
+
+            <ProgressBar
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:indeterminateTint="@color/white" />
+        </LinearLayout>
 
         <TextView
             android:id="@+id/deviceIDTxt"
