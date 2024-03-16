@@ -81,8 +81,6 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
         handler.post(checkWebSocketStatusRunnable)
 
 
-
-
     }
 
     override fun onPause() {
@@ -183,12 +181,15 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
 //        binding.offlineModeSwitch.isEnabled = !binding.offlineModeSwitch.isChecked
 
+        binding.connectingLay.visibility = View.GONE
 
         binding.offlineModeSwitch.setOnClickListener {
             val uri = URI(Source.WEBSOCKET_URL)
 
             if (binding.offlineModeSwitch.isChecked && !WebSocketManager.WEBSOCKET_CONNECTED) {
                 isReconnecting = true
+
+                binding.connectingLay.visibility = View.VISIBLE
 
 
 //                WebSocketManager.reconnect()
@@ -203,6 +204,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                         runOnUiThread {
 
                             isReconnecting = false
+                            binding.connectingLay.visibility = View.GONE
+
                             Source.SOCKET_CONNECTED = true
                             binding.socketConnected.visibility = View.VISIBLE
                             binding.socketDisconnected.visibility = View.GONE
