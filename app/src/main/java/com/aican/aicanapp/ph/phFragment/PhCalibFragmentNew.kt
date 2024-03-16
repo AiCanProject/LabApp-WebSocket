@@ -31,6 +31,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -338,7 +339,8 @@ class PhCalibFragmentNew : Fragment() {
                 updateError(error.toString())
             }
         }
-        WebSocketManager.setMessageListener { message ->
+
+        WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
             connectedWebsocket = true
 
 
@@ -1107,6 +1109,10 @@ class PhCalibFragmentNew : Fragment() {
                     e.printStackTrace()
                 }
             }
+
+        })
+
+        WebSocketManager.setMessageListener { message ->
 
         }
     }

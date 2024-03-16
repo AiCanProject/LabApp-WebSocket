@@ -11,6 +11,7 @@ import android.widget.CompoundButton
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.aican.aicanapp.data.DatabaseHelper
@@ -263,7 +264,7 @@ class PhFragment : Fragment() {
             sharedViewModel.openConnectionLiveData.value = ""
         }
 
-        WebSocketManager.setMessageListener { message ->
+        WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
             requireActivity().runOnUiThread {
                 Log.e("WebSocketMessageAican", message)
 
@@ -411,6 +412,10 @@ class PhFragment : Fragment() {
 
 
             }
+        })
+
+        WebSocketManager.setMessageListener { message ->
+
 
         }
 
