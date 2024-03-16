@@ -831,6 +831,8 @@ class PhLogFragment : Fragment() {
 
         binding.printGraph.setOnClickListener {
             printGraph()
+            showPdfFiles()
+
         }
 
 
