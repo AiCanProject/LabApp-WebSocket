@@ -1115,19 +1115,32 @@ class PhLogFragment : Fragment() {
             document.add(Paragraph("Ph Log Graph"))
 
 
-            val bitmap =
-                Bitmap.createBitmap(graphView.width, graphView.height, Bitmap.Config.ARGB_8888)
-            val graphCanvas = Canvas(bitmap)
-            graphView.draw(graphCanvas)
+//            val bitmap =
+//                Bitmap.createBitmap(graphView.width, graphView.height, Bitmap.Config.ARGB_8888)
+//            val graphCanvas = Canvas(bitmap)
+//            graphView.draw(graphCanvas)
+//
+//            val byteArrayOutputStream = ByteArrayOutputStream()
+//            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+//            val byteArray = byteArrayOutputStream.toByteArray()
+//
+//            val imageData = ImageDataFactory.create(byteArray)
+//
+//            val image = Image(imageData).setHeight(80f).setWidth(80f)
+//            document.add(image)
 
-            val byteArrayOutputStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-            val byteArray = byteArrayOutputStream.toByteArray()
 
-            val imageData = ImageDataFactory.create(byteArray)
+            val chartBitmap1 = getGraphViewBitmap(graphView)
 
-            val image = Image(imageData).setHeight(80f).setWidth(80f)
-            document.add(image)
+
+            val stream1 = ByteArrayOutputStream()
+            chartBitmap1.compress(Bitmap.CompressFormat.JPEG, 100, stream1)
+            val byteArray1 = stream1.toByteArray()
+            val imageData1 = ImageDataFactory.create(byteArray1)
+            val image1 = Image(imageData1)
+            image1.scaleToFit(595f, 500f)
+            document.add(image1)
+            document.add(Paragraph("\n"))
 
 
             val db = databaseHelper.writableDatabase
@@ -1250,6 +1263,20 @@ class PhLogFragment : Fragment() {
         document.close()
 
     }
+
+    private fun getGraphViewBitmap(graphView: GraphView): Bitmap {
+        // Create a Bitmap object with the dimensions of the GraphView
+        val bitmap = Bitmap.createBitmap(graphView.width, graphView.height, Bitmap.Config.ARGB_8888)
+
+        // Create a Canvas using the Bitmap
+        val canvas = Canvas(bitmap)
+
+        // Draw the GraphView onto the Canvas
+        graphView.draw(canvas)
+
+        return bitmap
+    }
+
 
 
     private fun showPdfFiles() {
