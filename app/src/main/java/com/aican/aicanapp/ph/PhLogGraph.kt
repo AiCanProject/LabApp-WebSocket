@@ -42,6 +42,7 @@ class PhLogGraph : AppCompatActivity() {
         graphView.viewport.setMaxY(800.0)
 
         val seriesData = ArrayList<DataPoint>()
+        seriesData.add(DataPoint(0.0, 0.0))
         var i = 1
         for (data in phDataArrayList) {
             seriesData.add(DataPoint(i.toDouble(), data.toDouble()))
@@ -50,7 +51,7 @@ class PhLogGraph : AppCompatActivity() {
 
 
         val series = LineGraphSeries<DataPoint>(
-           seriesData.toTypedArray()
+            seriesData.toTypedArray()
         )
         graphView.addSeries(series)
         series.isDrawDataPoints = true
