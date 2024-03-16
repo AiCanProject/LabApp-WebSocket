@@ -228,13 +228,17 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 //                            Source.SOCKET_CONNECTED = false
 //                            binding.offlineModeSwitch.isChecked = false
                             sharedViewModel.closeConnectionLiveData.value = "" + ""
+                            binding.connectingLay.visibility = View.GONE
 
                             binding.socketConnected.visibility = View.GONE
                             binding.socketDisconnected.visibility = View.VISIBLE
                         }
                     }
                 )
-            } else {
+            }
+
+            else {
+                binding.connectingLay.visibility = View.GONE
 
             }
 //            binding.offlineModeSwitch.isEnabled = !binding.offlineModeSwitch.isChecked

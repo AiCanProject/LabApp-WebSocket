@@ -178,6 +178,10 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         fetchWebSocketUrl()
 
 
+        binding.connectingLay.visibility = View.GONE
+
+
+
         binding.offlineModeSwitch.setOnClickListener {
             webSocketConnected = if (binding.offlineModeSwitch.isChecked) {
 
@@ -188,6 +192,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 
                 //{"DEVICE_ID": "EPT2020", "CAL_MODE": "1"}
 
+                binding.connectingLay.visibility = View.VISIBLE
 
 //
 //                WebSocketManager.disconnect()
@@ -197,6 +202,8 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
                     {
                         // WebSocket connection opened
                         runOnUiThread {
+                            binding.connectingLay.visibility = View.GONE
+
                             Source.SOCKET_CONNECTED = true
                             binding.socketConnected.visibility = View.VISIBLE
                             binding.socketDisconnected.visibility = View.GONE
@@ -271,6 +278,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
                             Source.SOCKET_CONNECTED = false
                             binding.offlineModeSwitch.isChecked = false
                             sharedViewModel.closeConnectionLiveData.value = "" + ""
+                            binding.connectingLay.visibility = View.GONE
 
                             binding.socketConnected.visibility = View.GONE
                             binding.socketDisconnected.visibility = View.VISIBLE
@@ -281,7 +289,7 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
             } else {
                 // Disconnect WebSocket
                 runOnUiThread {
-
+                    binding.connectingLay.visibility = View.GONE
 //                    Toast.makeText(this@Dashboard, "hjvvb", Toast.LENGTH_SHORT).show()
                     binding.socketConnected.visibility = View.GONE
                     binding.socketDisconnected.visibility = View.VISIBLE
