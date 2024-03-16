@@ -678,6 +678,9 @@ class PhLogFragment : Fragment() {
             graphView.invalidate()
 
             phDataModelList.clear()
+
+            binding.intensityChart.clear()
+
             val ar = ArrayList<phData>()
             adapter = LogAdapter(context, ar)
             recyclerView.adapter = adapter
@@ -716,6 +719,16 @@ class PhLogFragment : Fragment() {
             binding.print.visibility = View.VISIBLE
         } else {
             binding.print.visibility = View.GONE
+
+        }
+        binding.graph.visibility = View.GONE
+        binding.intensityChart.visibility = View.INVISIBLE
+
+
+        if (Source.EXPORT_GRAPH) {
+            binding.printGraph.visibility = View.VISIBLE
+        } else {
+            binding.printGraph.visibility = View.GONE
 
         }
 

@@ -485,12 +485,20 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
     private fun fetchExportConditions() {
         val exportCsvEnabled = SharedPref.getSavedData(this@Dashboard, "EXPORT_CSV")
         val exportPdfEnabled = SharedPref.getSavedData(this@Dashboard, "EXPORT_PDF")
+        val exportGraphEnabled = SharedPref.getSavedData(this@Dashboard, "EXPORT_GRAPH")
 
         if (exportCsvEnabled != null && exportCsvEnabled != "") {
             Source.EXPORT_CSV = exportCsvEnabled == "true"
         } else {
             SharedPref.saveData(this@Dashboard, "EXPORT_CSV", "false")
             Source.EXPORT_CSV = false
+        }
+
+        if (exportGraphEnabled != null && exportGraphEnabled != "") {
+            Source.EXPORT_GRAPH = exportGraphEnabled == "true"
+        } else {
+            SharedPref.saveData(this@Dashboard, "EXPORT_GRAPH", "false")
+            Source.EXPORT_GRAPH = false
         }
 
         if (exportPdfEnabled != null && exportPdfEnabled != "") {
@@ -726,7 +734,6 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
         }
 
     }
-
 
 
     override fun onResume() {

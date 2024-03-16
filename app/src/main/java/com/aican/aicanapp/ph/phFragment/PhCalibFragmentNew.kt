@@ -3224,7 +3224,7 @@ class PhCalibFragmentNew : Fragment() {
         if (Constants.OFFLINE_MODE) {
             try {
                 jsonData = JSONObject()
-                jsonData.put("CAL_MODE", 5.toString())
+                jsonData.put("CAL_MODE", 2.toString())
                 jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                 WebSocketManager.sendMessage(jsonData.toString())
             } catch (e: JSONException) {
@@ -3254,7 +3254,7 @@ class PhCalibFragmentNew : Fragment() {
                             if (Constants.OFFLINE_MODE) {
                                 try {
                                     jsonData = JSONObject()
-                                    jsonData.put("CAL_MODE", 5.toString())
+                                    jsonData.put("CAL_MODE", 2.toString())
                                     jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                                     WebSocketManager.sendMessage(jsonData.toString())
                                 } catch (e: JSONException) {
@@ -3290,7 +3290,7 @@ class PhCalibFragmentNew : Fragment() {
                             if (Constants.OFFLINE_MODE) {
                                 try {
                                     jsonData = JSONObject()
-                                    jsonData.put("CAL_MODE", 3.toString())
+                                    jsonData.put("CAL_MODE", 1.toString())
                                     jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
                                     WebSocketManager.sendMessage(jsonData.toString())
                                 } catch (e: JSONException) {
