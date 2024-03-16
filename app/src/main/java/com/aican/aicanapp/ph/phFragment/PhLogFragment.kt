@@ -71,6 +71,9 @@ import com.itextpdf.layout.Document
 import com.itextpdf.layout.element.Image
 import com.itextpdf.layout.element.Paragraph
 import com.itextpdf.layout.element.Table
+import com.jjoe64.graphview.GraphView
+import com.jjoe64.graphview.series.DataPoint
+import com.jjoe64.graphview.series.LineGraphSeries
 import com.opencsv.CSVWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -97,6 +100,7 @@ class PhLogFragment : Fragment() {
     }
 
     lateinit var binding: FragmentPhLogBinding
+    lateinit var graphView: GraphView
 
     companion object {
         private val PERMISSION_REQUEST_CODE = 200
@@ -241,6 +245,7 @@ class PhLogFragment : Fragment() {
         val csvRecyclerView: RecyclerView = view.findViewById(R.id.recyclerViewCSVLog)
         csvRecyclerView.setHasFixedSize(true)
         csvRecyclerView.layoutManager = LinearLayoutManager(context)
+        graphView = binding.graph
 
         phDataModelList = ArrayList()
         adapter = LogAdapter(context, getSQLList())
@@ -253,6 +258,22 @@ class PhLogFragment : Fragment() {
         recyclerView.layoutManager = linearLayoutManager
         nullEntry = " "
         jsonData = JSONObject()
+
+        graphView.viewport.isScalable = true
+
+        graphView.viewport.isScrollable = true
+
+        graphView.viewport.setScalableY(true)
+
+        graphView.viewport.setScrollableY(true)
+
+        graphView.viewport.isXAxisBoundsManual = true
+        graphView.viewport.setMinX(-2.0)
+        graphView.viewport.setMaxX(20.0)
+
+        graphView.viewport.isYAxisBoundsManual = true
+        graphView.viewport.setMinY(-800.0)
+        graphView.viewport.setMaxY(800.0)
 
 
         if (Constants.OFFLINE_DATA) {
@@ -645,6 +666,11 @@ class PhLogFragment : Fragment() {
         }
 
         clearBtn.setOnClickListener {
+//            series.resetData(arrayOf())
+
+            // Redraw the graph
+            graphView.invalidate()
+
             phDataModelList.clear()
             val ar = ArrayList<phData>()
             adapter = LogAdapter(context, ar)
@@ -828,8 +854,25 @@ class PhLogFragment : Fragment() {
             }
         }
 
-        val inet = Intent(requireContext(), PhLogGraph::class.java)
-        startActivity(inet)
+//        val inet = Intent(requireContext(), PhLogGraph::class.java)
+//        startActivity(inet)
+
+
+        val seriesData = ArrayList<DataPoint>()
+        seriesData.add(DataPoint(0.0, 0.0))
+        var i = 1
+        for (data in PhLogGraph.phDataArrayList) {
+            seriesData.add(DataPoint(i.toDouble(), data.toDouble()))
+            i++
+        }
+
+
+        val series = LineGraphSeries<DataPoint>(
+            seriesData.toTypedArray()
+        )
+        graphView.addSeries(series)
+        series.isDrawDataPoints = true
+        series.setAnimated(true)
 
     }
 
