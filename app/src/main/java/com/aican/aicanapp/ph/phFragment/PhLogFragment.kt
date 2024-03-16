@@ -576,7 +576,7 @@ class PhLogFragment : Fragment() {
             }
         }
 
-
+//binding.switchBtnClick
 
         switchBtnClick.setOnCheckedChangeListener { compoundButton, b ->
             if (switchBtnClick.isChecked) {
@@ -1451,7 +1451,11 @@ class PhLogFragment : Fragment() {
                     updateMessage(message)
 
                     jsonData = JSONObject(message)
+
+
+
                     Log.d("JSONReceived:PHFragment", "onMessage: " + message)
+                    Log.d("JSONReceived:PHFragment", "Vishal: " + message)
 
                     if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         val battery: String = jsonData.getString("BATTERY")
