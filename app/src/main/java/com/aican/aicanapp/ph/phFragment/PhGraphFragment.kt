@@ -241,7 +241,7 @@ class PhGraphFragment : Fragment() {
                 try {
                     updateMessage(message.toString())
                     jsonData = JSONObject(message.toString())
-                    Log.d("JSONReceived:PHFragment", "onMessage: $message")
+                    Log.d("JSONReceived:PHGraphFragment", "onMessage: $message")
                     if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         val battery: String = jsonData.getString("BATTERY")
 //                        binding.batteryPercent.setText("$battery %")

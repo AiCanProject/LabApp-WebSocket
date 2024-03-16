@@ -269,7 +269,7 @@ class PhFragment : Fragment() {
                 updateMessage(message)
                 try {
                     jsonData = JSONObject(message)
-                    Log.d("JSONReceived:PHFragment", "onMessage: $message")
+                    Log.d("JSONReceived:PHFFragment", "onMessage: $message")
                     if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         val `val`: String = jsonData.getString("PH_VAL")
                         binding.tvPhCurr.setText(`val`)

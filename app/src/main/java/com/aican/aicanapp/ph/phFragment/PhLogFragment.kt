@@ -1453,8 +1453,8 @@ class PhLogFragment : Fragment() {
 
 
 
-                    Log.d("JSONReceived:PHFragment", "onMessage: " + message)
-                    Log.d("JSONReceived:PHFragment", "Vishal: " + message)
+                    Log.d("JSONReceived:PHLogFragment", "onMessage: " + message)
+                    Log.d("JSONReceived:PHLogFragment", "Vishal: " + message)
 
                     if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         val battery: String = jsonData.getString("BATTERY")
