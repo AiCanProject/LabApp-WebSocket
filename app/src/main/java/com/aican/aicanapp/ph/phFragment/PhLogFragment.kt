@@ -667,7 +667,7 @@ class PhLogFragment : Fragment() {
 
         clearBtn.setOnClickListener {
 //            series.resetData(arrayOf())
-
+            graphView.removeAllSeries()
             // Redraw the graph
             graphView.invalidate()
 
