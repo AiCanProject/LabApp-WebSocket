@@ -706,6 +706,7 @@
                     android:background="@drawable/gradient_color"
                     android:backgroundTint="#D24137"
                     android:clickable="true"
+                    android:visibility="gone"
                     app:srcCompat="@drawable/plus_ic" />
 
 

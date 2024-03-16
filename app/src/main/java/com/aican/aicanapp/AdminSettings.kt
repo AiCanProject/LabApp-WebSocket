@@ -4,8 +4,12 @@ import android.content.Intent
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.LayoutInflater
 import android.view.View
+import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
@@ -25,6 +29,8 @@ import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.ProductViewModel
 import com.aican.aicanapp.viewModels.ProductViewModelFactory
 import com.aican.aicanapp.websocket.WebSocketManager
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textfield.TextInputLayout
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONException
@@ -44,8 +50,46 @@ class AdminSettings : AppCompatActivity() {
         setContentView(binding.root)
 
         binding.adminSettings.setOnClickListener {
-            val intnt = Intent(this@AdminSettings, AdminActivities::class.java)
-            startActivity(intnt)
+
+
+            val dialogView = LayoutInflater.from(this).inflate(R.layout.developer_password, null)
+
+            // Initialize views from the dialog layout
+            val textViewPasswordHeading =
+                dialogView.findViewById<TextView>(R.id.textViewPasswordHeading)
+            val textInputLayoutPassword =
+                dialogView.findViewById<TextInputLayout>(R.id.textInputLayoutPassword)
+            val editTextPassword = dialogView.findViewById<TextInputEditText>(R.id.editTextPassword)
+            val buttonLogin = dialogView.findViewById<Button>(R.id.buttonLogin)
+
+            // Create the dialog
+            val dialog = AlertDialog.Builder(this)
+                .setView(dialogView)
+                .create()
+
+            // Set click listener for the login button
+            buttonLogin.setOnClickListener {
+                // Check if the password is correct
+                val enteredPassword = editTextPassword.text.toString()
+                val correctPassword =
+                    "12345678" // Replace with your correct password
+                if (enteredPassword == correctPassword) {
+                    // Password is correct, navigate to AdminActivities
+                    val intent = Intent(this@AdminSettings, AdminActivities::class.java)
+                    startActivity(intent)
+                    dialog.dismiss() // Dismiss the dialog
+                } else {
+                    // Password is incorrect, show an error message
+                    textInputLayoutPassword.error = "Incorrect password"
+                }
+            }
+
+            // Show the dialog
+            dialog.show()
+
+
+//            val intnt = Intent(this@AdminSettings, AdminActivities::class.java)
+//            startActivity(intnt)
 
         }
 
