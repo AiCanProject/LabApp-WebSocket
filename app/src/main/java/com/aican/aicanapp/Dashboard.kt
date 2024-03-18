@@ -188,26 +188,26 @@ class Dashboard : AppCompatActivity(), DashboardListsOptionsClickListener, OnNam
 //                val uri = URI("wss://socketsbay.com/wss/v2/1/demo/")
 //                val uri = URI("ws://192.168.4.1:81")
 
-                val uri = URI(Source.WEBSOCKET_URL)
+                        val uri = URI(Source.WEBSOCKET_URL)
 
-                //{"DEVICE_ID": "EPT2020", "CAL_MODE": "1"}
+                        //{"DEVICE_ID": "EPT2020", "CAL_MODE": "1"}
 
-                binding.connectingLay.visibility = View.VISIBLE
+                        binding.connectingLay.visibility = View.VISIBLE
 
 //
 //                WebSocketManager.disconnect()
-                WebSocketManager.initializeWebSocket(uri,
+                        WebSocketManager.initializeWebSocket(uri,
 //                    viewModel,
-                    // Open listener
-                    {
-                        // WebSocket connection opened
-                        runOnUiThread {
-                            binding.connectingLay.visibility = View.GONE
+                            // Open listener
+                            {
+                                // WebSocket connection opened
+                                runOnUiThread {
+                                    binding.connectingLay.visibility = View.GONE
 
-                            Source.SOCKET_CONNECTED = true
-                            binding.socketConnected.visibility = View.VISIBLE
-                            binding.socketDisconnected.visibility = View.GONE
-                        }
+                                    Source.SOCKET_CONNECTED = true
+                                    binding.socketConnected.visibility = View.VISIBLE
+                                    binding.socketDisconnected.visibility = View.GONE
+                                }
 
 //                        WebSocketManager.setMessageListener { message ->
 //                            val jsonData = JSONObject(message)
