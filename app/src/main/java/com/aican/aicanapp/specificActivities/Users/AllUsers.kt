@@ -8,6 +8,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.aican.aicanapp.adapters.NewUserAdapter
 import com.aican.aicanapp.databinding.ActivityAllUsersBinding
+import com.aican.aicanapp.interfaces.UserDeleteListener
 import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
 import com.aican.aicanapp.roomDatabase.entities.UserEntity
@@ -17,7 +18,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Date
 
-class AllUsers : AppCompatActivity() {
+class AllUsers : AppCompatActivity(), UserDeleteListener {
 
     private val userList = mutableListOf<UserEntity>()
     lateinit var binding: ActivityAllUsersBinding
@@ -64,7 +65,7 @@ class AllUsers : AppCompatActivity() {
 
 
 
-            userAdapter = NewUserAdapter(users!!)
+            userAdapter = NewUserAdapter(this@AllUsers,users!!, userDao, this@AllUsers)
 
 //        binding.userDatabaseRecyclerView.layoutManager = LinearLayoutManager(this)
             binding.userDatabaseRecyclerView.adapter = userAdapter
@@ -78,6 +79,14 @@ class AllUsers : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
 
+        lifecycleScope.launch(Dispatchers.IO) {
+
+            loadUsers()
+        }
+
+    }
+
+    override fun deleted() {
         lifecycleScope.launch(Dispatchers.IO) {
 
             loadUsers()

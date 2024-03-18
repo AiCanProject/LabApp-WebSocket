@@ -10,8 +10,14 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.room.Room
 import com.aican.aicanapp.data.DatabaseHelper
-import com.aican.aicanapp.ph.PhActivity
+import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
+import com.aican.aicanapp.roomDatabase.database.AppDatabase
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.DateFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -33,6 +39,7 @@ class EditUserDatabase : AppCompatActivity() {
     var uid = ""
     var prevPasscode = ""
     lateinit var previPasscode: TextView
+    private lateinit var userDao: UserDao
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,6 +52,11 @@ class EditUserDatabase : AppCompatActivity() {
         update = findViewById<Button>(R.id.updateBtn)
         passwordText = findViewById<EditText>(R.id.password)
         previPasscode = findViewById<TextView>(R.id.previPasscode)
+
+        userDao =
+            Room.databaseBuilder(applicationContext, AppDatabase::class.java, "aican-database")
+                .build().userDao()
+
 
         val intent = intent
 
@@ -93,34 +105,74 @@ class EditUserDatabase : AppCompatActivity() {
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault())
                     .format(Date())
                 password = passwordText.getText().toString()
-                val passwordUpdated = databaseHelper.updateUserDetails(
-                    username,
-                    uid,
-                    name.getText().toString(),
-                    userRole,
-                    password
-                )
-                if (passwordUpdated) {
-                    databaseHelper.insert_action_data(
-                        time,
-                        date,
-                        "Username: " + username + ", Name: " + name.getText()
-                            .toString() + ", UID: " + uid
-                                + " Password changed",
-                        "",
-                        "",
-                        "",
-                        "",
-                        PhActivity.DEVICE_ID
-                    )
-                    Toast.makeText(this, "Password updated successfully", Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, "Something went wrong", Toast.LENGTH_SHORT).show()
-                }
+
+                updateUser(uid, name.getText().toString(), username, password, userRole)
+
+//                val passwordUpdated = databaseHelper.updateUserDetails(
+//                    username,
+//                    uid,
+//                    name.getText().toString(),
+//                    userRole,
+//                    password
+//                )
+//                if (passwordUpdated) {
+//                    databaseHelper.insert_action_data(
+//                        time,
+//                        date,
+//                        "Username: " + username + ", Name: " + name.getText()
+//                            .toString() + ", UID: " + uid
+//                                + " Password changed",
+//                        "",
+//                        "",
+//                        "",
+//                        "",
+//                        PhActivity.DEVICE_ID
+//                    )
+//                    Toast.makeText(this, "Password updated successfully", Toast.LENGTH_SHORT).show()
+//                } else {
+//                    Toast.makeText(this, "Something went wrong", Toast.LENGTH_SHORT).show()
+//                }
             }
         })
     }
 
+    private fun updateUser(
+        userId: String, newName: String, username: String, password: String,
+        role: String
+    ) {
+        // Start a coroutine
+        CoroutineScope(Dispatchers.IO).launch {
+            // Retrieve the user from the database
+            val user = userDao.getUserById(userId)
+
+            // Check if the user exists
+            if (user != null) {
+                // Modify the user's information
+                user.name = newName
+                user.password = password
+                user.role = role
+                user.dateOfExpiry = getExpiryDate().toString()
+
+                // Update the user in the database
+                userDao.updateUser(user)
+
+                // Optionally, you can notify the user that the update was successful
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@EditUserDatabase,
+                        "User updated successfully",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } else {
+                // User with the specified ID not found
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@EditUserDatabase, "User not found", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            }
+        }
+    }
 
     private fun getExpiryDate(): String? {
         val date = Calendar.getInstance().time

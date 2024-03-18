@@ -283,6 +283,7 @@
                 android:textAllCaps="false"
                 android:textSize="12sp"
                 android:visibility="visible" />
+
             <Button
                 android:id="@+id/printCSV"
                 android:layout_width="wrap_content"
@@ -302,6 +303,7 @@
                 android:textAllCaps="false"
                 android:textSize="12sp"
                 android:visibility="visible" />
+
             <Button
                 android:id="@+id/clear"
                 android:layout_width="wrap_content"
@@ -315,6 +317,13 @@
 
         </LinearLayout>
 
+        <TextView
+            android:id="@+id/logCounter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="@color/black"
+            android:textSize="16dp" />
 
         <LinearLayout
             android:layout_width="wrap_content"
@@ -567,9 +576,9 @@
 
             <com.jjoe64.graphview.GraphView
                 android:id="@+id/graph"
-                android:visibility="gone"
                 android:layout_width="match_parent"
-                android:layout_height="500dp" />
+                android:layout_height="500dp"
+                android:visibility="gone" />
 
             <com.github.mikephil.charting.charts.LineChart
                 android:id="@+id/intensityChart"
