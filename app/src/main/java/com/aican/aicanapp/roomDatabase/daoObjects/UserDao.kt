@@ -1,6 +1,7 @@
 package com.aican.aicanapp.roomDatabase.daoObjects
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
@@ -18,7 +19,10 @@ interface UserDao {
     fun getAllUsers(): List<UserEntity>?
 
 
-
     @Update
     fun updateUser(user: UserEntity)
+
+    @Delete
+     fun deleteUser(user: UserEntity)
+
 }

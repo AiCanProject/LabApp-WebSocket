@@ -7,12 +7,12 @@ import androidx.room.PrimaryKey
 //         TEXT,expiryDate TEXT,dateCreated TEXT)");
 @Entity(tableName = "users")
 data class UserEntity(
-    @PrimaryKey val id: String,
-    val name: String,
-    val password: String,
-    val role: String,
-    val dateOfCreation: String,
-    val dateOfExpiry: String,
-    val dateOfModification: String,
-    val isActive: Boolean
+    @PrimaryKey var id: String,
+    var name: String,
+    var password: String,
+    var role: String,
+    var dateOfCreation: String,
+    var dateOfExpiry: String,
+    var dateOfModification: String,
+    var isActive: Boolean
 )

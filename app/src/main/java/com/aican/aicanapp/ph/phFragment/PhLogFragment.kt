@@ -106,6 +106,8 @@ class PhLogFragment : Fragment() {
 
     }
 
+    var log_counter = 0;
+
     lateinit var binding: FragmentPhLogBinding
     lateinit var graphView: GraphView
 
@@ -1536,6 +1538,11 @@ class PhLogFragment : Fragment() {
                         ) == PhActivity.DEVICE_ID
                     ) {
                         if (switchBtnClick.isChecked) {
+
+                            log_counter++
+                            binding.logCounter.text = log_counter.toString()
+                            Log.e("LogCounterText", log_counter.toString())
+
                             date = SimpleDateFormat(
                                 "yyyy-MM-dd", Locale.getDefault()
                             ).format(Date())
