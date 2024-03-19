@@ -45,6 +45,7 @@ import com.aican.aicanapp.adapters.PDF_CSV_Adapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.dataClasses.phData
 import com.aican.aicanapp.databinding.FragmentPhLogBinding
+import com.aican.aicanapp.interfaces.UserDeleteListener
 import com.aican.aicanapp.ph.Export
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.ph.PhLogGraph
@@ -99,7 +100,7 @@ import java.util.Date
 import java.util.Locale
 
 
-class PhLogFragment : Fragment() {
+class PhLogFragment : Fragment(), UserDeleteListener {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -1362,7 +1363,7 @@ class PhLogFragment : Fragment() {
             sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
 
         // Set up RecyclerView with adapter
-        plAdapter = PDF_CSV_Adapter(requireContext(), sortedFiles.toTypedArray(), "PhLog")
+        plAdapter = PDF_CSV_Adapter(requireContext(), sortedFiles.toTypedArray(), "PhLog", this)
         binding.recyclerViewCSVLog.adapter = plAdapter
         plAdapter.notifyDataSetChanged()
         binding.recyclerViewCSVLog.layoutManager = LinearLayoutManager(requireContext())
@@ -1384,7 +1385,7 @@ class PhLogFragment : Fragment() {
         }
 
         plAdapter = PDF_CSV_Adapter(
-            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF), "PhLog"
+            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF), "PhLog", this
         )
         binding.recyclerViewCSVLog.adapter = plAdapter
         plAdapter.notifyDataSetChanged()
@@ -1625,7 +1626,8 @@ class PhLogFragment : Fragment() {
                 } catch (e: JSONException) {
                     e.printStackTrace()
                 }
-            }        }
+            }
+        }
 
         WebSocketManager.getMessageLiveData().observe(this, messageObserver)
 
@@ -2647,7 +2649,6 @@ class PhLogFragment : Fragment() {
         webSocketConnection()
 
 
-
 //        if (Source.cfr_mode) {
 //            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
 //            userAuthDialog.showLoginDialog { isValidCredentials ->
@@ -2680,6 +2681,10 @@ class PhLogFragment : Fragment() {
     override fun onStart() {
         super.onStart()
 
+    }
+
+    override fun deleted() {
+        showPdfFiles()
     }
 
 

@@ -44,6 +44,7 @@ import com.aican.aicanapp.dataClasses.BufferData
 import com.aican.aicanapp.dataClasses.CalibDatClass
 import com.aican.aicanapp.databinding.FragmentPhCalibNewBinding
 import com.aican.aicanapp.dialogs.EditPhBufferDialog
+import com.aican.aicanapp.interfaces.UserDeleteListener
 import com.aican.aicanapp.ph.PHCalibGraph
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.ph.PhMvTable
@@ -84,7 +85,7 @@ import java.util.Date
 import java.util.Locale
 
 
-class PhCalibFragmentNew : Fragment() {
+class PhCalibFragmentNew : Fragment(), UserDeleteListener {
 
     companion object {
         var PH_MODE = "both"
@@ -285,7 +286,7 @@ class PhCalibFragmentNew : Fragment() {
             sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
 
         // Set up RecyclerView with adapter
-        calibFileAdapter = PDF_CSV_Adapter(requireContext(), sortedFiles.toTypedArray(), "PhCalib")
+        calibFileAdapter = PDF_CSV_Adapter(requireContext(), sortedFiles.toTypedArray(), "PhCalib", this)
         calibRecyclerView.adapter = calibFileAdapter
         calibFileAdapter.notifyDataSetChanged()
         calibRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -307,7 +308,7 @@ class PhCalibFragmentNew : Fragment() {
         fileNotWrite(root)
         val filesAndFoldersPDF = rootPDF.listFiles()
         calibFileAdapter = PDF_CSV_Adapter(
-            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF), "PhCalib"
+            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF), "PhCalib", this
         )
         calibRecyclerView.adapter = calibFileAdapter
         calibFileAdapter.notifyDataSetChanged()
@@ -4141,5 +4142,8 @@ class PhCalibFragmentNew : Fragment() {
 
     lateinit var jsonData: JSONObject
     lateinit var databaseHelper: DatabaseHelper
+    override fun deleted() {
+        showCalibPDFs()
+    }
 
 }

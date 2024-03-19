@@ -16,6 +16,7 @@ import com.aican.aicanapp.CSVWebViewActivity
 import com.aican.aicanapp.PDFViewer
 import com.aican.aicanapp.R
 import com.aican.aicanapp.databinding.CustomFileItemsBinding
+import com.aican.aicanapp.interfaces.UserDeleteListener
 import java.io.BufferedReader
 import java.io.File
 import java.io.FileReader
@@ -23,7 +24,8 @@ import java.io.FileReader
 class PDF_CSV_Adapter(
     val context: Context,
     private val files: Array<File>?,
-    private val activity: String
+    private val activity: String,
+    val userDeleteListener: UserDeleteListener
 ) : RecyclerView.Adapter<PDF_CSV_Adapter.ViewHolder>() {
 
     inner class ViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -107,7 +109,8 @@ class PDF_CSV_Adapter(
                                 Toast.LENGTH_SHORT
                             ).show()
                             files.toMutableList().remove(selectedFile)
-                            notifyItemRemoved(position)
+                            userDeleteListener.deleted()
+//                            notifyItemRemoved(position)
                         }
                     }
 

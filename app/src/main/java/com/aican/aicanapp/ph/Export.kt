@@ -40,6 +40,7 @@ import com.aican.aicanapp.adapters.PDF_CSV_Adapter
 import com.aican.aicanapp.adapters.UserDataAdapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.ActivityExportBinding
+import com.aican.aicanapp.interfaces.UserDeleteListener
 import com.aican.aicanapp.roomDatabase.daoObjects.AllLogsDataDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
@@ -78,7 +79,7 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-class Export : AppCompatActivity() {
+class Export : AppCompatActivity(), UserDeleteListener {
 
 
     companion object {
@@ -362,7 +363,7 @@ class Export : AppCompatActivity() {
         fAdapter = PDF_CSV_Adapter(
             applicationContext,
             reverseFileArray(filesAndFoldersPDF ?: arrayOfNulls<File>(0)),
-            "PhExport"
+            "PhExport", this@Export
         )
         recyclerView.adapter = fAdapter
         fAdapter.notifyDataSetChanged()
@@ -439,15 +440,18 @@ class Export : AppCompatActivity() {
         exportPDFAllLogDataBtn.setOnClickListener {
             try {
 
-                Source.showLoading(this@Export, false, false, "Generating pdf...",
-                    false)
+                Source.showLoading(
+                    this@Export, false, false, "Generating pdf...",
+                    false
+                )
 
                 GlobalScope.launch(Dispatchers.IO) {
                     try {
                         companyName = companyNameEditText.text.toString()
                         if (!companyName.isEmpty()) {
                             if (Constants.OFFLINE_MODE) {
-                                val company_name = getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
+                                val company_name =
+                                    getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
                                 val editT = company_name.edit()
                                 editT.putString("COMPANY_NAME", companyName)
                                 editT.commit()
@@ -469,7 +473,11 @@ class Export : AppCompatActivity() {
                         e.printStackTrace()
                         launch(Dispatchers.Main) {
                             Source.cancelLoading()
-                            Toast.makeText(this@Export, "Failed to generate pdf", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this@Export,
+                                "Failed to generate pdf",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }
@@ -484,15 +492,18 @@ class Export : AppCompatActivity() {
 
             try {
 
-                Source.showLoading(this@Export, false, false, "Generating csv...",
-                    false)
+                Source.showLoading(
+                    this@Export, false, false, "Generating csv...",
+                    false
+                )
 
                 GlobalScope.launch(Dispatchers.IO) {
                     try {
                         companyName = companyNameEditText.text.toString()
                         if (!companyName.isEmpty()) {
                             if (Constants.OFFLINE_MODE) {
-                                val company_name = getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
+                                val company_name =
+                                    getSharedPreferences("COMPANY_NAME", MODE_PRIVATE)
                                 val editT = company_name.edit()
                                 editT.putString("COMPANY_NAME", companyName)
                                 editT.commit()
@@ -514,7 +525,11 @@ class Export : AppCompatActivity() {
                         e.printStackTrace()
                         launch(Dispatchers.Main) {
                             Source.cancelLoading()
-                            Toast.makeText(this@Export, "Failed to generate CSV", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                this@Export,
+                                "Failed to generate CSV",
+                                Toast.LENGTH_SHORT
+                            ).show()
                         }
                     }
                 }
@@ -522,7 +537,6 @@ class Export : AppCompatActivity() {
             } catch (e: FileNotFoundException) {
                 e.printStackTrace()
             }
-
 
 
         }
@@ -550,10 +564,14 @@ class Export : AppCompatActivity() {
 
         printAllCalibData.setOnClickListener { v: View? ->
 
-            if (Source.userRole == "Operator"){
-                Toast.makeText(this@Export, "You don't have permission to access this", Toast.LENGTH_SHORT).show()
+            if (Source.userRole == "Operator") {
+                Toast.makeText(
+                    this@Export,
+                    "You don't have permission to access this",
+                    Toast.LENGTH_SHORT
+                ).show()
 
-            }else {
+            } else {
 
 
                 try {
@@ -599,10 +617,14 @@ class Export : AppCompatActivity() {
         }
 
         binding.printAllCalibDataCSV.setOnClickListener { v: View? ->
-            if (Source.userRole == "Operator"){
-                Toast.makeText(this@Export, "You don't have permission to access this", Toast.LENGTH_SHORT).show()
+            if (Source.userRole == "Operator") {
+                Toast.makeText(
+                    this@Export,
+                    "You don't have permission to access this",
+                    Toast.LENGTH_SHORT
+                ).show()
 
-            }else {
+            } else {
                 try {
 
                     Source.showLoading(
@@ -660,7 +682,8 @@ class Export : AppCompatActivity() {
             sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
 
         // Set up RecyclerView with adapter
-        fAdapter = PDF_CSV_Adapter(applicationContext, sortedFiles.toTypedArray(), "PhExport")
+        fAdapter =
+            PDF_CSV_Adapter(applicationContext, sortedFiles.toTypedArray(), "PhExport", this@Export)
 
         recyclerView.adapter = fAdapter
         fAdapter.notifyDataSetChanged()
@@ -2656,6 +2679,12 @@ $slope  |  $tempe"""
                 }
             }
         }
+    }
+
+    override fun deleted() {
+        updateRecyclerView()
+//        updateRecyclerView()
+
     }
 
 
