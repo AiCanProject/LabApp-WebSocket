@@ -346,7 +346,7 @@ class PhCalibFragmentNew : Fragment() {
             }
         })
 
-        WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
+        messageObserver = Observer { message ->
             connectedWebsocket = true
 
 
@@ -1091,7 +1091,7 @@ class PhCalibFragmentNew : Fragment() {
                             }
                         }
                     }
-                     if (true) {
+                    if (true) {
                     }
 //                    if (Constants.OFFLINE_MODE) {
 //                        offlineDataFeeding();
@@ -1117,12 +1117,35 @@ class PhCalibFragmentNew : Fragment() {
                 }
             }
 
-        })
+        }
+
+        WebSocketManager.getMessageLiveData().observe(this, messageObserver)
 
         WebSocketManager.setMessageListener { message ->
 
         }
     }
+
+    override fun onStop() {
+        super.onStop()
+        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+
+    }
+
+    override fun onPause() {
+        super.onPause()
+        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+
+    }
+
+    lateinit var messageObserver: Observer<String>
 
 
     private fun calibrateButtons() {

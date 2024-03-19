@@ -155,6 +155,27 @@ class PhGraphFragment : Fragment() {
         }
     }
 
+    override fun onStop() {
+        super.onStop()
+        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+
+    }
+
+    override fun onPause() {
+        super.onPause()
+        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+
+    }
+
+    lateinit var messageObserver: Observer<String>
+
     lateinit var userDao: UserDao
     lateinit var userActionDao: UserActionDao
     var tempToggleSharedPref: String? = null
@@ -243,7 +264,7 @@ class PhGraphFragment : Fragment() {
 
         }
 
-        WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
+        messageObserver = Observer { message ->
             requireActivity().runOnUiThread {
                 try {
                     updateMessage(message.toString())
@@ -323,7 +344,10 @@ class PhGraphFragment : Fragment() {
                     e.printStackTrace()
                 }
             }
-        })
+
+        }
+
+        WebSocketManager.getMessageLiveData().observe(this, messageObserver)
 
         WebSocketManager.setMessageListener { message ->
 

@@ -120,6 +120,7 @@ class PhLogFragment : Fragment() {
     private var handler1: Handler? = null
     private lateinit var runnable1: Runnable
     private lateinit var jsonData: JSONObject
+    lateinit var messageObserver: Observer<String>
 
     var autoLogggg: Int = 0
 
@@ -1453,10 +1454,7 @@ class PhLogFragment : Fragment() {
             }
         })
 
-
-        WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
-            // Handle the received message here
-            Log.d("WebSocket", "Received message: $message")
+        messageObserver = Observer { message ->
             requireActivity().runOnUiThread {
                 try {
                     updateMessage(message)
@@ -1466,7 +1464,7 @@ class PhLogFragment : Fragment() {
 
 
                     Log.d("JSONReceived:PHLogFragment", "onMessage: " + message)
-                    Log.d("JSONReceived:PHLogFragment", "Vishal: " + message)
+//                    Log.d("JSONReceived:PHLogFragment", "Vishal: " + message)
 
                     if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
                         val battery: String = jsonData.getString("BATTERY")
@@ -1553,15 +1551,7 @@ class PhLogFragment : Fragment() {
                             }
                             ph = binding.tvPhCurr.text.toString()
 
-                            //                        } else {
-//                            databaseHelper.print_insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
-//                            databaseHelper.insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
-//                            databaseHelper.insert_action_data(time, date, "Log pressed : " + Source.logUserName, ph, temp, mv, compound_name, PhActivity.DEVICE_ID);
-//                        }
-//                        if (Constants.OFFLINE_MODE) {
-//                            databaseHelper.print_insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
-//                            databaseHelper.insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
-//                        }
+
                             takeLog()
                         }
                         //                        deviceRef.child("Data").child("LOG").setValue(0);
@@ -1635,9 +1625,9 @@ class PhLogFragment : Fragment() {
                 } catch (e: JSONException) {
                     e.printStackTrace()
                 }
-            }
-            // Update UI or perform any other actions based on the received message
-        })
+            }        }
+
+        WebSocketManager.getMessageLiveData().observe(this, messageObserver)
 
         WebSocketManager.setMessageListener { message ->
 
@@ -2331,13 +2321,23 @@ class PhLogFragment : Fragment() {
     override fun onDestroy() {
         deleteAllLogs()
         deleteAllLogsOffline()
+        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+
         super.onDestroy()
     }
 
     override fun onPause() {
         Log.d("Timer", "onPause: ")
+        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+
         if (handler != null) handler!!.removeCallbacks(runnable)
         super.onPause()
+    }
+
+    override fun onStop() {
+        super.onStop()
+        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+
     }
 
     fun handler() {
@@ -2612,12 +2612,13 @@ class PhLogFragment : Fragment() {
         super.onResume()
 
         Source.activeFragment = 3
-        webSocketConnection()
 
         tempToggleSharedPref =
             SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
 
         setPreviousData()
+
+
 
         userDao = Room.databaseBuilder(
             requireContext().applicationContext, AppDatabase::class.java, "aican-database"
@@ -2642,6 +2643,9 @@ class PhLogFragment : Fragment() {
             ViewModelProvider(this, viewModelFactory)[ProductViewModel::class.java]
 
         observeProductList()
+
+        webSocketConnection()
+
 
 
 //        if (Source.cfr_mode) {

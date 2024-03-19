@@ -286,7 +286,7 @@
 
                 <Button
                     android:id="@+id/startBtn"
-                    android:layout_width="90dp"
+                    android:layout_width="wrap_content"
                     android:layout_height="40dp"
                     android:layout_margin="10dp"
                     android:backgroundTint="#9037C7"
@@ -390,20 +390,19 @@
 
             <Button
                 android:id="@+id/phMvTable"
-                android:layout_width="117dp"
+                android:layout_width="wrap_content"
                 android:layout_height="40dp"
                 android:layout_gravity="center"
                 android:layout_marginStart="4dp"
                 android:layout_marginEnd="4dp"
                 android:backgroundTint="#9037C7"
-
                 android:text="pH mV Table"
                 android:textAllCaps="false"
                 android:textSize="12dp" />
 
             <Button
                 android:id="@+id/phGraph"
-                android:layout_width="80dp"
+                android:layout_width="wrap_content"
                 android:layout_height="40dp"
 
                 android:layout_gravity="center"
