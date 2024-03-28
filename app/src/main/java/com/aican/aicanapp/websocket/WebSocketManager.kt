@@ -66,18 +66,18 @@ object WebSocketManager {
                         messageListener?.invoke(it)
                         EventBus.getDefault().post(MessageEvent(message))
 
-                      val  jsonData = JSONObject(message)
-
-                        if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
-                                "DEVICE_ID"
-                            ) == PhActivity.DEVICE_ID
-                        ) {
-
-                            Log.e("LogCountsHere",jsonData.toString())
-
-                        }
-
-
+//                      val  jsonData = JSONObject(message)
+//
+//                        if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
+//                                "DEVICE_ID"
+//                            ) == PhActivity.DEVICE_ID
+//                        ) {
+//.
+//                            Log.e("LogCountsHere",jsonData.toString())
+//
+//                        }
+//
+//
                     }
                 }
 
