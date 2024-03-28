@@ -3,8 +3,10 @@ package com.aican.aicanapp.websocket
 import android.util.Log
 import androidx.lifecycle.MutableLiveData
 import com.aican.aicanapp.ph.PhActivity
+import org.greenrobot.eventbus.EventBus
 import org.java_websocket.client.WebSocketClient
 import org.java_websocket.handshake.ServerHandshake
+import org.json.JSONObject
 import java.net.URI
 
 object WebSocketManager {
@@ -58,9 +60,24 @@ object WebSocketManager {
 
                 override fun onMessage(message: String?) {
                     message?.let {
+
                         WEBSOCKET_CONNECTED = true
                         messageLiveData.postValue(message!!) // Post the received message to LiveData
                         messageListener?.invoke(it)
+                        EventBus.getDefault().post(MessageEvent(message))
+
+                      val  jsonData = JSONObject(message)
+
+                        if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
+                                "DEVICE_ID"
+                            ) == PhActivity.DEVICE_ID
+                        ) {
+
+                            Log.e("LogCountsHere",jsonData.toString())
+
+                        }
+
+
                     }
                 }
 
@@ -131,4 +148,8 @@ object WebSocketManager {
         closeListener = null
         errorListener = null
     }
+}
+
+class MessageEvent(val message: String) {
+
 }

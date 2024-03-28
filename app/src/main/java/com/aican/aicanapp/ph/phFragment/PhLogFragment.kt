@@ -65,6 +65,7 @@ import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.ProductViewModel
 import com.aican.aicanapp.viewModels.ProductViewModelFactory
 import com.aican.aicanapp.viewModels.SharedViewModel
+import com.aican.aicanapp.websocket.MessageEvent
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.github.mikephil.charting.charts.LineChart
 import com.github.mikephil.charting.components.XAxis
@@ -86,6 +87,9 @@ import com.opencsv.CSVWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
@@ -1430,6 +1434,201 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onMessageEvent(event: MessageEvent) {
+        // Update UI with event.message
+        val message = event.message.toString()
+        try {
+            updateMessage(message)
+
+            jsonData = JSONObject(message)
+
+            if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
+                    "DEVICE_ID"
+                ) == PhActivity.DEVICE_ID
+            ) {
+                if (switchBtnClick.isChecked) {
+
+                    log_counter++
+                    binding.logCounter.text = log_counter.toString()
+
+                }
+            }
+
+            requireActivity().runOnUiThread {
+
+
+
+
+                Log.d("JSONReceived:PHLogFragment", "onMessage: " + message)
+//                    Log.d("JSONReceived:PHLogFragment", "Vishal: " + message)
+
+                if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    val battery: String = jsonData.getString("BATTERY")
+//                        binding.batteryPercent.setText("$battery %")
+                    SharedPref.saveData(
+                        requireContext(),
+                        "battery" + PhActivity.DEVICE_ID,
+                        battery
+                    )
+
+                }
+
+                if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    var phk = 0.0f
+                    if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
+                            jsonData.getString("PH_VAL")
+                        )
+                    ) {
+                        phk = jsonData.getString("PH_VAL").toFloat()
+                    }
+                    tvPhCurr.text = phk.toString()
+                    phView.moveTo(phk)
+                    SharedPref.saveData(
+                        requireContext(), "phValue" + PhActivity.DEVICE_ID, phk.toString()
+                    )
+                    ph = phk.toString()
+                    AlarmConstants.PH = phk
+                }
+                if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    var tempval = 0.0f
+                    if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
+                            jsonData.getString("TEMP_VAL")
+                        )
+                    ) {
+                        tempval = jsonData.getString("TEMP_VAL").toFloat()
+
+                    }
+                    val temp1 = Math.round(tempval).toString()
+
+                    if (tempToggleSharedPref != null) {
+                        if (tempToggleSharedPref == "true") {
+
+                            temp = if (temp1.toInt() <= -127) {
+
+                                "NA"
+                            } else {
+                                temp1
+                            }
+
+                            SharedPref.saveData(
+                                requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
+                            )
+                        }
+                    } else {
+                        temp = if (temp1.toInt() <= -127) {
+
+                            "NA"
+                        } else {
+                            temp1
+                        }
+
+                        SharedPref.saveData(
+                            requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
+                        )
+                    }
+                }
+                if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
+                        "DEVICE_ID"
+                    ) == PhActivity.DEVICE_ID
+                ) {
+                    if (switchBtnClick.isChecked) {
+
+
+//                            log_counter
+
+//                            log_counter++
+//                            binding.logCounter.text = log_counter.toString()
+//                            Log.e("LogCounterText", log_counter.toString())
+
+                        date = SimpleDateFormat(
+                            "yyyy-MM-dd", Locale.getDefault()
+                        ).format(Date())
+                        time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                        //                        fetch_logs();
+                        if (ph == null || temp == null || mv == null) {
+//                                Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
+                        }
+                        ph = binding.tvPhCurr.text.toString()
+
+
+                        takeLog()
+                    }
+                    //                        deviceRef.child("Data").child("LOG").setValue(0);
+                }
+                if (jsonData.has("HOLD") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    if (switchHold.isChecked) {
+                        if (jsonData.getString("HOLD") == "0") {
+                            holdFlag = 0
+                        }
+                    }
+                    if (switchHold.isChecked) {
+                        if (jsonData.getString("HOLD") == "1") {
+                            holdFlag++
+                            date = SimpleDateFormat(
+                                "yyyy-MM-dd", Locale.getDefault()
+                            ).format(Date())
+                            time = SimpleDateFormat(
+                                "HH:mm", Locale.getDefault()
+                            ).format(Date())
+                            //                            fetch_logs();
+//                                Toast.makeText(getContext(), "HOLD " + jsonData.getString("HOLD"), Toast.LENGTH_SHORT).show();
+                            jsonData = JSONObject()
+                            jsonData.put("HOLD", 0.toString())
+                            jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                            WebSocketManager.sendMessage(jsonData.toString())
+                            ph = binding.tvPhCurr.text.toString()
+
+//                                deviceRef.child("Data").child("HOLD").setValue(0);
+                            if (holdFlag == 1) {
+                                if (ph == null || temp == null || mv == null) {
+//                                    Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
+                                }
+                                //                                } else {
+//                                    databaseHelper.print_insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
+//                                    databaseHelper.insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
+//                                    databaseHelper.insert_action_data(time, date, "Log pressed : " + Source.userName, ph, temp, mv, compound_name, PhActivity.DEVICE_ID);
+//                                }
+                                adapter = LogAdapter(context, getList())
+                                recyclerView.adapter = adapter
+                                if (Constants.OFFLINE_MODE) {
+                                    databaseHelper.print_insert_log_data(
+                                        date,
+                                        time,
+                                        ph,
+                                        temp,
+                                        batchnum,
+                                        arnum,
+                                        compound_name,
+                                        PhActivity.DEVICE_ID
+                                    )
+//                                        databaseHelper.insert_log_data(
+//                                            date,
+//                                            time,
+//                                            ph,
+//                                            temp,
+//                                            batchnum,
+//                                            arnum,
+//                                            compound_name,
+//                                            PhActivity.DEVICE_ID
+//                                        )
+
+                                    addLogData(
+                                        ph, temp, batchnum, arnum, compound_name
+                                    )
+
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (e: JSONException) {
+            e.printStackTrace()
+        }
+
+    }
+
 
     public fun webSocketConnection() {
 
@@ -1456,154 +1655,161 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         })
 
         messageObserver = Observer { message ->
-            requireActivity().runOnUiThread {
-                try {
-                    updateMessage(message)
-
-                    jsonData = JSONObject(message)
-
-
-
-                    Log.d("JSONReceived:PHLogFragment", "onMessage: " + message)
-//                    Log.d("JSONReceived:PHLogFragment", "Vishal: " + message)
-
-                    if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val battery: String = jsonData.getString("BATTERY")
-//                        binding.batteryPercent.setText("$battery %")
-                        SharedPref.saveData(
-                            requireContext(),
-                            "battery" + PhActivity.DEVICE_ID,
-                            battery
-                        )
-
-                    }
-
-                    if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        var phk = 0.0f
-                        if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
-                                jsonData.getString("PH_VAL")
-                            )
-                        ) {
-                            phk = jsonData.getString("PH_VAL").toFloat()
-                        }
-                        tvPhCurr.text = phk.toString()
-                        phView.moveTo(phk)
-                        SharedPref.saveData(
-                            requireContext(), "phValue" + PhActivity.DEVICE_ID, phk.toString()
-                        )
-                        ph = phk.toString()
-                        AlarmConstants.PH = phk
-                    }
-                    if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        var tempval = 0.0f
-                        if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
-                                jsonData.getString("TEMP_VAL")
-                            )
-                        ) {
-                            tempval = jsonData.getString("TEMP_VAL").toFloat()
-
-                        }
-                        val temp1 = Math.round(tempval).toString()
-
-                        if (tempToggleSharedPref != null) {
-                            if (tempToggleSharedPref == "true") {
-
-                                temp = if (temp1.toInt() <= -127) {
-
-                                    "NA"
-                                } else {
-                                    temp1
-                                }
-
-                                SharedPref.saveData(
-                                    requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
-                                )
-                            }
-                        } else {
-                            temp = if (temp1.toInt() <= -127) {
-
-                                "NA"
-                            } else {
-                                temp1
-                            }
-
-                            SharedPref.saveData(
-                                requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
-                            )
-                        }
-                    }
-                    if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
-                            "DEVICE_ID"
-                        ) == PhActivity.DEVICE_ID
-                    ) {
-                        if (switchBtnClick.isChecked) {
-
-                            log_counter++
-                            binding.logCounter.text = log_counter.toString()
-                            Log.e("LogCounterText", log_counter.toString())
-
-                            date = SimpleDateFormat(
-                                "yyyy-MM-dd", Locale.getDefault()
-                            ).format(Date())
-                            time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                            //                        fetch_logs();
-                            if (ph == null || temp == null || mv == null) {
-//                                Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
-                            }
-                            ph = binding.tvPhCurr.text.toString()
-
-
-                            takeLog()
-                        }
-                        //                        deviceRef.child("Data").child("LOG").setValue(0);
-                    }
-                    if (jsonData.has("HOLD") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        if (switchHold.isChecked) {
-                            if (jsonData.getString("HOLD") == "0") {
-                                holdFlag = 0
-                            }
-                        }
-                        if (switchHold.isChecked) {
-                            if (jsonData.getString("HOLD") == "1") {
-                                holdFlag++
-                                date = SimpleDateFormat(
-                                    "yyyy-MM-dd", Locale.getDefault()
-                                ).format(Date())
-                                time = SimpleDateFormat(
-                                    "HH:mm", Locale.getDefault()
-                                ).format(Date())
-                                //                            fetch_logs();
-//                                Toast.makeText(getContext(), "HOLD " + jsonData.getString("HOLD"), Toast.LENGTH_SHORT).show();
-                                jsonData = JSONObject()
-                                jsonData.put("HOLD", 0.toString())
-                                jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                                WebSocketManager.sendMessage(jsonData.toString())
-                                ph = binding.tvPhCurr.text.toString()
-
-//                                deviceRef.child("Data").child("HOLD").setValue(0);
-                                if (holdFlag == 1) {
-                                    if (ph == null || temp == null || mv == null) {
-//                                    Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
-                                    }
-                                    //                                } else {
-//                                    databaseHelper.print_insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
-//                                    databaseHelper.insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
-//                                    databaseHelper.insert_action_data(time, date, "Log pressed : " + Source.userName, ph, temp, mv, compound_name, PhActivity.DEVICE_ID);
+//            try {
+//                updateMessage(message)
+//
+//                jsonData = JSONObject(message)
+//
+//                if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
+//                        "DEVICE_ID"
+//                    ) == PhActivity.DEVICE_ID
+//                ) {
+//                    if (switchBtnClick.isChecked) {
+//
+//                        log_counter++
+//                        binding.logCounter.text = log_counter.toString()
+//
+//                    }
+//                }
+//
+//                requireActivity().runOnUiThread {
+//
+//
+//
+//
+//                    Log.d("JSONReceived:PHLogFragment", "onMessage: " + message)
+////                    Log.d("JSONReceived:PHLogFragment", "Vishal: " + message)
+//
+//                    if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+//                        val battery: String = jsonData.getString("BATTERY")
+////                        binding.batteryPercent.setText("$battery %")
+//                        SharedPref.saveData(
+//                            requireContext(),
+//                            "battery" + PhActivity.DEVICE_ID,
+//                            battery
+//                        )
+//
+//                    }
+//
+//                    if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+//                        var phk = 0.0f
+//                        if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
+//                                jsonData.getString("PH_VAL")
+//                            )
+//                        ) {
+//                            phk = jsonData.getString("PH_VAL").toFloat()
+//                        }
+//                        tvPhCurr.text = phk.toString()
+//                        phView.moveTo(phk)
+//                        SharedPref.saveData(
+//                            requireContext(), "phValue" + PhActivity.DEVICE_ID, phk.toString()
+//                        )
+//                        ph = phk.toString()
+//                        AlarmConstants.PH = phk
+//                    }
+//                    if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+//                        var tempval = 0.0f
+//                        if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
+//                                jsonData.getString("TEMP_VAL")
+//                            )
+//                        ) {
+//                            tempval = jsonData.getString("TEMP_VAL").toFloat()
+//
+//                        }
+//                        val temp1 = Math.round(tempval).toString()
+//
+//                        if (tempToggleSharedPref != null) {
+//                            if (tempToggleSharedPref == "true") {
+//
+//                                temp = if (temp1.toInt() <= -127) {
+//
+//                                    "NA"
+//                                } else {
+//                                    temp1
 //                                }
-                                    adapter = LogAdapter(context, getList())
-                                    recyclerView.adapter = adapter
-                                    if (Constants.OFFLINE_MODE) {
-                                        databaseHelper.print_insert_log_data(
-                                            date,
-                                            time,
-                                            ph,
-                                            temp,
-                                            batchnum,
-                                            arnum,
-                                            compound_name,
-                                            PhActivity.DEVICE_ID
-                                        )
-//                                        databaseHelper.insert_log_data(
+//
+//                                SharedPref.saveData(
+//                                    requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
+//                                )
+//                            }
+//                        } else {
+//                            temp = if (temp1.toInt() <= -127) {
+//
+//                                "NA"
+//                            } else {
+//                                temp1
+//                            }
+//
+//                            SharedPref.saveData(
+//                                requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
+//                            )
+//                        }
+//                    }
+//                    if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
+//                            "DEVICE_ID"
+//                        ) == PhActivity.DEVICE_ID
+//                    ) {
+//                        if (switchBtnClick.isChecked) {
+//
+//
+////                            log_counter
+//
+////                            log_counter++
+////                            binding.logCounter.text = log_counter.toString()
+////                            Log.e("LogCounterText", log_counter.toString())
+//
+//                            date = SimpleDateFormat(
+//                                "yyyy-MM-dd", Locale.getDefault()
+//                            ).format(Date())
+//                            time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+//                            //                        fetch_logs();
+//                            if (ph == null || temp == null || mv == null) {
+////                                Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
+//                            }
+//                            ph = binding.tvPhCurr.text.toString()
+//
+//
+//                            takeLog()
+//                        }
+//                        //                        deviceRef.child("Data").child("LOG").setValue(0);
+//                    }
+//                    if (jsonData.has("HOLD") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+//                        if (switchHold.isChecked) {
+//                            if (jsonData.getString("HOLD") == "0") {
+//                                holdFlag = 0
+//                            }
+//                        }
+//                        if (switchHold.isChecked) {
+//                            if (jsonData.getString("HOLD") == "1") {
+//                                holdFlag++
+//                                date = SimpleDateFormat(
+//                                    "yyyy-MM-dd", Locale.getDefault()
+//                                ).format(Date())
+//                                time = SimpleDateFormat(
+//                                    "HH:mm", Locale.getDefault()
+//                                ).format(Date())
+//                                //                            fetch_logs();
+////                                Toast.makeText(getContext(), "HOLD " + jsonData.getString("HOLD"), Toast.LENGTH_SHORT).show();
+//                                jsonData = JSONObject()
+//                                jsonData.put("HOLD", 0.toString())
+//                                jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+//                                WebSocketManager.sendMessage(jsonData.toString())
+//                                ph = binding.tvPhCurr.text.toString()
+//
+////                                deviceRef.child("Data").child("HOLD").setValue(0);
+//                                if (holdFlag == 1) {
+//                                    if (ph == null || temp == null || mv == null) {
+////                                    Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
+//                                    }
+//                                    //                                } else {
+////                                    databaseHelper.print_insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
+////                                    databaseHelper.insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
+////                                    databaseHelper.insert_action_data(time, date, "Log pressed : " + Source.userName, ph, temp, mv, compound_name, PhActivity.DEVICE_ID);
+////                                }
+//                                    adapter = LogAdapter(context, getList())
+//                                    recyclerView.adapter = adapter
+//                                    if (Constants.OFFLINE_MODE) {
+//                                        databaseHelper.print_insert_log_data(
 //                                            date,
 //                                            time,
 //                                            ph,
@@ -1613,23 +1819,34 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //                                            compound_name,
 //                                            PhActivity.DEVICE_ID
 //                                        )
-
-                                        addLogData(
-                                            ph, temp, batchnum, arnum, compound_name
-                                        )
-
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } catch (e: JSONException) {
-                    e.printStackTrace()
-                }
-            }
+////                                        databaseHelper.insert_log_data(
+////                                            date,
+////                                            time,
+////                                            ph,
+////                                            temp,
+////                                            batchnum,
+////                                            arnum,
+////                                            compound_name,
+////                                            PhActivity.DEVICE_ID
+////                                        )
+//
+//                                        addLogData(
+//                                            ph, temp, batchnum, arnum, compound_name
+//                                        )
+//
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                }
+//            } catch (e: JSONException) {
+//                e.printStackTrace()
+//            }
+//
         }
 
-        WebSocketManager.getMessageLiveData().observe(this, messageObserver)
+        WebSocketManager.getMessageLiveData().observe(viewLifecycleOwner, messageObserver)
 
         WebSocketManager.setMessageListener { message ->
 
@@ -2337,8 +2554,10 @@ class PhLogFragment : Fragment(), UserDeleteListener {
     }
 
     override fun onStop() {
-        super.onStop()
+        EventBus.getDefault().unregister(this)
+
         WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+        super.onStop()
 
     }
 
@@ -2680,6 +2899,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
     override fun onStart() {
         super.onStart()
+        EventBus.getDefault().register(this)
 
     }
 
