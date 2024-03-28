@@ -59,6 +59,7 @@ import com.aican.aicanapp.utils.SharedKeys
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
+import com.aican.aicanapp.websocket.MessageEvent
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.itextpdf.io.image.ImageDataFactory
 import com.itextpdf.kernel.pdf.PdfDocument
@@ -71,6 +72,9 @@ import com.opencsv.CSVWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.ByteArrayOutputStream
@@ -286,7 +290,8 @@ class PhCalibFragmentNew : Fragment(), UserDeleteListener {
             sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
 
         // Set up RecyclerView with adapter
-        calibFileAdapter = PDF_CSV_Adapter(requireContext(), sortedFiles.toTypedArray(), "PhCalib", this)
+        calibFileAdapter =
+            PDF_CSV_Adapter(requireContext(), sortedFiles.toTypedArray(), "PhCalib", this)
         calibRecyclerView.adapter = calibFileAdapter
         calibFileAdapter.notifyDataSetChanged()
         calibRecyclerView.layoutManager = LinearLayoutManager(requireContext())
@@ -308,7 +313,10 @@ class PhCalibFragmentNew : Fragment(), UserDeleteListener {
         fileNotWrite(root)
         val filesAndFoldersPDF = rootPDF.listFiles()
         calibFileAdapter = PDF_CSV_Adapter(
-            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF), "PhCalib", this
+            requireContext().applicationContext,
+            reverseFileArray(filesAndFoldersPDF),
+            "PhCalib",
+            this
         )
         calibRecyclerView.adapter = calibFileAdapter
         calibFileAdapter.notifyDataSetChanged()
@@ -322,6 +330,783 @@ class PhCalibFragmentNew : Fragment(), UserDeleteListener {
     private fun updateError(error: String) {
         sharedViewModel.errorLiveData.value = error
     }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onMessageEvent(event: MessageEvent) {
+        // Update UI with event.message
+        val message = event.message.toString()
+
+        connectedWebsocket = true
+
+
+        requireActivity().runOnUiThread {
+            try {
+                updateMessage(message)
+                jsonData = JSONObject(message)
+                Log.d("JSONReceived:PHCalibFragment", "onMessage: $message")
+
+                if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    val battery: String = jsonData.getString("BATTERY")
+//                        binding.batteryPercent.setText("$battery %")
+                    SharedPref.saveData(
+                        requireContext(),
+                        "battery" + PhActivity.DEVICE_ID,
+                        battery
+                    )
+
+                }
+
+                if (jsonData.has("SLOPE") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    if (jsonData.getString("SLOPE") != "nan" && PhFragment.validateNumber(
+                            jsonData.getString("SLOPE")
+                        )
+                    ) {
+                        val finalSlopes = jsonData.getString("SLOPE")
+//                            Toast.makeText(requireContext(), "" + finalSlopes, Toast.LENGTH_SHORT)
+//                                .show()
+                        SharedPref.saveData(
+                            requireContext(), "SLOPE_" + PhActivity.DEVICE_ID, finalSlopes
+                        )
+                        finalSlope.text = finalSlopes
+                    }
+                }
+                if (jsonData.has("OFFSET") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    if (jsonData.getString("OFFSET") != "nan" && PhFragment.validateNumber(
+                            jsonData.getString("OFFSET")
+                        )
+                    ) {
+                        val finalSlopes = jsonData.getString("OFFSET")
+//                            Toast.makeText(requireContext(), "" + finalSlopes, Toast.LENGTH_SHORT)
+//                                .show()
+                        SharedPref.saveData(
+                            requireContext(), "OFFSET_" + PhActivity.DEVICE_ID, finalSlopes
+                        )
+//                            finalSlope.text = finalSlopes
+                    }
+                }
+                if (true) {
+                    if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        var ph = 0.0f
+                        if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
+                                jsonData.getString("PH_VAL")
+                            )
+                        ) {
+                            ph = jsonData.getString("PH_VAL").toFloat()
+                        }
+                        val phForm = String.format(Locale.UK, "%.2f", ph)
+                        SharedPref.saveData(
+                            requireContext(),
+                            "phValue" + PhActivity.DEVICE_ID,
+                            phForm.toString()
+                        )
+                        tvPhCurr.text = phForm
+                        phView.moveTo(ph)
+                        AlarmConstants.PH = ph
+                    }
+                    if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        var tempVal = 0.0f
+                        if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
+                                jsonData.getString("TEMP_VAL")
+                            )
+                        ) {
+                            tempVal = jsonData.getString("TEMP_VAL").toFloat()
+                            val tempForm = String.format(Locale.UK, "%.1f", tempVal)
+                            Log.e("NullCheck", "" + tempToggleSharedPref)
+
+                            requireActivity().runOnUiThread {
+//                                    Toast.makeText(requireContext(), "" + tempForm, Toast.LENGTH_SHORT).show()
+                            }
+
+                            if (tempToggleSharedPref != null) {
+                                if (tempToggleSharedPref == "true") {
+                                    tvTempCurr.text = "$tempForm°C"
+                                    SharedPref.saveData(
+                                        requireContext(),
+                                        "tempValue" + PhActivity.DEVICE_ID,
+                                        tempForm
+                                    )
+                                    if (tempVal <= -127.0) {
+                                        tvTempCurr.text = "NA"
+                                        SharedPref.saveData(
+                                            requireContext(),
+                                            "tempValue" + PhActivity.DEVICE_ID,
+                                            "NA"
+                                        )
+                                    }
+                                }
+                            } else {
+                                tvTempCurr.text = "$tempForm°C"
+                                SharedPref.saveData(
+                                    requireContext(),
+                                    "tempValue" + PhActivity.DEVICE_ID,
+                                    tempForm
+                                )
+                                if (tempVal <= -127.0) {
+                                    tvTempCurr.text = "NA"
+                                    SharedPref.saveData(
+                                        requireContext(),
+                                        "tempValue" + PhActivity.DEVICE_ID,
+                                        "NA"
+                                    )
+                                }
+                            }
+                        } else {
+                            tvTempCurr.text = "nan"
+//                                SharedPref.saveData(
+//                                    requireContext(), "tempValue" + PhActivity.DEVICE_ID, "nan"
+//                                )
+                        }
+                    }
+                    if (jsonData.has("EC_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("EC_VAL")
+                        tvEcCurr.text = `val`
+                    }
+                    if (jsonData.has("MV_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("MV_1")
+                        var ecForm = "0"
+                        ecForm = if (`val` == "nan" && !PhFragment.validateNumber(`val`)) {
+                            "nan"
+                        } else {
+                            String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        mv1.text = ecForm
+                        mV1 = mv1.text.toString()
+                        Log.d("test1", mV1)
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("MV1", mV1)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("MV_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("MV_2")
+                        var v = `val`
+                        if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        mv2.text = v
+                        mV2 = mv2.text.toString()
+                        Log.d("test2", mV2)
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("MV2", mV2)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("MV_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("MV_3")
+                        var v = `val`
+                        if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        mv3.text = v
+                        mV3 = mv3.text.toString()
+                        Log.d("test3", mV3)
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("MV3", mV3)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("MV_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("MV_4")
+                        var v = `val`
+                        if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        mv4.text = v
+                        mV4 = mv4.text.toString()
+                        Log.d("test4", mV4)
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("MV4", mV4)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("MV_5") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("MV_5")
+                        var v = `val`
+                        if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        mv5.text = v
+                        mV5 = mv5.text.toString()
+                        Log.d("test5", mV5)
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("MV5", mV5)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("POST_VAL_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("POST_VAL_1")
+                        var v = `val`
+                        if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        phAfterCalib1.text = v
+                        pHAC1 = phAfterCalib1.text.toString()
+                        val calibDatClass = CalibDatClass(
+                            1,
+                            ph1.text.toString(),
+                            mv1.text.toString(),
+                            slope1.text.toString(),
+                            dt1.text.toString(),
+                            bufferD1.text.toString(),
+                            phAfterCalib1.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.updateClbOffDataFive(calibDatClass)
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("pHAC1", pHAC1)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("POST_VAL_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("POST_VAL_2")
+                        var v = `val`
+                        if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        phAfterCalib2.text = v
+                        pHAC2 = phAfterCalib2.text.toString()
+                        val calibDatClass = CalibDatClass(
+                            2,
+                            ph2.text.toString(),
+                            mv2.text.toString(),
+                            slope2.text.toString(),
+                            dt2.text.toString(),
+                            bufferD2.text.toString(),
+                            phAfterCalib2.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.updateClbOffDataFive(calibDatClass)
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("pHAC2", pHAC2)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("SLOPE_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("SLOPE_1")
+                        var v = "--"
+                        if (jsonData.getString("SLOPE_1") != "nan" && PhFragment.validateNumber(
+                                jsonData.getString("SLOPE_1")
+                            )
+                        ) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        slope2.text = v
+                        val calibDatClass = CalibDatClass(
+                            2,
+                            ph2.text.toString(),
+                            mv2.text.toString(),
+                            slope2.text.toString(),
+                            dt2.text.toString(),
+                            bufferD2.text.toString(),
+                            phAfterCalib2.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.updateClbOffDataFive(calibDatClass)
+                    }
+                    if (jsonData.has("SLOPE_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("SLOPE_2")
+                        var v = "--"
+                        if (jsonData.getString("SLOPE_2") != "nan" && PhFragment.validateNumber(
+                                jsonData.getString("SLOPE_2")
+                            )
+                        ) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        slope3.text = v
+                        val calibDatClass = CalibDatClass(
+                            3,
+                            ph3.text.toString(),
+                            mv3.text.toString(),
+                            slope3.text.toString(),
+                            dt3.text.toString(),
+                            bufferD3.text.toString(),
+                            phAfterCalib3.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.updateClbOffDataFive(calibDatClass)
+                    }
+                    if (jsonData.has("POST_VAL_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("POST_VAL_3")
+                        var v = "--"
+                        if (jsonData.getString("POST_VAL_3") != "nan" && PhFragment.validateNumber(
+                                jsonData.getString("POST_VAL_3")
+                            )
+                        ) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        phAfterCalib3.text = v
+                        pHAC3 = phAfterCalib3.text.toString()
+                        val calibDatClass = CalibDatClass(
+                            3,
+                            ph3.text.toString(),
+                            mv3.text.toString(),
+                            slope3.text.toString(),
+                            dt3.text.toString(),
+                            bufferD3.text.toString(),
+                            phAfterCalib3.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.updateClbOffDataFive(calibDatClass)
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("pHAC3", pHAC3)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("SLOPE_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("SLOPE_3")
+                        var v = "--"
+                        if (jsonData.getString("SLOPE_3") != "nan" && PhFragment.validateNumber(
+                                jsonData.getString("SLOPE_3")
+                            )
+                        ) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        slope4.text = v
+                        val calibDatClass = CalibDatClass(
+                            4,
+                            ph4.text.toString(),
+                            mv4.text.toString(),
+                            slope4.text.toString(),
+                            dt4.text.toString(),
+                            bufferD4.text.toString(),
+                            phAfterCalib4.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.updateClbOffDataFive(calibDatClass)
+                    }
+                    if (jsonData.has("POST_VAL_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("POST_VAL_4")
+                        var v = "--"
+                        if (jsonData.getString("POST_VAL_4") != "nan" && PhFragment.validateNumber(
+                                jsonData.getString("POST_VAL_4")
+                            )
+                        ) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        phAfterCalib4.text = v
+                        pHAC4 = phAfterCalib4.text.toString()
+                        val calibDatClass = CalibDatClass(
+                            4,
+                            ph4.text.toString(),
+                            mv4.text.toString(),
+                            slope4.text.toString(),
+                            dt4.text.toString(),
+                            bufferD4.text.toString(),
+                            phAfterCalib4.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.updateClbOffDataFive(calibDatClass)
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("pHAC4", pHAC4)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("SLOPE_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("SLOPE_4")
+                        var v = "--"
+                        if (jsonData.getString("SLOPE_4") != "nan" && PhFragment.validateNumber(
+                                jsonData.getString("SLOPE_4")
+                            )
+                        ) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        slope5.text = v
+                        val calibDatClass = CalibDatClass(
+                            5,
+                            ph5.text.toString(),
+                            mv5.text.toString(),
+                            slope5.text.toString(),
+                            dt5.text.toString(),
+                            bufferD5.text.toString(),
+                            phAfterCalib5.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.updateClbOffDataFive(calibDatClass)
+                    }
+                    if (jsonData.has("POST_VAL_5") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("POST_VAL_5")
+                        var v = `val`
+                        if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
+                            v = String.format(
+                                Locale.UK, "%.2f", `val`.toFloat()
+                            )
+                        }
+                        phAfterCalib5.text = v
+                        pHAC5 = phAfterCalib5.text.toString()
+                        val calibDatClass = CalibDatClass(
+                            5,
+                            ph5.text.toString(),
+                            mv5.text.toString(),
+                            slope5.text.toString(),
+                            dt5.text.toString(),
+                            bufferD5.text.toString(),
+                            phAfterCalib5.text.toString(),
+                            tvTempCurr.text.toString(),
+                            if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                .substring(0, 10) else "--",
+                            if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                .substring(11, 16) else "--"
+                        )
+                        databaseHelper.updateClbOffDataFive(calibDatClass)
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("pHAC5", pHAC5)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("DT_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("DT_1")
+                        dt1.text = `val`
+                        DT1 = dt1.text.toString()
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("DT1", DT1)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("DT_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("DT_2")
+                        dt2.text = `val`
+                        DT2 = dt2.text.toString()
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("DT2", DT2)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("DT_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("DT_3")
+                        dt3.text = `val`
+                        DT3 = dt3.text.toString()
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("DT3", DT3)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("DT_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("DT_4")
+                        dt4.text = `val`
+                        DT4 = dt4.text.toString()
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("DT4", DT4)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("DT_5") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("DT_5")
+                        dt5.text = `val`
+                        DT5 = dt5.text.toString()
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("DT5", DT5)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("B_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("B_1")
+                        ph1.text = `val`
+                        PH1 = ph1.text.toString()
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("PH1", PH1)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("B_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("B_2")
+                        ph2.text = `val`
+                        PH2 = ph2.text.toString()
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("PH2", PH2)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("B_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("B_3")
+                        ph3.text = `val`
+                        PH3 = ph3.text.toString()
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("PH3", PH3)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("B_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("B_4")
+                        ph4.text = `val`
+                        PH4 = ph4.text.toString()
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("PH4", PH4)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("B_5") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("B_5")
+                        ph5.text = `val`
+                        PH5 = ph5.text.toString()
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        myEdit.putString("PH5", PH5)
+                        myEdit.commit()
+                    }
+                    if (jsonData.has("CAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val `val` = jsonData.getString("CAL")
+                        val ec = `val`.toInt()
+                        Log.d("ECVal", "onDataChange: $ec")
+                        //                            stateChangeModeFive();
+                        val sharedPreferences = fragmentContext.getSharedPreferences(
+                            "CalibPrefs", Context.MODE_PRIVATE
+                        )
+                        val myEdit = sharedPreferences.edit()
+                        if (jsonData.getString("CAL") == "11" && jsonData.has("POST_VAL_1")) {
+                            val d = jsonData.getString("POST_VAL_1")
+                            phAfterCalib1.text = d
+                            val calibDatClass = CalibDatClass(
+                                1,
+                                ph1.text.toString(),
+                                mv1.text.toString(),
+                                slope1.text.toString(),
+                                dt1.text.toString(),
+                                bufferD1.text.toString(),
+                                phAfterCalib1.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt1.text.toString().length >= 15) dt1.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataFive(calibDatClass)
+                            SharedPref.saveData(
+                                requireContext(), "tem1", tvTempCurr.text.toString()
+                            )
+                            SharedPref.saveData(requireContext(), "pHAC1", d)
+                            //                                deviceRef.child("Data").child("CALIBRATION_STAT").setValue("incomplete");
+                            temp1.text = tvTempCurr.text
+                        } else if (jsonData.getString("CAL") == "21" && jsonData.has("POST_VAL_2")) {
+                            val d = jsonData.getString("POST_VAL_2")
+                            phAfterCalib2.text = d
+                            val calibDatClass = CalibDatClass(
+                                2,
+                                ph2.text.toString(),
+                                mv2.text.toString(),
+                                slope2.text.toString(),
+                                dt2.text.toString(),
+                                bufferD2.text.toString(),
+                                phAfterCalib2.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt2.text.toString().length >= 15) dt2.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataFive(calibDatClass)
+                            SharedPref.saveData(
+                                requireContext(), "tem2", tvTempCurr.text.toString()
+                            )
+                            SharedPref.saveData(requireContext(), "pHAC2", d)
+
+                            temp2.text = tvTempCurr.text
+                        } else if (jsonData.getString("CAL") == "31" && jsonData.has("POST_VAL_3")) {
+                            val d = jsonData.getString("POST_VAL_3")
+                            phAfterCalib3.text = d
+                            val calibDatClass = CalibDatClass(
+                                3,
+                                ph3.text.toString(),
+                                mv3.text.toString(),
+                                slope3.text.toString(),
+                                dt3.text.toString(),
+                                bufferD3.text.toString(),
+                                phAfterCalib3.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt3.text.toString().length >= 15) dt3.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataFive(calibDatClass)
+
+                            SharedPref.saveData(
+                                requireContext(), "tem3", tvTempCurr.text.toString()
+                            )
+                            SharedPref.saveData(requireContext(), "pHAC3", d)
+
+                            temp3.text = tvTempCurr.text
+                        } else if (jsonData.getString("CAL") == "41" && jsonData.has("POST_VAL_4")) {
+                            val d = jsonData.getString("POST_VAL_4")
+                            phAfterCalib4.text = d.toString()
+                            val calibDatClass = CalibDatClass(
+                                4,
+                                ph4.text.toString(),
+                                mv4.text.toString(),
+                                slope4.text.toString(),
+                                dt4.text.toString(),
+                                bufferD4.text.toString(),
+                                phAfterCalib4.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt4.text.toString().length >= 15) dt4.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataFive(calibDatClass)
+
+                            SharedPref.saveData(
+                                requireContext(), "tem4", tvTempCurr.text.toString()
+                            )
+                            SharedPref.saveData(requireContext(), "pHAC4", d.toString())
+
+
+                            temp4.text = tvTempCurr.text
+                        } else if (jsonData.getString("CAL") == "51" && jsonData.has("POST_VAL_5")) {
+                            val d = jsonData.getString("POST_VAL_5")
+                            phAfterCalib5.text = d.toString()
+                            val calibDatClass = CalibDatClass(
+                                5,
+                                ph5.text.toString(),
+                                mv5.text.toString(),
+                                slope5.text.toString(),
+                                dt5.text.toString(),
+                                bufferD5.text.toString(),
+                                phAfterCalib5.text.toString(),
+                                tvTempCurr.text.toString(),
+                                if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                    .substring(0, 10) else "--",
+                                if (dt5.text.toString().length >= 15) dt5.text.toString()
+                                    .substring(11, 16) else "--"
+                            )
+                            databaseHelper.updateClbOffDataFive(calibDatClass)
+
+
+                            SharedPref.saveData(
+                                requireContext(), "tem5", tvTempCurr.text.toString()
+                            )
+                            SharedPref.saveData(requireContext(), "pHAC5", d.toString())
+
+                            temp5.text = tvTempCurr.text
+                            //                                deviceRef.child("Data").child("CALIBRATION_STAT").setValue("ok");
+//                                calibData()
+                        }
+                    }
+                }
+                if (true) {
+                }
+//                    if (Constants.OFFLINE_MODE) {
+//                        offlineDataFeeding();
+//                    }
+                if (jsonData.has("FAULT") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    val `val` = jsonData.getString("FAULT")
+                    val fault = `val`.toInt()
+                    if (fault != null) if (fault == 1) {
+                        showAlertDialogButtonClicked()
+                    }
+                }
+
+//                    progressDialog.dismiss();
+//                    calibrateBtn.setEnabled(true);
+//
+//                    if (Constants.OFFLINE_MODE){
+//                        calibrateBtn.setOnClickListener(v -> {
+//                            calibrateFivePointOffline(webSocket);
+//                        });
+//                    }
+            } catch (e: JSONException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
 
     public fun websocketData() {
 
@@ -348,775 +1133,7 @@ class PhCalibFragmentNew : Fragment(), UserDeleteListener {
         })
 
         messageObserver = Observer { message ->
-            connectedWebsocket = true
 
-
-            requireActivity().runOnUiThread {
-                try {
-                    updateMessage(message)
-                    jsonData = JSONObject(message)
-                    Log.d("JSONReceived:PHCalibFragment", "onMessage: $message")
-
-                            if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                val battery: String = jsonData.getString("BATTERY")
-//                        binding.batteryPercent.setText("$battery %")
-                                SharedPref.saveData(
-                                    requireContext(),
-                                    "battery" + PhActivity.DEVICE_ID,
-                                    battery
-                                )
-
-                            }
-
-                            if (jsonData.has("SLOPE") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                if (jsonData.getString("SLOPE") != "nan" && PhFragment.validateNumber(
-                                        jsonData.getString("SLOPE")
-                                    )
-                                ) {
-                                    val finalSlopes = jsonData.getString("SLOPE")
-//                            Toast.makeText(requireContext(), "" + finalSlopes, Toast.LENGTH_SHORT)
-//                                .show()
-                                    SharedPref.saveData(
-                                        requireContext(), "SLOPE_" + PhActivity.DEVICE_ID, finalSlopes
-                                    )
-                                    finalSlope.text = finalSlopes
-                                }
-                            }
-                            if (jsonData.has("OFFSET") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                if (jsonData.getString("OFFSET") != "nan" && PhFragment.validateNumber(
-                                        jsonData.getString("OFFSET")
-                                    )
-                                ) {
-                                    val finalSlopes = jsonData.getString("OFFSET")
-//                            Toast.makeText(requireContext(), "" + finalSlopes, Toast.LENGTH_SHORT)
-//                                .show()
-                                    SharedPref.saveData(
-                                        requireContext(), "OFFSET_" + PhActivity.DEVICE_ID, finalSlopes
-                                    )
-//                            finalSlope.text = finalSlopes
-                                }
-                            }
-                            if (true) {
-                                if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                    var ph = 0.0f
-                                    if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
-                                            jsonData.getString("PH_VAL")
-                                        )
-                                    ) {
-                                        ph = jsonData.getString("PH_VAL").toFloat()
-                                    }
-                                    val phForm = String.format(Locale.UK, "%.2f", ph)
-                                    SharedPref.saveData(
-                                        requireContext(),
-                                        "phValue" + PhActivity.DEVICE_ID,
-                                        phForm.toString()
-                                    )
-                                    tvPhCurr.text = phForm
-                                    phView.moveTo(ph)
-                                    AlarmConstants.PH = ph
-                                }
-                                if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                    var tempVal = 0.0f
-                                    if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
-                                            jsonData.getString("TEMP_VAL")
-                                        )
-                                    ) {
-                                        tempVal = jsonData.getString("TEMP_VAL").toFloat()
-                                        val tempForm = String.format(Locale.UK, "%.1f", tempVal)
-                                        Log.e("NullCheck", "" + tempToggleSharedPref)
-
-                                        requireActivity().runOnUiThread {
-//                                    Toast.makeText(requireContext(), "" + tempForm, Toast.LENGTH_SHORT).show()
-                                        }
-
-                                        if (tempToggleSharedPref != null) {
-                                            if (tempToggleSharedPref == "true") {
-                                                tvTempCurr.text = "$tempForm°C"
-                                                SharedPref.saveData(
-                                                    requireContext(),
-                                                    "tempValue" + PhActivity.DEVICE_ID,
-                                                    tempForm
-                                                )
-                                                if (tempVal <= -127.0) {
-                                                    tvTempCurr.text = "NA"
-                                                    SharedPref.saveData(
-                                                        requireContext(),
-                                                        "tempValue" + PhActivity.DEVICE_ID,
-                                                        "NA"
-                                                    )
-                                                }
-                                            }
-                                        } else {
-                                            tvTempCurr.text = "$tempForm°C"
-                                            SharedPref.saveData(
-                                                requireContext(),
-                                                "tempValue" + PhActivity.DEVICE_ID,
-                                                tempForm
-                                            )
-                                            if (tempVal <= -127.0) {
-                                                tvTempCurr.text = "NA"
-                                                SharedPref.saveData(
-                                                    requireContext(),
-                                                    "tempValue" + PhActivity.DEVICE_ID,
-                                                    "NA"
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        tvTempCurr.text = "nan"
-//                                SharedPref.saveData(
-//                                    requireContext(), "tempValue" + PhActivity.DEVICE_ID, "nan"
-//                                )
-                                    }
-                                }
-                                if (jsonData.has("EC_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                    val `val` = jsonData.getString("EC_VAL")
-                                    tvEcCurr.text = `val`
-                                }
-                                if (jsonData.has("MV_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                    val `val` = jsonData.getString("MV_1")
-                                    var ecForm = "0"
-                                    ecForm = if (`val` == "nan" && !PhFragment.validateNumber(`val`)) {
-                                        "nan"
-                                    } else {
-                                        String.format(
-                                            Locale.UK, "%.2f", `val`.toFloat()
-                                        )
-                                    }
-                                    mv1.text = ecForm
-                                    mV1 = mv1.text.toString()
-                                    Log.d("test1", mV1)
-                                    val sharedPreferences = fragmentContext.getSharedPreferences(
-                                        "CalibPrefs", Context.MODE_PRIVATE
-                                    )
-                                    val myEdit = sharedPreferences.edit()
-                                    myEdit.putString("MV1", mV1)
-                                    myEdit.commit()
-                                }
-                                if (jsonData.has("MV_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                    val `val` = jsonData.getString("MV_2")
-                                    var v = `val`
-                                    if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
-                                        v = String.format(
-                                            Locale.UK, "%.2f", `val`.toFloat()
-                                        )
-                                    }
-                                    mv2.text = v
-                                    mV2 = mv2.text.toString()
-                                    Log.d("test2", mV2)
-                                    val sharedPreferences = fragmentContext.getSharedPreferences(
-                                        "CalibPrefs", Context.MODE_PRIVATE
-                                    )
-                                    val myEdit = sharedPreferences.edit()
-                                    myEdit.putString("MV2", mV2)
-                                    myEdit.commit()
-                                }
-                                if (jsonData.has("MV_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                    val `val` = jsonData.getString("MV_3")
-                                    var v = `val`
-                                    if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
-                                        v = String.format(
-                                            Locale.UK, "%.2f", `val`.toFloat()
-                                        )
-                                    }
-                                    mv3.text = v
-                                    mV3 = mv3.text.toString()
-                                    Log.d("test3", mV3)
-                                    val sharedPreferences = fragmentContext.getSharedPreferences(
-                                        "CalibPrefs", Context.MODE_PRIVATE
-                                    )
-                                    val myEdit = sharedPreferences.edit()
-                                    myEdit.putString("MV3", mV3)
-                                    myEdit.commit()
-                                }
-                                if (jsonData.has("MV_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                    val `val` = jsonData.getString("MV_4")
-                                    var v = `val`
-                                    if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
-                                        v = String.format(
-                                            Locale.UK, "%.2f", `val`.toFloat()
-                                        )
-                                    }
-                                    mv4.text = v
-                                    mV4 = mv4.text.toString()
-                                    Log.d("test4", mV4)
-                                    val sharedPreferences = fragmentContext.getSharedPreferences(
-                                        "CalibPrefs", Context.MODE_PRIVATE
-                                    )
-                                    val myEdit = sharedPreferences.edit()
-                                    myEdit.putString("MV4", mV4)
-                                    myEdit.commit()
-                                }
-                                if (jsonData.has("MV_5") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                    val `val` = jsonData.getString("MV_5")
-                                    var v = `val`
-                                    if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
-                                        v = String.format(
-                                            Locale.UK, "%.2f", `val`.toFloat()
-                                        )
-                                    }
-                                    mv5.text = v
-                                    mV5 = mv5.text.toString()
-                                    Log.d("test5", mV5)
-                                    val sharedPreferences = fragmentContext.getSharedPreferences(
-                                        "CalibPrefs", Context.MODE_PRIVATE
-                                    )
-                                    val myEdit = sharedPreferences.edit()
-                                    myEdit.putString("MV5", mV5)
-                                    myEdit.commit()
-                                }
-                                if (jsonData.has("POST_VAL_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                    val `val` = jsonData.getString("POST_VAL_1")
-                                    var v = `val`
-                                    if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
-                                        v = String.format(
-                                            Locale.UK, "%.2f", `val`.toFloat()
-                                        )
-                                    }
-                                    phAfterCalib1.text = v
-                                    pHAC1 = phAfterCalib1.text.toString()
-                                    val calibDatClass = CalibDatClass(
-                                        1,
-                                        ph1.text.toString(),
-                                        mv1.text.toString(),
-                                        slope1.text.toString(),
-                                        dt1.text.toString(),
-                                        bufferD1.text.toString(),
-                                        phAfterCalib1.text.toString(),
-                                        tvTempCurr.text.toString(),
-                                        if (dt1.text.toString().length >= 15) dt1.text.toString()
-                                            .substring(0, 10) else "--",
-                                        if (dt1.text.toString().length >= 15) dt1.text.toString()
-                                            .substring(11, 16) else "--"
-                                    )
-                                    databaseHelper.updateClbOffDataFive(calibDatClass)
-                                    val sharedPreferences = fragmentContext.getSharedPreferences(
-                                        "CalibPrefs", Context.MODE_PRIVATE
-                                    )
-                                    val myEdit = sharedPreferences.edit()
-                                    myEdit.putString("pHAC1", pHAC1)
-                                    myEdit.commit()
-                                }
-                                if (jsonData.has("POST_VAL_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                                    val `val` = jsonData.getString("POST_VAL_2")
-                                    var v = `val`
-                                    if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
-                                        v = String.format(
-                                            Locale.UK, "%.2f", `val`.toFloat()
-                                        )
-                                    }
-                                    phAfterCalib2.text = v
-                                    pHAC2 = phAfterCalib2.text.toString()
-                                    val calibDatClass = CalibDatClass(
-                                2,
-                                ph2.text.toString(),
-                                mv2.text.toString(),
-                                slope2.text.toString(),
-                                dt2.text.toString(),
-                                bufferD2.text.toString(),
-                                phAfterCalib2.text.toString(),
-                                tvTempCurr.text.toString(),
-                                if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                    .substring(0, 10) else "--",
-                                if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                    .substring(11, 16) else "--"
-                            )
-                            databaseHelper.updateClbOffDataFive(calibDatClass)
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("pHAC2", pHAC2)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("SLOPE_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("SLOPE_1")
-                            var v = "--"
-                            if (jsonData.getString("SLOPE_1") != "nan" && PhFragment.validateNumber(
-                                    jsonData.getString("SLOPE_1")
-                                )
-                            ) {
-                                v = String.format(
-                                    Locale.UK, "%.2f", `val`.toFloat()
-                                )
-                            }
-                            slope2.text = v
-                            val calibDatClass = CalibDatClass(
-                                2,
-                                ph2.text.toString(),
-                                mv2.text.toString(),
-                                slope2.text.toString(),
-                                dt2.text.toString(),
-                                bufferD2.text.toString(),
-                                phAfterCalib2.text.toString(),
-                                tvTempCurr.text.toString(),
-                                if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                    .substring(0, 10) else "--",
-                                if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                    .substring(11, 16) else "--"
-                            )
-                            databaseHelper.updateClbOffDataFive(calibDatClass)
-                        }
-                        if (jsonData.has("SLOPE_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("SLOPE_2")
-                            var v = "--"
-                            if (jsonData.getString("SLOPE_2") != "nan" && PhFragment.validateNumber(
-                                    jsonData.getString("SLOPE_2")
-                                )
-                            ) {
-                                v = String.format(
-                                    Locale.UK, "%.2f", `val`.toFloat()
-                                )
-                            }
-                            slope3.text = v
-                            val calibDatClass = CalibDatClass(
-                                3,
-                                ph3.text.toString(),
-                                mv3.text.toString(),
-                                slope3.text.toString(),
-                                dt3.text.toString(),
-                                bufferD3.text.toString(),
-                                phAfterCalib3.text.toString(),
-                                tvTempCurr.text.toString(),
-                                if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                    .substring(0, 10) else "--",
-                                if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                    .substring(11, 16) else "--"
-                            )
-                            databaseHelper.updateClbOffDataFive(calibDatClass)
-                        }
-                        if (jsonData.has("POST_VAL_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("POST_VAL_3")
-                            var v = "--"
-                            if (jsonData.getString("POST_VAL_3") != "nan" && PhFragment.validateNumber(
-                                    jsonData.getString("POST_VAL_3")
-                                )
-                            ) {
-                                v = String.format(
-                                    Locale.UK, "%.2f", `val`.toFloat()
-                                )
-                            }
-                            phAfterCalib3.text = v
-                            pHAC3 = phAfterCalib3.text.toString()
-                            val calibDatClass = CalibDatClass(
-                                3,
-                                ph3.text.toString(),
-                                mv3.text.toString(),
-                                slope3.text.toString(),
-                                dt3.text.toString(),
-                                bufferD3.text.toString(),
-                                phAfterCalib3.text.toString(),
-                                tvTempCurr.text.toString(),
-                                if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                    .substring(0, 10) else "--",
-                                if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                    .substring(11, 16) else "--"
-                            )
-                            databaseHelper.updateClbOffDataFive(calibDatClass)
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("pHAC3", pHAC3)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("SLOPE_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("SLOPE_3")
-                            var v = "--"
-                            if (jsonData.getString("SLOPE_3") != "nan" && PhFragment.validateNumber(
-                                    jsonData.getString("SLOPE_3")
-                                )
-                            ) {
-                                v = String.format(
-                                    Locale.UK, "%.2f", `val`.toFloat()
-                                )
-                            }
-                            slope4.text = v
-                            val calibDatClass = CalibDatClass(
-                                4,
-                                ph4.text.toString(),
-                                mv4.text.toString(),
-                                slope4.text.toString(),
-                                dt4.text.toString(),
-                                bufferD4.text.toString(),
-                                phAfterCalib4.text.toString(),
-                                tvTempCurr.text.toString(),
-                                if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                    .substring(0, 10) else "--",
-                                if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                    .substring(11, 16) else "--"
-                            )
-                            databaseHelper.updateClbOffDataFive(calibDatClass)
-                        }
-                        if (jsonData.has("POST_VAL_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("POST_VAL_4")
-                            var v = "--"
-                            if (jsonData.getString("POST_VAL_4") != "nan" && PhFragment.validateNumber(
-                                    jsonData.getString("POST_VAL_4")
-                                )
-                            ) {
-                                v = String.format(
-                                    Locale.UK, "%.2f", `val`.toFloat()
-                                )
-                            }
-                            phAfterCalib4.text = v
-                            pHAC4 = phAfterCalib4.text.toString()
-                            val calibDatClass = CalibDatClass(
-                                4,
-                                ph4.text.toString(),
-                                mv4.text.toString(),
-                                slope4.text.toString(),
-                                dt4.text.toString(),
-                                bufferD4.text.toString(),
-                                phAfterCalib4.text.toString(),
-                                tvTempCurr.text.toString(),
-                                if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                    .substring(0, 10) else "--",
-                                if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                    .substring(11, 16) else "--"
-                            )
-                            databaseHelper.updateClbOffDataFive(calibDatClass)
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("pHAC4", pHAC4)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("SLOPE_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("SLOPE_4")
-                            var v = "--"
-                            if (jsonData.getString("SLOPE_4") != "nan" && PhFragment.validateNumber(
-                                    jsonData.getString("SLOPE_4")
-                                )
-                            ) {
-                                v = String.format(
-                                    Locale.UK, "%.2f", `val`.toFloat()
-                                )
-                            }
-                            slope5.text = v
-                            val calibDatClass = CalibDatClass(
-                                5,
-                                ph5.text.toString(),
-                                mv5.text.toString(),
-                                slope5.text.toString(),
-                                dt5.text.toString(),
-                                bufferD5.text.toString(),
-                                phAfterCalib5.text.toString(),
-                                tvTempCurr.text.toString(),
-                                if (dt5.text.toString().length >= 15) dt5.text.toString()
-                                    .substring(0, 10) else "--",
-                                if (dt5.text.toString().length >= 15) dt5.text.toString()
-                                    .substring(11, 16) else "--"
-                            )
-                            databaseHelper.updateClbOffDataFive(calibDatClass)
-                        }
-                        if (jsonData.has("POST_VAL_5") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("POST_VAL_5")
-                            var v = `val`
-                            if (`val` != "nan" && PhFragment.validateNumber(`val`)) {
-                                v = String.format(
-                                    Locale.UK, "%.2f", `val`.toFloat()
-                                )
-                            }
-                            phAfterCalib5.text = v
-                            pHAC5 = phAfterCalib5.text.toString()
-                            val calibDatClass = CalibDatClass(
-                                5,
-                                ph5.text.toString(),
-                                mv5.text.toString(),
-                                slope5.text.toString(),
-                                dt5.text.toString(),
-                                bufferD5.text.toString(),
-                                phAfterCalib5.text.toString(),
-                                tvTempCurr.text.toString(),
-                                if (dt5.text.toString().length >= 15) dt5.text.toString()
-                                    .substring(0, 10) else "--",
-                                if (dt5.text.toString().length >= 15) dt5.text.toString()
-                                    .substring(11, 16) else "--"
-                            )
-                            databaseHelper.updateClbOffDataFive(calibDatClass)
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("pHAC5", pHAC5)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("DT_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("DT_1")
-                            dt1.text = `val`
-                            DT1 = dt1.text.toString()
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("DT1", DT1)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("DT_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("DT_2")
-                            dt2.text = `val`
-                            DT2 = dt2.text.toString()
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("DT2", DT2)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("DT_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("DT_3")
-                            dt3.text = `val`
-                            DT3 = dt3.text.toString()
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("DT3", DT3)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("DT_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("DT_4")
-                            dt4.text = `val`
-                            DT4 = dt4.text.toString()
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("DT4", DT4)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("DT_5") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("DT_5")
-                            dt5.text = `val`
-                            DT5 = dt5.text.toString()
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("DT5", DT5)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("B_1") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("B_1")
-                            ph1.text = `val`
-                            PH1 = ph1.text.toString()
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("PH1", PH1)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("B_2") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("B_2")
-                            ph2.text = `val`
-                            PH2 = ph2.text.toString()
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("PH2", PH2)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("B_3") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("B_3")
-                            ph3.text = `val`
-                            PH3 = ph3.text.toString()
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("PH3", PH3)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("B_4") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("B_4")
-                            ph4.text = `val`
-                            PH4 = ph4.text.toString()
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("PH4", PH4)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("B_5") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("B_5")
-                            ph5.text = `val`
-                            PH5 = ph5.text.toString()
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            myEdit.putString("PH5", PH5)
-                            myEdit.commit()
-                        }
-                        if (jsonData.has("CAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val `val` = jsonData.getString("CAL")
-                            val ec = `val`.toInt()
-                            Log.d("ECVal", "onDataChange: $ec")
-                            //                            stateChangeModeFive();
-                            val sharedPreferences = fragmentContext.getSharedPreferences(
-                                "CalibPrefs", Context.MODE_PRIVATE
-                            )
-                            val myEdit = sharedPreferences.edit()
-                            if (jsonData.getString("CAL") == "11" && jsonData.has("POST_VAL_1")) {
-                                val d = jsonData.getString("POST_VAL_1")
-                                phAfterCalib1.text = d
-                                val calibDatClass = CalibDatClass(
-                                    1,
-                                    ph1.text.toString(),
-                                    mv1.text.toString(),
-                                    slope1.text.toString(),
-                                    dt1.text.toString(),
-                                    bufferD1.text.toString(),
-                                    phAfterCalib1.text.toString(),
-                                    tvTempCurr.text.toString(),
-                                    if (dt1.text.toString().length >= 15) dt1.text.toString()
-                                        .substring(0, 10) else "--",
-                                    if (dt1.text.toString().length >= 15) dt1.text.toString()
-                                        .substring(11, 16) else "--"
-                                )
-                                databaseHelper.updateClbOffDataFive(calibDatClass)
-                                SharedPref.saveData(
-                                    requireContext(), "tem1", tvTempCurr.text.toString()
-                                )
-                                SharedPref.saveData(requireContext(), "pHAC1", d)
-                                //                                deviceRef.child("Data").child("CALIBRATION_STAT").setValue("incomplete");
-                                temp1.text = tvTempCurr.text
-                            } else if (jsonData.getString("CAL") == "21" && jsonData.has("POST_VAL_2")) {
-                                val d = jsonData.getString("POST_VAL_2")
-                                phAfterCalib2.text = d
-                                val calibDatClass = CalibDatClass(
-                                    2,
-                                    ph2.text.toString(),
-                                    mv2.text.toString(),
-                                    slope2.text.toString(),
-                                    dt2.text.toString(),
-                                    bufferD2.text.toString(),
-                                    phAfterCalib2.text.toString(),
-                                    tvTempCurr.text.toString(),
-                                    if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                        .substring(0, 10) else "--",
-                                    if (dt2.text.toString().length >= 15) dt2.text.toString()
-                                        .substring(11, 16) else "--"
-                                )
-                                databaseHelper.updateClbOffDataFive(calibDatClass)
-                                SharedPref.saveData(
-                                    requireContext(), "tem2", tvTempCurr.text.toString()
-                                )
-                                SharedPref.saveData(requireContext(), "pHAC2", d)
-
-                                temp2.text = tvTempCurr.text
-                            } else if (jsonData.getString("CAL") == "31" && jsonData.has("POST_VAL_3")) {
-                                val d = jsonData.getString("POST_VAL_3")
-                                phAfterCalib3.text = d
-                                val calibDatClass = CalibDatClass(
-                                    3,
-                                    ph3.text.toString(),
-                                    mv3.text.toString(),
-                                    slope3.text.toString(),
-                                    dt3.text.toString(),
-                                    bufferD3.text.toString(),
-                                    phAfterCalib3.text.toString(),
-                                    tvTempCurr.text.toString(),
-                                    if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                        .substring(0, 10) else "--",
-                                    if (dt3.text.toString().length >= 15) dt3.text.toString()
-                                        .substring(11, 16) else "--"
-                                )
-                                databaseHelper.updateClbOffDataFive(calibDatClass)
-
-                                SharedPref.saveData(
-                                    requireContext(), "tem3", tvTempCurr.text.toString()
-                                )
-                                SharedPref.saveData(requireContext(), "pHAC3", d)
-
-                                temp3.text = tvTempCurr.text
-                            } else if (jsonData.getString("CAL") == "41" && jsonData.has("POST_VAL_4")) {
-                                val d = jsonData.getString("POST_VAL_4")
-                                phAfterCalib4.text = d.toString()
-                                val calibDatClass = CalibDatClass(
-                                    4,
-                                    ph4.text.toString(),
-                                    mv4.text.toString(),
-                                    slope4.text.toString(),
-                                    dt4.text.toString(),
-                                    bufferD4.text.toString(),
-                                    phAfterCalib4.text.toString(),
-                                    tvTempCurr.text.toString(),
-                                    if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                        .substring(0, 10) else "--",
-                                    if (dt4.text.toString().length >= 15) dt4.text.toString()
-                                        .substring(11, 16) else "--"
-                                )
-                                databaseHelper.updateClbOffDataFive(calibDatClass)
-
-                                SharedPref.saveData(
-                                    requireContext(), "tem4", tvTempCurr.text.toString()
-                                )
-                                SharedPref.saveData(requireContext(), "pHAC4", d.toString())
-
-
-                                temp4.text = tvTempCurr.text
-                            } else if (jsonData.getString("CAL") == "51" && jsonData.has("POST_VAL_5")) {
-                                val d = jsonData.getString("POST_VAL_5")
-                                phAfterCalib5.text = d.toString()
-                                val calibDatClass = CalibDatClass(
-                                    5,
-                                    ph5.text.toString(),
-                                    mv5.text.toString(),
-                                    slope5.text.toString(),
-                                    dt5.text.toString(),
-                                    bufferD5.text.toString(),
-                                    phAfterCalib5.text.toString(),
-                                    tvTempCurr.text.toString(),
-                                    if (dt5.text.toString().length >= 15) dt5.text.toString()
-                                        .substring(0, 10) else "--",
-                                    if (dt5.text.toString().length >= 15) dt5.text.toString()
-                                        .substring(11, 16) else "--"
-                                )
-                                databaseHelper.updateClbOffDataFive(calibDatClass)
-
-
-                                SharedPref.saveData(
-                                    requireContext(), "tem5", tvTempCurr.text.toString()
-                                )
-                                SharedPref.saveData(requireContext(), "pHAC5", d.toString())
-
-                                temp5.text = tvTempCurr.text
-                                //                                deviceRef.child("Data").child("CALIBRATION_STAT").setValue("ok");
-//                                calibData()
-                            }
-                        }
-                    }
-                    if (true) {
-                    }
-//                    if (Constants.OFFLINE_MODE) {
-//                        offlineDataFeeding();
-//                    }
-                    if (jsonData.has("FAULT") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val `val` = jsonData.getString("FAULT")
-                        val fault = `val`.toInt()
-                        if (fault != null) if (fault == 1) {
-                            showAlertDialogButtonClicked()
-                        }
-                    }
-
-//                    progressDialog.dismiss();
-//                    calibrateBtn.setEnabled(true);
-//
-//                    if (Constants.OFFLINE_MODE){
-//                        calibrateBtn.setOnClickListener(v -> {
-//                            calibrateFivePointOffline(webSocket);
-//                        });
-//                    }
-                } catch (e: JSONException) {
-                    e.printStackTrace()
-                }
-            }
 
         }
 
@@ -1128,8 +1145,10 @@ class PhCalibFragmentNew : Fragment(), UserDeleteListener {
     }
 
     override fun onStop() {
-        super.onStop()
+        EventBus.getDefault().unregister(this)
+
         WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+        super.onStop()
 
     }
 
@@ -3363,6 +3382,9 @@ class PhCalibFragmentNew : Fragment(), UserDeleteListener {
 //            Toast.makeText(requireContext(), "E: " + e.message, Toast.LENGTH_SHORT).show()
         }
         super.onStart()
+
+        EventBus.getDefault().register(this)
+
     }
 
 

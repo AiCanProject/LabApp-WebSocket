@@ -20,6 +20,7 @@ import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.aican.aicanapp.R
+import com.aican.aicanapp.adapters.LogAdapter
 import com.aican.aicanapp.databinding.FragmentPhAlarmFragmentBinding
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
@@ -27,15 +28,22 @@ import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
 import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
+import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
+import com.aican.aicanapp.websocket.MessageEvent
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.google.firebase.database.DatabaseReference
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import org.json.JSONException
 import org.json.JSONObject
+import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 
@@ -131,6 +139,18 @@ class PhAlarmFragment : Fragment() {
 
     }
 
+    override fun onStart() {
+        super.onStart()
+        EventBus.getDefault().register(this)
+
+    }
+    override fun onStop() {
+        EventBus.getDefault().unregister(this)
+
+        super.onStop()
+    }
+
+
     fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
         lifecycleScope.launch(Dispatchers.IO) {
 
@@ -184,41 +204,51 @@ class PhAlarmFragment : Fragment() {
 //        }
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onMessageEvent(event: MessageEvent) {
+        // Update UI with event.message
+        val message = event.message.toString()
+
+        if (requireActivity() != null) {
+
+            requireActivity().runOnUiThread {
+                updateMessage(message)
+
+                try {
+                    jsonData = JSONObject(message)
+                    Log.d("JSONAlarmReceived:PHFragment", "onMessage: " + message)
+                    if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val battery: String = jsonData.getString("BATTERY")
+//                        binding.batteryPercent.setText("$battery %")
+                        SharedPref.saveData(
+                            requireContext(),
+                            "battery" + PhActivity.DEVICE_ID,
+                            battery
+                        )
+
+                    }
+                    if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val ph = jsonData.getString("PH_VAL").toFloat()
+                        val phForm =
+                            String.format(Locale.UK, "%.2f", ph)
+                        AlarmConstants.PH = ph
+                    }
+                    if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                        val temp = jsonData.getString("TEMP_VAL")
+                    }
+                } catch (e: JSONException) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
+
+
     public fun webSocketInit() {
 
         WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
-            if (requireActivity() != null) {
 
-                requireActivity().runOnUiThread {
-                    updateMessage(message)
-
-                    try {
-                        jsonData = JSONObject(message)
-                        Log.d("JSONAlarmReceived:PHFragment", "onMessage: " + message)
-                        if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val battery: String = jsonData.getString("BATTERY")
-//                        binding.batteryPercent.setText("$battery %")
-                            SharedPref.saveData(
-                                requireContext(),
-                                "battery" + PhActivity.DEVICE_ID,
-                                battery
-                            )
-
-                        }
-                        if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val ph = jsonData.getString("PH_VAL").toFloat()
-                            val phForm =
-                                String.format(Locale.UK, "%.2f", ph)
-                            AlarmConstants.PH = ph
-                        }
-                        if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                            val temp = jsonData.getString("TEMP_VAL")
-                        }
-                    } catch (e: JSONException) {
-                        e.printStackTrace()
-                    }
-                }
-            }
         })
 
         WebSocketManager.setMessageListener { message ->

@@ -13,6 +13,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
+import com.aican.aicanapp.adapters.LogAdapter
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.FragmentPhBinding
 import com.aican.aicanapp.ph.PhActivity
@@ -21,12 +22,17 @@ import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
 import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
+import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
 import com.aican.aicanapp.viewModels.SharedViewModel
+import com.aican.aicanapp.websocket.MessageEvent
 import com.aican.aicanapp.websocket.WebSocketManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.greenrobot.eventbus.EventBus
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import org.json.JSONException
 import org.json.JSONObject
 import java.text.SimpleDateFormat
@@ -239,6 +245,161 @@ class PhFragment : Fragment() {
 
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    fun onMessageEvent(event: MessageEvent) {
+        // Update UI with event.message
+        val message = event.message.toString()
+        requireActivity().runOnUiThread {
+            Log.e("WebSocketMessageAican", message)
+
+            updateMessage(message)
+            try {
+                jsonData = JSONObject(message)
+                Log.d("JSONReceived:PHFFragment", "onMessage: $message")
+                if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    val `val`: String = jsonData.getString("PH_VAL")
+                    binding.tvPhCurr.setText(`val`)
+                    var floatVal = 0.0f
+                    if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
+                            jsonData.getString("PH_VAL")
+                        )
+                    ) {
+                        floatVal = `val`.toFloat()
+                    }
+                    SharedPref.saveData(
+                        requireContext(),
+                        "phValue" + PhActivity.DEVICE_ID,
+                        floatVal.toString()
+                    )
+
+                    binding.phView.moveTo(floatVal)
+                    AlarmConstants.PH = floatVal
+                }
+                if (jsonData.has("ATC") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    if (jsonData.getString("ATC") == "1") {
+                        binding.switchAtc.setChecked(true)
+
+                        SharedPref.saveData(
+                            requireContext(),
+                            "toggleValue" + PhActivity.DEVICE_ID,
+                            "1"
+                        )
+
+                    } else {
+                        binding.switchAtc.setChecked(false)
+                        SharedPref.saveData(
+                            requireContext(),
+                            "toggleValue" + PhActivity.DEVICE_ID,
+                            "0"
+                        )
+
+                    }
+                }
+                if (jsonData.has("ATC_AT") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    val `val`: String = jsonData.getString("ATC_AT")
+                    SharedPref.saveData(
+                        requireContext(),
+                        "atcValue" + PhActivity.DEVICE_ID,
+                        `val`
+                    )
+                    binding.atcValue.setText(`val`)
+                }
+                if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    var tempval = 0.0f
+                    var temp = "0.0"
+                    if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
+                            jsonData.getString("TEMP_VAL")
+                        )
+                    ) {
+                        tempval = jsonData.getString("TEMP_VAL").toFloat()
+                        temp = Math.round(tempval).toString()
+                        Log.e("NullCheck", "" + tempToggleSharedPref)
+
+                        if (tempToggleSharedPref != null) {
+                            if (tempToggleSharedPref == "true") {
+                                binding.tvTempCurr.setText("$temp°C")
+                                SharedPref.saveData(
+                                    requireContext(),
+                                    "tempValue" + PhActivity.DEVICE_ID,
+                                    temp
+                                )
+
+                                if (temp.toInt() <= -127) {
+                                    binding.tvTempCurr.setText("NA")
+
+                                    binding.switchAtc.setEnabled(false)
+                                } else {
+                                    binding.switchAtc.setEnabled(true)
+                                }
+                            }
+                        } else {
+                            binding.tvTempCurr.setText("$temp°C")
+                            SharedPref.saveData(
+                                requireContext(),
+                                "tempValue" + PhActivity.DEVICE_ID,
+                                temp
+                            )
+
+                            if (temp.toInt() <= -127) {
+                                binding.tvTempCurr.setText("NA")
+
+                                binding.switchAtc.setEnabled(false)
+                            } else {
+                                binding.switchAtc.setEnabled(true)
+                            }
+                        }
+                    }
+
+                }
+                if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    val battery: String = jsonData.getString("BATTERY")
+                    binding.batteryPercent.setText("$battery %")
+                    SharedPref.saveData(
+                        requireContext(),
+                        "battery" + PhActivity.DEVICE_ID,
+                        battery
+                    )
+
+                }
+                if (jsonData.has("SLOPE") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    val slope: String = jsonData.getString("SLOPE")
+                    binding.slopeVal.setText("$slope %")
+
+                    SharedPref.saveData(
+                        requireContext(), "SLOPE_" + PhActivity.DEVICE_ID, slope
+                    )
+
+
+                }
+                if (jsonData.has("OFFSET") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    val offSet: String = jsonData.getString("OFFSET")
+                    //                        String offsetForm = String.format(Locale.UK, "%.2f", offSet);
+                    binding.offsetVal.setText(offSet)
+                    SharedPref.saveData(
+                        requireContext(),
+                        "offsetVal" + PhActivity.DEVICE_ID,
+                        offSet
+                    )
+
+                }
+                if (jsonData.has("EC_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                    val ec: String = jsonData.getString("EC_VAL")
+                    //                        String ecForm = String.format(Locale.UK, "%.1f", ec);
+                    binding.tvEcCurr.setText(ec)
+
+                    SharedPref.saveData(requireContext(), "ecValue" + PhActivity.DEVICE_ID, ec)
+
+                }
+            } catch (e: JSONException) {
+                e.printStackTrace()
+            }
+
+
+        }
+
+
+    }
+
 
     public fun webSocketInit() {
 
@@ -260,153 +421,6 @@ class PhFragment : Fragment() {
         }
 
         WebSocketManager.getMessageLiveData().observe(this, Observer { message ->
-            requireActivity().runOnUiThread {
-                Log.e("WebSocketMessageAican", message)
-
-                updateMessage(message)
-                try {
-                    jsonData = JSONObject(message)
-                    Log.d("JSONReceived:PHFFragment", "onMessage: $message")
-                    if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val `val`: String = jsonData.getString("PH_VAL")
-                        binding.tvPhCurr.setText(`val`)
-                        var floatVal = 0.0f
-                        if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
-                                jsonData.getString("PH_VAL")
-                            )
-                        ) {
-                            floatVal = `val`.toFloat()
-                        }
-                        SharedPref.saveData(
-                            requireContext(),
-                            "phValue" + PhActivity.DEVICE_ID,
-                            floatVal.toString()
-                        )
-
-                        binding.phView.moveTo(floatVal)
-                        AlarmConstants.PH = floatVal
-                    }
-                    if (jsonData.has("ATC") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        if (jsonData.getString("ATC") == "1") {
-                            binding.switchAtc.setChecked(true)
-
-                            SharedPref.saveData(
-                                requireContext(),
-                                "toggleValue" + PhActivity.DEVICE_ID,
-                                "1"
-                            )
-
-                        } else {
-                            binding.switchAtc.setChecked(false)
-                            SharedPref.saveData(
-                                requireContext(),
-                                "toggleValue" + PhActivity.DEVICE_ID,
-                                "0"
-                            )
-
-                        }
-                    }
-                    if (jsonData.has("ATC_AT") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val `val`: String = jsonData.getString("ATC_AT")
-                        SharedPref.saveData(
-                            requireContext(),
-                            "atcValue" + PhActivity.DEVICE_ID,
-                            `val`
-                        )
-                        binding.atcValue.setText(`val`)
-                    }
-                    if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        var tempval = 0.0f
-                        var temp = "0.0"
-                        if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
-                                jsonData.getString("TEMP_VAL")
-                            )
-                        ) {
-                            tempval = jsonData.getString("TEMP_VAL").toFloat()
-                            temp = Math.round(tempval).toString()
-                            Log.e("NullCheck", "" + tempToggleSharedPref)
-
-                            if (tempToggleSharedPref != null) {
-                                if (tempToggleSharedPref == "true") {
-                                    binding.tvTempCurr.setText("$temp°C")
-                                    SharedPref.saveData(
-                                        requireContext(),
-                                        "tempValue" + PhActivity.DEVICE_ID,
-                                        temp
-                                    )
-
-                                    if (temp.toInt() <= -127) {
-                                        binding.tvTempCurr.setText("NA")
-
-                                        binding.switchAtc.setEnabled(false)
-                                    } else {
-                                        binding.switchAtc.setEnabled(true)
-                                    }
-                                }
-                            } else {
-                                binding.tvTempCurr.setText("$temp°C")
-                                SharedPref.saveData(
-                                    requireContext(),
-                                    "tempValue" + PhActivity.DEVICE_ID,
-                                    temp
-                                )
-
-                                if (temp.toInt() <= -127) {
-                                    binding.tvTempCurr.setText("NA")
-
-                                    binding.switchAtc.setEnabled(false)
-                                } else {
-                                    binding.switchAtc.setEnabled(true)
-                                }
-                            }
-                        }
-
-                    }
-                    if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val battery: String = jsonData.getString("BATTERY")
-                        binding.batteryPercent.setText("$battery %")
-                        SharedPref.saveData(
-                            requireContext(),
-                            "battery" + PhActivity.DEVICE_ID,
-                            battery
-                        )
-
-                    }
-                    if (jsonData.has("SLOPE") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val slope: String = jsonData.getString("SLOPE")
-                        binding.slopeVal.setText("$slope %")
-
-                        SharedPref.saveData(
-                            requireContext(), "SLOPE_" + PhActivity.DEVICE_ID, slope
-                        )
-
-
-                    }
-                    if (jsonData.has("OFFSET") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val offSet: String = jsonData.getString("OFFSET")
-                        //                        String offsetForm = String.format(Locale.UK, "%.2f", offSet);
-                        binding.offsetVal.setText(offSet)
-                        SharedPref.saveData(
-                            requireContext(),
-                            "offsetVal" + PhActivity.DEVICE_ID,
-                            offSet
-                        )
-
-                    }
-                    if (jsonData.has("EC_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                        val ec: String = jsonData.getString("EC_VAL")
-                        //                        String ecForm = String.format(Locale.UK, "%.1f", ec);
-                        binding.tvEcCurr.setText(ec)
-
-                        SharedPref.saveData(requireContext(), "ecValue" + PhActivity.DEVICE_ID, ec)
-
-                    }
-                } catch (e: JSONException) {
-                    e.printStackTrace()
-                }
-
-
-            }
         })
 
         WebSocketManager.setMessageListener { message ->
@@ -450,6 +464,19 @@ class PhFragment : Fragment() {
             val matcher = pattern.matcher(text)
             return matcher.matches()
         }
+    }
+
+
+
+    override fun onStart() {
+        super.onStart()
+        EventBus.getDefault().register(this)
+
+    }
+    override fun onStop() {
+        EventBus.getDefault().unregister(this)
+
+        super.onStop()
     }
 
 }
