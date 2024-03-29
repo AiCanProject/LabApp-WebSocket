@@ -72,14 +72,13 @@ class AdminSettings : AppCompatActivity() {
                 // Check if the password is correct
                 val enteredPassword = editTextPassword.text.toString()
                 val correctPassword =
-                    "12345678" // Replace with your correct password
+                    Source.ADMIN_PASSWORD // Replace with your correct password
                 if (enteredPassword == correctPassword) {
                     // Password is correct, navigate to AdminActivities
                     val intent = Intent(this@AdminSettings, AdminActivities::class.java)
                     startActivity(intent)
                     dialog.dismiss() // Dismiss the dialog
                 } else {
-                    // Password is incorrect, show an error message
                     textInputLayoutPassword.error = "Incorrect password"
                 }
             }

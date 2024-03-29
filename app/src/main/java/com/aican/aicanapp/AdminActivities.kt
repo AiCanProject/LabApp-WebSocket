@@ -44,7 +44,7 @@ class AdminActivities : AppCompatActivity() {
                     parent: AdapterView<*>,
                     view: View?,
                     position: Int,
-                    id: Long
+                    id: Long,
                 ) {
                     val selectedItem = parent.getItemAtPosition(position) as Int
 
@@ -150,7 +150,7 @@ class AdminActivities : AppCompatActivity() {
                     etPassword.error = "Enter developer password"
                 }
             } else {
-                if (password == "12345678") {
+                if (password == Source.ADMIN_PASSWORD) {
                     Source.WEBSOCKET_URL = webSocketUrl
                     binding.websocketUrlText.text = webSocketUrl
                     SharedPref.saveData(this@AdminActivities, "WEBSOCKET_URL", webSocketUrl)

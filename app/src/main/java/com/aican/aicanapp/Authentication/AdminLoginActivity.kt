@@ -9,6 +9,7 @@ import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.aican.aicanapp.AddProductBatchArList
 import com.aican.aicanapp.AdminSettings
 import com.aican.aicanapp.FirebaseAccounts.PrimaryAccount
 import com.aican.aicanapp.R
@@ -59,6 +60,8 @@ class AdminLoginActivity : AppCompatActivity() {
                         userDatabase()
                     } else if (checkFlag == "adminSettings") {
                         openAdminSettings()
+                    } else if (checkFlag == "openAddList") {
+                        openAddListSettings()
                     }
                 }
             }
@@ -87,6 +90,8 @@ class AdminLoginActivity : AppCompatActivity() {
                         userDatabase()
                     } else if (checkFlag == "adminSettings") {
                         openAdminSettings()
+                    } else if (checkFlag == "openAddList") {
+                        openAddListSettings()
                     }
                 }.addOnFailureListener { exception: Exception ->
                     if (exception is FirebaseAuthInvalidUserException) {
@@ -111,6 +116,11 @@ class AdminLoginActivity : AppCompatActivity() {
 
     private fun openAdminSettings() {
         startActivity(Intent(this@AdminLoginActivity, AdminSettings::class.java))
+        finish()
+    }
+
+    private fun openAddListSettings() {
+        startActivity(Intent(this@AdminLoginActivity, AddProductBatchArList::class.java))
         finish()
     }
 

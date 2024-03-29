@@ -17,6 +17,11 @@ interface ProductsListDao {
     @Query("SELECT * FROM products_list")
     fun getAllProducts(): LiveData<List<ProductEntity>>
 
+    @Query("SELECT * FROM products_list")
+    fun getAllProductsData(): List<ProductEntity>
+
+
+
     @Update
     fun updateProduct(product: ProductEntity)
 

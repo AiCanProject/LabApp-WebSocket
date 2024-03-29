@@ -23,6 +23,7 @@ public class Source {
     public static int fragmentActive = 1;
     public static String WEBSOCKET_URL = "ws://192.168.4.1:81";
 
+    public static String ADMIN_PASSWORD = "9315036599@Vishal";
     public static boolean EXPORT_CSV = false;
     public static boolean EXPORT_GRAPH = false;
     public static boolean EXPORT_PDF = true;

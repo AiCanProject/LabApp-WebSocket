@@ -50,18 +50,27 @@ import com.aican.aicanapp.ph.Export
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.ph.PhLogGraph
 import com.aican.aicanapp.ph.phAnim.PhView
+import com.aican.aicanapp.roomDatabase.daoObjects.ARNumDao
 import com.aican.aicanapp.roomDatabase.daoObjects.AllLogsDataDao
+import com.aican.aicanapp.roomDatabase.daoObjects.BatchListDao
 import com.aican.aicanapp.roomDatabase.daoObjects.ProductsListDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
+import com.aican.aicanapp.roomDatabase.entities.ARNumEntity
 import com.aican.aicanapp.roomDatabase.entities.AllLogsEntity
+import com.aican.aicanapp.roomDatabase.entities.BatchEntity
+import com.aican.aicanapp.roomDatabase.entities.ProductEntity
 import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
 import com.aican.aicanapp.utils.Constants
 import com.aican.aicanapp.utils.SharedKeys
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.utils.Source
+import com.aican.aicanapp.viewModels.ARNumViewModel
+import com.aican.aicanapp.viewModels.ARNumViewModelFactory
+import com.aican.aicanapp.viewModels.BatchViewModel
+import com.aican.aicanapp.viewModels.BatchViewModelFactory
 import com.aican.aicanapp.viewModels.ProductViewModel
 import com.aican.aicanapp.viewModels.ProductViewModelFactory
 import com.aican.aicanapp.viewModels.SharedViewModel
@@ -87,6 +96,7 @@ import com.opencsv.CSVWriter
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
@@ -218,7 +228,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,
     ): View? {
         binding = FragmentPhLogBinding.inflate(inflater, container, false);
         return binding.root;
@@ -1456,8 +1466,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             }
 
             requireActivity().runOnUiThread {
-
-
 
 
                 Log.d("JSONReceived:PHLogFragment", "onMessage: " + message)
@@ -2709,7 +2717,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
     }
 
     override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<out String>, grantResults: IntArray
+        requestCode: Int, permissions: Array<out String>, grantResults: IntArray,
     ) {
         if (requestCode == PERMISSION_REQUEST_CODE) {
             if (grantResults.isNotEmpty()) {
@@ -2778,9 +2786,100 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         }
     }
 
+    fun observeARList() {
+        lifecycleScope.launch(Dispatchers.Main) {
+            arViewModel.productListLiveData.observe(this@PhLogFragment) { productList ->
+                val spinnerAdapter = ArrayAdapter(
+                    requireContext(),
+                    android.R.layout.simple_spinner_item,
+                    productList.map { it.arNum }
+                )
+                spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                binding.arSpinner.adapter = spinnerAdapter
+
+
+                binding.arSpinner.onItemSelectedListener =
+                    object : AdapterView.OnItemSelectedListener {
+                        override fun onItemSelected(
+                            parent: AdapterView<*>?,
+                            view: View?,
+                            position: Int,
+                            id: Long,
+                        ) {
+                            if (position >= 0 && position < productList.size) {
+                                val selectedProduct = productList[position]
+                                binding.arNumber.setText(selectedProduct.arNum)
+                                arnum = selectedProduct.arNum
+                                arnum_fetched = selectedProduct.arNum
+                            }
+                        }
+
+                        override fun onNothingSelected(parent: AdapterView<*>?) {
+                            binding.arNumber.setText("Select product")
+                            arnum_fetched = "Select product"
+                            arnum = "Select product"
+
+                        }
+                    }
+
+
+            }
+
+
+        }
+
+    }
+
+    fun observeBatchList() {
+        lifecycleScope.launch(Dispatchers.Main) {
+            batchViewModel.productListLiveData.observe(this@PhLogFragment) { productList ->
+                val spinnerAdapter = ArrayAdapter(
+                    requireContext(),
+                    android.R.layout.simple_spinner_item,
+                    productList.map { it.batchName }
+                )
+                spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+                binding.batchSpinner.adapter = spinnerAdapter
+
+
+                binding.batchSpinner.onItemSelectedListener =
+                    object : AdapterView.OnItemSelectedListener {
+                        override fun onItemSelected(
+                            parent: AdapterView<*>?,
+                            view: View?,
+                            position: Int,
+                            id: Long,
+                        ) {
+                            if (position >= 0 && position < productList.size) {
+                                val selectedProduct = productList[position]
+                                binding.batchNumber.setText(selectedProduct.batchName)
+                                batchnum = selectedProduct.batchName
+                                batchnum_fetched = selectedProduct.batchName
+                            }
+                        }
+
+                        override fun onNothingSelected(parent: AdapterView<*>?) {
+                            binding.batchNumber.setText("Select product")
+                            batchnum_fetched = "Select product"
+                            batchnum = "Select product"
+
+                        }
+                    }
+
+
+            }
+
+
+        }
+
+    }
+
     private fun observeProductList() {
         lifecycleScope.launch(Dispatchers.Main) {
             productViewModel.productListLiveData.observe(this@PhLogFragment) { productList ->
+
+                Log.e("NotErrorSpinnerItem", productList.size.toString())
+
                 val spinnerAdapter = ArrayAdapter(
                     requireContext(),
                     android.R.layout.simple_spinner_item,
@@ -2796,18 +2895,20 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                             parent: AdapterView<*>?,
                             view: View?,
                             position: Int,
-                            id: Long
+                            id: Long,
                         ) {
                             if (position >= 0 && position < productList.size) {
                                 val selectedProduct = productList[position]
                                 binding.compoundName.setText(selectedProduct.productName)
                                 compound_name = selectedProduct.productName
+                                compound_name_fetched = selectedProduct.productName
                             }
                         }
 
                         override fun onNothingSelected(parent: AdapterView<*>?) {
                             binding.compoundName.setText("Select product")
                             compound_name = "Select product"
+                            compound_name_fetched = "Select product"
 
                         }
                     }
@@ -2821,16 +2922,218 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
     }
 
+    private fun updateBatchSpinner(productList: List<BatchEntity>) {
+
+        val spinnerAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            productList.map { it.batchName }
+        )
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.batchSpinner.adapter = spinnerAdapter
+
+
+        binding.batchSpinner.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long,
+                ) {
+                    if (position >= 0 && position < productList.size) {
+                        val selectedProduct = productList[position]
+                        binding.batchNumber.setText(selectedProduct.batchName)
+                        batchnum = selectedProduct.batchName
+                        batchnum_fetched = selectedProduct.batchName
+                    }
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    binding.batchNumber.setText("Select product")
+                    batchnum_fetched = "Select product"
+                    batchnum = "Select product"
+
+                }
+            }
+
+
+    }
+
+
+    private fun updateARSpinner(productList: List<ARNumEntity>) {
+
+        val spinnerAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            productList.map { it.arNum }
+        )
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.arSpinner.adapter = spinnerAdapter
+
+
+        binding.arSpinner.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long,
+                ) {
+                    if (position >= 0 && position < productList.size) {
+                        val selectedProduct = productList[position]
+                        binding.arNumber.setText(selectedProduct.arNum)
+                        arnum = selectedProduct.arNum
+                        arnum_fetched = selectedProduct.arNum
+                    }
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    binding.arNumber.setText("Select product")
+                    arnum_fetched = "Select product"
+                    arnum = "Select product"
+
+                }
+            }
+
+    }
+
+
+    private fun updateProductSpinner(productList: List<ProductEntity>) {
+
+        val spinnerAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            productList.map { it.productName }
+        )
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.productSpinner.adapter = spinnerAdapter
+
+
+        binding.productSpinner.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long,
+                ) {
+                    if (position >= 0 && position < productList.size) {
+                        val selectedProduct = productList[position]
+                        binding.compoundName.setText(selectedProduct.productName)
+                        compound_name = selectedProduct.productName
+                        compound_name_fetched = selectedProduct.productName
+                    }
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    binding.compoundName.setText("Select product")
+                    compound_name = "Select product"
+                    compound_name_fetched = "Select product"
+
+                }
+            }
+    }
+
 
     lateinit var userDao: UserDao
     lateinit var userActionDao: UserActionDao
     lateinit var allLogsDataDao: AllLogsDataDao
     var tempToggleSharedPref: String? = null
     lateinit var productsListDao: ProductsListDao
+    lateinit var batchListDao: BatchListDao
+    lateinit var arListDao: ARNumDao
     private lateinit var productViewModel: ProductViewModel
+    private lateinit var batchViewModel: BatchViewModel
+    private lateinit var arViewModel: ARNumViewModel
 
     override fun onResume() {
         super.onResume()
+
+        binding.refreshList.setOnClickListener {
+
+            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+                val productList = productViewModel.fetchProducts()
+                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                    updateProductSpinner(productList)
+                }
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+                val productList = batchViewModel.fetchBatches()
+                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                    updateBatchSpinner(productList)
+                }
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+                val productList = arViewModel.fetchARs()
+                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                    updateARSpinner(productList)
+                }
+            }
+
+        }
+
+        productsListDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().productsDao()
+
+        batchListDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().batchDao()
+
+        arListDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().arNumDao()
+
+        val viewModelFactory = ProductViewModelFactory(productsListDao)
+        productViewModel =
+            ViewModelProvider(this, viewModelFactory)[ProductViewModel::class.java]
+
+        val viewModelFactoryBatch = BatchViewModelFactory(batchListDao)
+        batchViewModel =
+            ViewModelProvider(this, viewModelFactoryBatch)[BatchViewModel::class.java]
+
+        val viewModelFactoryAR = ARNumViewModelFactory(arListDao)
+        arViewModel =
+            ViewModelProvider(this, viewModelFactoryAR)[ARNumViewModel::class.java]
+
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = productViewModel.fetchProducts()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateProductSpinner(productList)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = batchViewModel.fetchBatches()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateBatchSpinner(productList)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = arViewModel.fetchARs()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateARSpinner(productList)
+            }
+        }
+
+
+//
+//        observeBatchList()
+//
+//        observeARList()
+//
+//        observeProductList()
 
         Source.activeFragment = 3
 
@@ -2845,11 +3148,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             requireContext().applicationContext, AppDatabase::class.java, "aican-database"
         ).build().userDao()
 
-        productsListDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().productsDao()
+
+
 
         allLogsDataDao = Room.databaseBuilder(
             requireContext().applicationContext, AppDatabase::class.java, "aican-database"
@@ -2859,11 +3159,9 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             requireContext().applicationContext, AppDatabase::class.java, "aican-database"
         ).build().userActionDao()
 
-        val viewModelFactory = ProductViewModelFactory(productsListDao)
-        productViewModel =
-            ViewModelProvider(this, viewModelFactory)[ProductViewModel::class.java]
 
-        observeProductList()
+
+
 
         webSocketConnection()
 
@@ -2895,11 +3193,14 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         if (handler1 != null && runnable1 != null) {
             handler1!!.removeCallbacks(runnable1)
         }
+
+
     }
 
     override fun onStart() {
         super.onStart()
         EventBus.getDefault().register(this)
+
 
     }
 

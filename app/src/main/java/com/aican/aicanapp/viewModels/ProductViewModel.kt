@@ -17,4 +17,8 @@ class ProductViewModel(private val productsListDao: ProductsListDao) : ViewModel
 
     }
 
+    suspend fun fetchProducts(): List<ProductEntity> {
+        return productsListDao.getAllProductsData()
+    }
+
 }

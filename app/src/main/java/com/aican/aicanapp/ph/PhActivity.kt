@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
+import com.aican.aicanapp.Authentication.AdminLoginActivity
 import com.aican.aicanapp.Dashboard
 import com.aican.aicanapp.ProbeScanner
 import com.aican.aicanapp.R
@@ -380,6 +381,16 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
             }
         }
 
+        binding.addListBtn.visibility = View.GONE
+
+        binding.addListBtn.setOnClickListener {
+
+            val intent = Intent(this@PhActivity, AdminLoginActivity::class.java)
+            intent.putExtra("checkBtn", "openAddList")
+            startActivity(intent)
+
+        }
+
 
     }
 
@@ -422,11 +433,14 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 tabItemPh.animate().x(0f).duration = 100
                 loadFragments(phFragment)
                 ph!!.setTextColor(Color.WHITE)
+                binding.addListBtn.visibility = View.GONE
+
                 calibrate.setTextColor(Color.parseColor("#FF24003A"))
                 log.setTextColor(Color.parseColor("#FF24003A"))
                 graph.setTextColor(Color.parseColor("#FF24003A"))
                 alarm.setTextColor(Color.parseColor("#FF24003A"))
             } else if (view.getId() == R.id.item2) {
+                binding.addListBtn.visibility = View.GONE
 
 //                loadFragments(phCalibFragment);
                 loadFragments(phCalibFragmentNew)
@@ -439,6 +453,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 tabItemPh.animate().x(size.toFloat()).duration = 100
             } else if (view.getId() == R.id.item3) {
                 loadFragments(phLogFragment)
+                binding.addListBtn.visibility = View.VISIBLE
+
                 log.setTextColor(Color.WHITE)
                 ph!!.setTextColor(Color.parseColor("#FF24003A"))
                 calibrate.setTextColor(Color.parseColor("#FF24003A"))
@@ -447,6 +463,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 val size = calibrate.width * 2
                 tabItemPh.animate().x(size.toFloat()).duration = 100
             } else if (view.getId() == R.id.item4) {
+                binding.addListBtn.visibility = View.GONE
+
                 loadFragments(phGraphFragment)
                 graph.setTextColor(Color.WHITE)
                 ph!!.setTextColor(Color.parseColor("#FF24003A"))
@@ -456,6 +474,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 val size = calibrate.width * 3
                 tabItemPh.animate().x(size.toFloat()).duration = 100
             } else if (view.getId() == R.id.item5) {
+                binding.addListBtn.visibility = View.GONE
+
                 loadFragments(phAlarmFragment)
                 alarm.setTextColor(Color.WHITE)
                 ph!!.setTextColor(Color.parseColor("#FF24003A"))
@@ -465,6 +485,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
                 val size = calibrate.width * 4
                 tabItemPh.animate().x(size.toFloat()).duration = 100
             } else if (view.getId() == R.id.cLProbes) {
+                binding.addListBtn.visibility = View.GONE
+
                 val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
                 val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
                 databaseHelper.insert_action_data(
