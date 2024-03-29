@@ -104,7 +104,7 @@ class PhCalibFragmentNew : Fragment(), UserDeleteListener {
 
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?,
     ): View? {
         binding = FragmentPhCalibNewBinding.inflate(inflater, container, false)
         return binding.root;
@@ -3036,7 +3036,10 @@ class PhCalibFragmentNew : Fragment(), UserDeleteListener {
 
     private fun phGraphOnClick() {
         phGraph.setOnClickListener { v: View? ->
-            if (PH1 != "" || PH2 != "" || PH3 != "" || PH4 != "" || PH5 != "" || MV1 != "" || MV2 != "" || MV3 != "" || MV4 != "" || MV5 != "") {
+            if (PH1.isNotEmpty() && PH2.isNotEmpty() && PH3.isNotEmpty() && PH4.isNotEmpty()
+                && PH5.isNotEmpty() && MV1.isNotEmpty() && MV2.isNotEmpty() && MV3.isNotEmpty()
+                && MV4.isNotEmpty() && MV5.isNotEmpty()
+            ) {
                 val i = Intent(fragmentContext, PHCalibGraph::class.java)
                 i.putExtra("PH1", PH1)
                 i.putExtra("PH2", PH2)
@@ -3051,10 +3054,15 @@ class PhCalibFragmentNew : Fragment(), UserDeleteListener {
                 startActivity(i)
             } else {
                 Toast.makeText(
-                    fragmentContext,
-                    "Not allow to move further because some values are null, and null values cannot plot the graph",
+                    requireContext(),
+                    "Calibration Data not available to plot graph, plz calibrate",
                     Toast.LENGTH_LONG
                 ).show()
+//                Toast.makeText(
+//                    fragmentContext,
+//                    "Not allow to move further because some values are null, and null values cannot plot the graph",
+//                    Toast.LENGTH_LONG
+//                ).show()
             }
         }
 
@@ -3294,7 +3302,7 @@ class PhCalibFragmentNew : Fragment(), UserDeleteListener {
 
             spin.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
-                    parent: AdapterView<*>?, view: View?, position: Int, id: Long
+                    parent: AdapterView<*>?, view: View?, position: Int, id: Long,
                 ) {
 
                     view ?: return

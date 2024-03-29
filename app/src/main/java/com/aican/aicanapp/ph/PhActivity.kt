@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
+import com.aican.aicanapp.AddProductBatchArList
 import com.aican.aicanapp.Authentication.AdminLoginActivity
 import com.aican.aicanapp.Dashboard
 import com.aican.aicanapp.ProbeScanner
@@ -385,8 +386,8 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
 
         binding.addListBtn.setOnClickListener {
 
-            val intent = Intent(this@PhActivity, AdminLoginActivity::class.java)
-            intent.putExtra("checkBtn", "openAddList")
+            val intent = Intent(this@PhActivity, AddProductBatchArList::class.java)
+//            intent.putExtra("checkBtn", "openAddList")
             startActivity(intent)
 
         }
