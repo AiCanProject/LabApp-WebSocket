@@ -17,5 +17,5 @@
     <dimen name="intensity_graph_height">300dp</dimen>
     <dimen name="font_size_small">10sp</dimen>
     <dimen name="font_size_medium">12sp</dimen>
-    <dimen name="ph_log_item_size">12dp</dimen>
+    <dimen name="ph_log_item_size">14dp</dimen>
 </resources>
