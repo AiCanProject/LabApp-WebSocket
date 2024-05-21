@@ -958,7 +958,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
         dialog.show()
     }
-}
+
 
 private fun printGraph() {
     val db = databaseHelper.writableDatabase
