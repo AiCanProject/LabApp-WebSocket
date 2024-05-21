@@ -34,7 +34,8 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
 
     @Override
     public void onBindViewHolder(@NonNull LogAdapter.ViewHolder holder, int position) {
-        if(logs_list != null && logs_list.size() > 0){
+        if (logs_list != null && logs_list.size() > 0) {
+            holder.sNo.setText((position + 1) + "");
             holder.ph.setText(logs_list.get(position).getpH());
             holder.temp.setText(logs_list.get(position).getmV());
             holder.dt.setText(logs_list.get(position).getDate());
@@ -51,10 +52,11 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView ph, temp, dt, time, batchnum, arnum, compound_name;
+        TextView sNo, ph, temp, dt, time, batchnum, arnum, compound_name;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            sNo = itemView.findViewById(R.id.sNo);
             ph = itemView.findViewById(R.id.phLog);
             temp = itemView.findViewById(R.id.tempLog);
             time = itemView.findViewById(R.id.time);

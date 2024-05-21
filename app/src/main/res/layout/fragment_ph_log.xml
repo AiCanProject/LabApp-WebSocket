@@ -519,7 +519,16 @@
                 android:background="@drawable/table_border">
 
                 <TableRow tools:ignore="UselessParent">
-
+                    <TextView
+                        style="@style/table_header"
+                        android:layout_width="10dp"
+                        android:layout_height="30dp"
+                        android:layout_column="0"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="S.No."
+                        android:textAlignment="center" />
                     <TextView
                         style="@style/table_header"
                         android:layout_width="10dp"
