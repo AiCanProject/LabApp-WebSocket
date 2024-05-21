@@ -24,6 +24,8 @@ import com.aican.aicanapp.roomDatabase.database.AppDatabase
 import com.aican.aicanapp.roomDatabase.entities.ARNumEntity
 import com.aican.aicanapp.roomDatabase.entities.BatchEntity
 import com.aican.aicanapp.roomDatabase.entities.ProductEntity
+import com.aican.aicanapp.roomDatabase.entities.UnknownEntity1
+import com.aican.aicanapp.roomDatabase.entities.UnknownEntity2
 import com.aican.aicanapp.utils.SharedPref
 import com.aican.aicanapp.viewModels.ARNumViewModel
 import com.aican.aicanapp.viewModels.ARNumViewModelFactory
@@ -33,6 +35,8 @@ import com.aican.aicanapp.viewModels.ProductViewModel
 import com.aican.aicanapp.viewModels.ProductViewModelFactory
 import com.aican.aicanapp.viewModels.UnknownListViewModel1
 import com.aican.aicanapp.viewModels.UnknownListViewModel2
+import com.aican.aicanapp.viewModels.UnknownListViewModelFactory1
+import com.aican.aicanapp.viewModels.UnknownListViewModelFactory2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
@@ -62,6 +66,18 @@ class AddProductBatchArList : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = ActivityAddProductBatchArListBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+
+
+        binding.knownHeading1.text = SharedPref.getSavedData(this@AddProductBatchArList, "known1")
+        binding.knownHeading2.text = SharedPref.getSavedData(this@AddProductBatchArList, "known2")
+        binding.knownHeading3.text = SharedPref.getSavedData(this@AddProductBatchArList, "known3")
+
+
+        binding.unknownHeading1.text = SharedPref.getSavedData(this@AddProductBatchArList, "unknownHeading1")
+
+        binding.unknownHeading2.text = SharedPref.getSavedData(this@AddProductBatchArList, "unknownHeading2")
+
 
 
         unknownListDao1 = Room.databaseBuilder(
@@ -94,11 +110,11 @@ class AddProductBatchArList : AppCompatActivity() {
             "aican-database"
         ).build().arNumDao()
 
-        val viewModelFactory1 = ProductViewModelFactory(productsListDao)
+        val viewModelFactory1 = UnknownListViewModelFactory1(unknownListDao1)
         unknownListViewModel1 =
             ViewModelProvider(this, viewModelFactory1)[UnknownListViewModel1::class.java]
 
-        val viewModelFactory2 = ProductViewModelFactory(productsListDao)
+        val viewModelFactory2 = UnknownListViewModelFactory2(unknownListDao2)
         unknownListViewModel2 =
             ViewModelProvider(this, viewModelFactory2)[UnknownListViewModel2::class.java]
 
@@ -121,6 +137,36 @@ class AddProductBatchArList : AppCompatActivity() {
         observeProductList()
         observeARList()
         observeBatchList()
+
+        binding.addUnknown1.setOnClickListener {
+            val product = binding.editTextUnknown1.text.toString()
+            if (product != "") {
+                val productEntity = UnknownEntity1(productName = product)
+                lifecycleScope.launch(Dispatchers.IO) {
+
+                    unknownListViewModel1.insertProduct(productEntity)
+                }
+                binding.editTextUnknown1.text!!.clear()
+            } else {
+                Toast.makeText(this@AddProductBatchArList, "Enter any text", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+
+        binding.addUnknown2.setOnClickListener {
+            val product = binding.editTextUnKnown2.text.toString()
+            if (product != "") {
+                val productEntity = UnknownEntity2(productName = product)
+                lifecycleScope.launch(Dispatchers.IO) {
+
+                    unknownListViewModel2.insertProduct(productEntity)
+                }
+                binding.editTextUnKnown2.text!!.clear()
+            } else {
+                Toast.makeText(this@AddProductBatchArList, "Enter any text", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
 
         binding.addProductBtn.setOnClickListener {
             val product = binding.editTextProduct.text.toString()

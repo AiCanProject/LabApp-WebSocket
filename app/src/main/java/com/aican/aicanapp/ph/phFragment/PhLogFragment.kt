@@ -81,6 +81,8 @@ import com.aican.aicanapp.viewModels.ProductViewModelFactory
 import com.aican.aicanapp.viewModels.SharedViewModel
 import com.aican.aicanapp.viewModels.UnknownListViewModel1
 import com.aican.aicanapp.viewModels.UnknownListViewModel2
+import com.aican.aicanapp.viewModels.UnknownListViewModelFactory1
+import com.aican.aicanapp.viewModels.UnknownListViewModelFactory2
 import com.aican.aicanapp.websocket.MessageEvent
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.github.mikephil.charting.charts.LineChart
@@ -1059,11 +1061,11 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             "aican-database"
         ).build().arNumDao()
 
-        val viewModelFactory1 = ProductViewModelFactory(productsListDao)
+        val viewModelFactory1 = UnknownListViewModelFactory1(unknownListDao1)
         unknownListViewModel1 =
             ViewModelProvider(this, viewModelFactory1)[UnknownListViewModel1::class.java]
 
-        val viewModelFactory2 = ProductViewModelFactory(productsListDao)
+        val viewModelFactory2 = UnknownListViewModelFactory2(unknownListDao2)
         unknownListViewModel2 =
             ViewModelProvider(this, viewModelFactory2)[UnknownListViewModel2::class.java]
 

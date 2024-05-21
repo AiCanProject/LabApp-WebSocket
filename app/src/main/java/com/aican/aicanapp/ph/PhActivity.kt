@@ -382,7 +382,7 @@ class PhActivity : AppCompatActivity(), View.OnClickListener {
             }
         }
 
-        binding.addListBtn.visibility = View.GONE
+        binding.addListBtn.visibility = View.VISIBLE
 
         binding.addListBtn.setOnClickListener {
 
