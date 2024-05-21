@@ -3,6 +3,7 @@ package com.aican.aicanapp.ph.phFragment
 import android.Manifest.permission.READ_EXTERNAL_STORAGE
 import android.Manifest.permission.WRITE_EXTERNAL_STORAGE
 import android.app.Activity
+import android.app.Dialog
 import android.content.Context
 import android.content.Context.MODE_PRIVATE
 import android.content.ContextWrapper
@@ -925,208 +926,239 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
         }
 
+        binding.unknownHeading1.text = SharedPref.getSavedData(requireContext(), "unknownHeading1")
+        binding.unknownHeading2.text = SharedPref.getSavedData(requireContext(), "unknownHeading2")
+
+        binding.unknownHeading1.setOnClickListener {
+            showEditDialog("unknownHeading1")
+        }
+
+        binding.unknownHeading2.setOnClickListener {
+            showEditDialog("unknownHeading2")
+        }
 
     }
 
-    private fun printGraph() {
-        val db = databaseHelper.writableDatabase
-        val curCSV: Cursor
-        curCSV = if (Constants.OFFLINE_MODE) {
-            db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
-        } else {
-            db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
-        }
-        PhLogGraph.phDataArrayList.clear()
-        while (curCSV.moveToNext()) {
-            val date = curCSV.getString(curCSV.getColumnIndex("date"))
-            val time = curCSV.getString(curCSV.getColumnIndex("time"))
-            val pH = curCSV.getString(curCSV.getColumnIndex("ph"))
+    private fun showEditDialog(key: String) {
+        val dialog = Dialog(requireContext())
+        dialog.setContentView(R.layout.dialog_heading_edit_text)
+        val editText = dialog.findViewById<EditText>(R.id.editText)
+        val buttonSave = dialog.findViewById<Button>(R.id.buttonSave)
 
-            if (PhFragment.validateNumber(pH)) {
-                PhLogGraph.phDataArrayList.add(pH.toFloat())
+        buttonSave.setOnClickListener {
+            val newText = editText.text.toString()
+            SharedPref.saveData(requireContext(), key, newText)
+            if (key == "unknownHeading1") {
+                binding.unknownHeading1.text = newText
+            } else if (key == "unknownHeading2") {
+                binding.unknownHeading2.text = newText
             }
+            dialog.dismiss()
         }
+
+        dialog.show()
+    }
+}
+
+private fun printGraph() {
+    val db = databaseHelper.writableDatabase
+    val curCSV: Cursor
+    curCSV = if (Constants.OFFLINE_MODE) {
+        db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+    } else {
+        db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+    }
+    PhLogGraph.phDataArrayList.clear()
+    while (curCSV.moveToNext()) {
+        val date = curCSV.getString(curCSV.getColumnIndex("date"))
+        val time = curCSV.getString(curCSV.getColumnIndex("time"))
+        val pH = curCSV.getString(curCSV.getColumnIndex("ph"))
+
+        if (PhFragment.validateNumber(pH)) {
+            PhLogGraph.phDataArrayList.add(pH.toFloat())
+        }
+    }
 
 //        val inet = Intent(requireContext(), PhLogGraph::class.java)
 //        startActivity(inet)
 
 
-        val seriesData = ArrayList<DataPoint>()
-        seriesData.add(DataPoint(0.0, 0.0))
-        var i = 1
-        for (data in PhLogGraph.phDataArrayList) {
-            seriesData.add(DataPoint(i.toDouble(), data.toDouble()))
-            i++
-        }
+    val seriesData = ArrayList<DataPoint>()
+    seriesData.add(DataPoint(0.0, 0.0))
+    var i = 1
+    for (data in PhLogGraph.phDataArrayList) {
+        seriesData.add(DataPoint(i.toDouble(), data.toDouble()))
+        i++
+    }
 
 
-        val series = LineGraphSeries<DataPoint>(
-            seriesData.toTypedArray()
-        )
-        graphView.addSeries(series)
-        series.isDrawDataPoints = true
-        series.setAnimated(true)
+    val series = LineGraphSeries<DataPoint>(
+        seriesData.toTypedArray()
+    )
+    graphView.addSeries(series)
+    series.isDrawDataPoints = true
+    series.setAnimated(true)
 
-        setupLineChart()
+    setupLineChart()
 
-        generateGraphPDF(graphView)
+    generateGraphPDF(graphView)
+
+}
+
+private fun setupLineChart() {
+    val lineChart = binding.intensityChart
+
+    // Create dummy data
+    val entries = ArrayList<Entry>()
+
+    var i = 1
+    for (data in PhLogGraph.phDataArrayList) {
+        entries.add(Entry(i.toFloat(), data.toFloat()))
+        i++
+    }
+
+
+    val dataSet = LineDataSet(entries, "Label") // Add entries to dataset
+    dataSet.color = Color.BLUE
+    dataSet.valueTextColor = Color.RED
+
+    val lineData = LineData(dataSet)
+    lineChart.data = lineData
+
+    // Customize chart
+    lineChart.description.isEnabled = false
+    lineChart.setDrawGridBackground(false)
+    lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
+    lineChart.axisRight.isEnabled = false
+
+    // Refresh chart
+    lineChart.invalidate()
+}
+
+private fun getLineChartBitmap(lineChart: LineChart): Bitmap {
+    // Create a Bitmap object with the dimensions of the LineChart
+    val bitmap = Bitmap.createBitmap(lineChart.width, lineChart.height, Bitmap.Config.ARGB_8888)
+
+    // Create a Canvas using the Bitmap
+    val canvas = Canvas(bitmap)
+
+    // Draw the LineChart onto the Canvas
+    lineChart.draw(canvas)
+
+    return bitmap
+}
+
+private fun generateGraphPDF(graphView: GraphView) {
+    // Create a new PDF document
+    var company_name = ""
+
+    val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
+    if (companyname != null) {
+        company_name = "Company: $companyname"
+
+    } else {
+        company_name = "Company: N/A"
 
     }
 
-    private fun setupLineChart() {
-        val lineChart = binding.intensityChart
-
-        // Create dummy data
-        val entries = ArrayList<Entry>()
-
-        var i = 1
-        for (data in PhLogGraph.phDataArrayList) {
-            entries.add(Entry(i.toFloat(), data.toFloat()))
-            i++
+    val user_name = "Username: " + Source.userName
+    val device_id = "DeviceID: " + PhActivity.DEVICE_ID
+    reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    reportTime = "Time: " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+    val shp = requireContext().getSharedPreferences("Extras", MODE_PRIVATE)
+    offset = "Offset: " + shp.getString("offset", "")
+    if (Constants.OFFLINE_DATA) {
+        offset = if (SharedPref.getSavedData(
+                requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
+            ) != null && SharedPref.getSavedData(
+                requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
+            ) !== ""
+        ) {
+            val data =
+                SharedPref.getSavedData(requireContext(), "OFFSET_" + PhActivity.DEVICE_ID)
+            "Offset: $data"
+        } else {
+            "Offset: " + "0"
         }
-
-
-        val dataSet = LineDataSet(entries, "Label") // Add entries to dataset
-        dataSet.color = Color.BLUE
-        dataSet.valueTextColor = Color.RED
-
-        val lineData = LineData(dataSet)
-        lineChart.data = lineData
-
-        // Customize chart
-        lineChart.description.isEnabled = false
-        lineChart.setDrawGridBackground(false)
-        lineChart.xAxis.position = XAxis.XAxisPosition.BOTTOM
-        lineChart.axisRight.isEnabled = false
-
-        // Refresh chart
-        lineChart.invalidate()
+    } else {
     }
+    tempe = "Temperature: " + shp.getString("temp", "")
+    battery = "Battery: " + shp.getString("battery", "")
+    if (Constants.OFFLINE_DATA) {
+        slope = if (SharedPref.getSavedData(
+                requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
+            ) != null && SharedPref.getSavedData(
+                requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
+            ) !== ""
+        ) {
+            val data =
+                SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
+            "Slope: $data"
+        } else {
+            "Slope: " + "0"
+        }
+        val tempData =
+            SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
+        tempe = if (SharedPref.getSavedData(
+                requireContext(), "tempValue" + PhActivity.DEVICE_ID
+            ) != null && SharedPref.getSavedData(
+                requireContext(), "tempValue" + PhActivity.DEVICE_ID
+            ) !== ""
+        ) {
 
-    private fun getLineChartBitmap(lineChart: LineChart): Bitmap {
-        // Create a Bitmap object with the dimensions of the LineChart
-        val bitmap = Bitmap.createBitmap(lineChart.width, lineChart.height, Bitmap.Config.ARGB_8888)
+            "Temperature: $tempData"
+        } else {
+            "Temperature: " + "0"
+        }
 
-        // Create a Canvas using the Bitmap
-        val canvas = Canvas(bitmap)
+        val batteryVal =
+            SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
+        if (batteryVal != null) {
+            if (batteryVal != "") {
+                battery = "Battery: $batteryVal %"
+            } else {
+                battery = "Battery: 0 %"
 
-        // Draw the LineChart onto the Canvas
-        lineChart.draw(canvas)
+            }
+        }
 
-        return bitmap
+    } else {
+        slope = "Slope: " + shp.getString("slope", "")
     }
-
-    private fun generateGraphPDF(graphView: GraphView) {
-        // Create a new PDF document
-        var company_name = ""
-
-        val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
-        if (companyname != null) {
-            company_name = "Company: $companyname"
-
-        } else {
-            company_name = "Company: N/A"
-
-        }
-
-        val user_name = "Username: " + Source.userName
-        val device_id = "DeviceID: " + PhActivity.DEVICE_ID
-        reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        reportTime = "Time: " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        val shp = requireContext().getSharedPreferences("Extras", MODE_PRIVATE)
-        offset = "Offset: " + shp.getString("offset", "")
-        if (Constants.OFFLINE_DATA) {
-            offset = if (SharedPref.getSavedData(
-                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
-                ) !== ""
-            ) {
-                val data =
-                    SharedPref.getSavedData(requireContext(), "OFFSET_" + PhActivity.DEVICE_ID)
-                "Offset: $data"
-            } else {
-                "Offset: " + "0"
-            }
-        } else {
-        }
-        tempe = "Temperature: " + shp.getString("temp", "")
-        battery = "Battery: " + shp.getString("battery", "")
-        if (Constants.OFFLINE_DATA) {
-            slope = if (SharedPref.getSavedData(
-                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
-                ) !== ""
-            ) {
-                val data =
-                    SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
-                "Slope: $data"
-            } else {
-                "Slope: " + "0"
-            }
-            val tempData =
-                SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
-            tempe = if (SharedPref.getSavedData(
-                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
-                ) !== ""
-            ) {
-
-                "Temperature: $tempData"
-            } else {
-                "Temperature: " + "0"
-            }
-
-            val batteryVal =
-                SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
-            if (batteryVal != null) {
-                if (batteryVal != "") {
-                    battery = "Battery: $batteryVal %"
-                } else {
-                    battery = "Battery: 0 %"
-
-                }
-            }
-
-        } else {
-            slope = "Slope: " + shp.getString("slope", "")
-        }
 
 //        File exportDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog");
 //        if (!exportDir.exists()) {
 //            exportDir.mkdirs();
 //        }
-        val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
-        val currentDateandTime = sdf.format(Date())
-        //        String tempPath = requireContext().getExternalFilesDir(null).getAbsolutePath() + "/LabApp/Currentlog";
-        val tempPath =
-            ContextWrapper(requireContext()).externalMediaDirs[0].toString() + "/LabApp/Currentlog"
-        val tempRoot = File(tempPath)
-        fileNotWrite(tempRoot)
-        val tempFilesAndFolders = tempRoot.listFiles()
+    val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
+    val currentDateandTime = sdf.format(Date())
+    //        String tempPath = requireContext().getExternalFilesDir(null).getAbsolutePath() + "/LabApp/Currentlog";
+    val tempPath =
+        ContextWrapper(requireContext()).externalMediaDirs[0].toString() + "/LabApp/Currentlog"
+    val tempRoot = File(tempPath)
+    fileNotWrite(tempRoot)
+    val tempFilesAndFolders = tempRoot.listFiles()
 
 //        Toast.makeText(requireContext(), "" + tempFilesAndFolders.length, Toast.LENGTH_SHORT).show();
 
 //        File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator
 //                + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders != null ? tempFilesAndFolders.length : 0) - 1)
 //                + ".pdf");
-        val filePath = ("" //                requireContext().getExternalFilesDir(null)
-                + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
-            ?: 0) - 1) + ".pdf")
+    val filePath = ("" //                requireContext().getExternalFilesDir(null)
+            + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
+        ?: 0) - 1) + ".pdf")
 
 
 //        File file = new File(requireContext().getExternalFilesDir(null).getAbsolutePath(), filePath);
-        val file = File(ContextWrapper(requireContext()).externalMediaDirs[0], filePath)
-        Log.e("FileNameError", file.path)
-        Log.e("FileNameError", file.absolutePath)
-        val outputStream: OutputStream = FileOutputStream(file)
-        val writer = PdfWriter(file)
-        val pdfDocument = PdfDocument(writer)
-        val document = Document(pdfDocument)
-        try {
-            val imgBit = getCompanyLogo()
+    val file = File(ContextWrapper(requireContext()).externalMediaDirs[0], filePath)
+    Log.e("FileNameError", file.path)
+    Log.e("FileNameError", file.absolutePath)
+    val outputStream: OutputStream = FileOutputStream(file)
+    val writer = PdfWriter(file)
+    val pdfDocument = PdfDocument(writer)
+    val document = Document(pdfDocument)
+    try {
+        val imgBit = getCompanyLogo()
 //            if (imgBit != null) {
 //                val uri: Uri? = getImageUri(requireContext(), imgBit)
 //                try {
@@ -1140,62 +1172,62 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //                    e.printStackTrace()
 //                }
 //            }
-            //
+        //
 
-            if (imgBit != null) {
+        if (imgBit != null) {
 
-                val byteArrayOutputStream = ByteArrayOutputStream()
-                imgBit.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-                val byteArray = byteArrayOutputStream.toByteArray()
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            imgBit.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
 
 // Create ImageData from byte array
-                val imageData = ImageDataFactory.create(byteArray)
+            val imageData = ImageDataFactory.create(byteArray)
 
 // Create an Image element
-                val image = Image(imageData).setHeight(80f).setWidth(80f)
-                document.add(image)
+            val image = Image(imageData).setHeight(80f).setWidth(80f)
+            document.add(image)
 
-            } else {
+        } else {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
-            }
-            ///
-            if (Constants.OFFLINE_MODE) {
+        }
+        ///
+        if (Constants.OFFLINE_MODE) {
 //                document.add(new Paragraph("Offline Mode"));
-            }
-            if (Source.cfr_mode) {
+        }
+        if (Source.cfr_mode) {
 
-                document.add(
-                    Paragraph(
-                        """
+            document.add(
+                Paragraph(
+                    """
                 $company_name
                 $user_name
                 $device_id
                 """.trimIndent()
-                    )
                 )
-            } else {
-                document.add(
-                    Paragraph(
-                        """
+            )
+        } else {
+            document.add(
+                Paragraph(
+                    """
                 $company_name
                 $device_id
                 """.trimIndent()
-                    )
-                )
-            }
-            document.add(Paragraph(""))
-
-            document.add(
-                Paragraph(
-                    """$reportDate  |  $reportTime
-                                 $offset  |  $battery
-                                 $slope  |  $tempe"""
                 )
             )
+        }
+        document.add(Paragraph(""))
+
+        document.add(
+            Paragraph(
+                """$reportDate  |  $reportTime
+                                 $offset  |  $battery
+                                 $slope  |  $tempe"""
+            )
+        )
 
 
-            document.add(Paragraph(""))
-            document.add(Paragraph("Ph Log Graph"))
+        document.add(Paragraph(""))
+        document.add(Paragraph("Ph Log Graph"))
 
 
 //            val bitmap =
@@ -1214,316 +1246,304 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
 
 //            val chartBitmap1 = getGraphViewBitmap(graphView)
-            val chartBitmap1 = binding.intensityChart.chartBitmap
+        val chartBitmap1 = binding.intensityChart.chartBitmap
 
 
-            val stream1 = ByteArrayOutputStream()
-            chartBitmap1.compress(Bitmap.CompressFormat.JPEG, 100, stream1)
-            val byteArray1 = stream1.toByteArray()
-            val imageData1 = ImageDataFactory.create(byteArray1)
-            val image1 = Image(imageData1)
-            image1.scaleToFit(595f, 500f)
-            document.add(image1)
-            document.add(Paragraph("\n"))
+        val stream1 = ByteArrayOutputStream()
+        chartBitmap1.compress(Bitmap.CompressFormat.JPEG, 100, stream1)
+        val byteArray1 = stream1.toByteArray()
+        val imageData1 = ImageDataFactory.create(byteArray1)
+        val image1 = Image(imageData1)
+        image1.scaleToFit(595f, 500f)
+        document.add(image1)
+        document.add(Paragraph("\n"))
 
 
-            val db = databaseHelper.writableDatabase
-            var calibCSV: Cursor? = null
+        val db = databaseHelper.writableDatabase
+        var calibCSV: Cursor? = null
 
 
 
-            document.add(Paragraph(""))
-            document.add(Paragraph("Log Table"))
-            val columnWidth1 = floatArrayOf(240f, 120f, 150f, 150f, 270f, 270f, 270f)
-            val table1 = Table(columnWidth1)
-            table1.addCell("Date")
-            table1.addCell("Time")
-            table1.addCell("pH")
-            table1.addCell("Temp")
-            table1.addCell("Batch No")
-            table1.addCell("AR No")
-            table1.addCell("Product")
+        document.add(Paragraph(""))
+        document.add(Paragraph("Log Table"))
+        val columnWidth1 = floatArrayOf(240f, 120f, 150f, 150f, 270f, 270f, 270f)
+        val table1 = Table(columnWidth1)
+        table1.addCell("Date")
+        table1.addCell("Time")
+        table1.addCell("pH")
+        table1.addCell("Temp")
+        table1.addCell("Batch No")
+        table1.addCell("AR No")
+        table1.addCell("Product")
 
 
-            val curCSV: Cursor
-            curCSV = if (Constants.OFFLINE_MODE) {
-                db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+        val curCSV: Cursor
+        curCSV = if (Constants.OFFLINE_MODE) {
+            db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+        } else {
+            db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+        }
+        while (curCSV.moveToNext()) {
+            val date = curCSV.getString(curCSV.getColumnIndex("date"))
+            val time = curCSV.getString(curCSV.getColumnIndex("time"))
+            val pH = curCSV.getString(curCSV.getColumnIndex("ph"))
+            val temp = curCSV.getString(curCSV.getColumnIndex("temperature"))
+            val batchnum = curCSV.getString(curCSV.getColumnIndex("batchnum"))
+            val arnum = curCSV.getString(curCSV.getColumnIndex("arnum"))
+            val comp = curCSV.getString(curCSV.getColumnIndex("compound"))
+            var newBatchNum: String? = "--"
+            if (batchnum != null && batchnum.length >= 8) {
+                newBatchNum = stringSplitter(batchnum)
             } else {
-                db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+                newBatchNum = batchnum
             }
-            while (curCSV.moveToNext()) {
-                val date = curCSV.getString(curCSV.getColumnIndex("date"))
-                val time = curCSV.getString(curCSV.getColumnIndex("time"))
-                val pH = curCSV.getString(curCSV.getColumnIndex("ph"))
-                val temp = curCSV.getString(curCSV.getColumnIndex("temperature"))
-                val batchnum = curCSV.getString(curCSV.getColumnIndex("batchnum"))
-                val arnum = curCSV.getString(curCSV.getColumnIndex("arnum"))
-                val comp = curCSV.getString(curCSV.getColumnIndex("compound"))
-                var newBatchNum: String? = "--"
-                if (batchnum != null && batchnum.length >= 8) {
-                    newBatchNum = stringSplitter(batchnum)
-                } else {
-                    newBatchNum = batchnum
-                }
-                var newArum: String? = "--"
-                if (arnum != null && arnum.length >= 8) {
-                    newArum = stringSplitter(arnum)
-                } else {
-                    newArum = arnum
-                }
-                var newComp: String? = "--"
-                if (comp != null && comp.length >= 8) {
-                    newComp = stringSplitter(comp)
-                } else {
-                    newComp = comp
-                }
-                table1.addCell(date ?: "--")
-                table1.addCell(time ?: "--")
-                table1.addCell(pH ?: "--")
-                table1.addCell(temp ?: "--")
-                table1.addCell(newBatchNum ?: "--")
-                table1.addCell(newArum ?: "--")
-                table1.addCell(newComp ?: "--")
-            }
-            document.add(table1)
-
-            val leftDesignationString =
-                SharedPref.getSavedData(requireContext(), SharedKeys.LEFT_DESIGNATION_KEY)
-            val rightDesignationString =
-                SharedPref.getSavedData(requireContext(), SharedKeys.RIGHT_DESIGNATION_KEY)
-
-            if (leftDesignationString != null && leftDesignationString != "") {
-
+            var newArum: String? = "--"
+            if (arnum != null && arnum.length >= 8) {
+                newArum = stringSplitter(arnum)
             } else {
-                SharedPref.saveData(
-                    requireContext(),
-                    SharedKeys.LEFT_DESIGNATION_KEY,
-                    "Operator Sign"
-                )
+                newArum = arnum
             }
-
-            if (rightDesignationString != null && rightDesignationString != "") {
+            var newComp: String? = "--"
+            if (comp != null && comp.length >= 8) {
+                newComp = stringSplitter(comp)
             } else {
-                SharedPref.saveData(
-                    requireContext(),
-                    SharedKeys.RIGHT_DESIGNATION_KEY,
-                    "Supervisor Sign"
-                )
+                newComp = comp
             }
+            table1.addCell(date ?: "--")
+            table1.addCell(time ?: "--")
+            table1.addCell(pH ?: "--")
+            table1.addCell(temp ?: "--")
+            table1.addCell(newBatchNum ?: "--")
+            table1.addCell(newArum ?: "--")
+            table1.addCell(newComp ?: "--")
+        }
+        document.add(table1)
 
-            if (leftDesignationString != null && leftDesignationString != "" &&
-                rightDesignationString != null && rightDesignationString != ""
-            ) {
-                document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
+        val leftDesignationString =
+            SharedPref.getSavedData(requireContext(), SharedKeys.LEFT_DESIGNATION_KEY)
+        val rightDesignationString =
+            SharedPref.getSavedData(requireContext(), SharedKeys.RIGHT_DESIGNATION_KEY)
 
-            } else {
-                document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+        if (leftDesignationString != null && leftDesignationString != "") {
 
-            }
+        } else {
+            SharedPref.saveData(
+                requireContext(),
+                SharedKeys.LEFT_DESIGNATION_KEY,
+                "Operator Sign"
+            )
+        }
 
-            val imgBit1: Bitmap? = getSignImage()
+        if (rightDesignationString != null && rightDesignationString != "") {
+        } else {
+            SharedPref.saveData(
+                requireContext(),
+                SharedKeys.RIGHT_DESIGNATION_KEY,
+                "Supervisor Sign"
+            )
+        }
 
-            if (imgBit1 != null) {
+        if (leftDesignationString != null && leftDesignationString != "" &&
+            rightDesignationString != null && rightDesignationString != ""
+        ) {
+            document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
 
-                val byteArrayOutputStream = ByteArrayOutputStream()
-                imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-                val byteArray = byteArrayOutputStream.toByteArray()
+        } else {
+            document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+
+        }
+
+        val imgBit1: Bitmap? = getSignImage()
+
+        if (imgBit1 != null) {
+
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
 
 // Create ImageData from byte array
-                val imageData = ImageDataFactory.create(byteArray)
+            val imageData = ImageDataFactory.create(byteArray)
 
 // Create an Image element
-                val image = Image(imageData).setHeight(80f).setWidth(80f)
-                document.add(image)
+            val image = Image(imageData).setHeight(80f).setWidth(80f)
+            document.add(image)
 
-            } else {
+        } else {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
+        }
+    } catch (e: Exception) {
 //            Toast.makeText(
 //                requireContext(), "Error : " + e.message, Toast.LENGTH_SHORT
 //            ).show()
+    }
+    document.close()
+
+}
+
+private fun getGraphViewBitmap(graphView: GraphView): Bitmap {
+    // Create a Bitmap object with the dimensions of the GraphView
+    val bitmap = Bitmap.createBitmap(graphView.width, graphView.height, Bitmap.Config.ARGB_8888)
+
+    // Create a Canvas using the Bitmap
+    val canvas = Canvas(bitmap)
+
+    // Draw the GraphView onto the Canvas
+    graphView.draw(canvas)
+
+    return bitmap
+}
+
+
+private fun showPdfFiles() {
+    val pathPDF =
+        ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog/"
+    val rootPDF = File(pathPDF)
+    fileNotWrite(rootPDF)
+    val filesAndFoldersPDF = rootPDF.listFiles() ?: return
+
+    // Sort the files based on last modified timestamp in descending order
+    val sortedFiles = filesAndFoldersPDF.sortedByDescending { it.lastModified() }
+
+    // Find the first PDF file
+    val pdfFile =
+        sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
+
+    // Set up RecyclerView with adapter
+    plAdapter = PDF_CSV_Adapter(requireContext(), sortedFiles.toTypedArray(), "PhLog", this)
+    binding.recyclerViewCSVLog.adapter = plAdapter
+    plAdapter.notifyDataSetChanged()
+    binding.recyclerViewCSVLog.layoutManager = LinearLayoutManager(requireContext())
+}
+
+private fun showPdfFiles1() {
+    val pathPDF =
+        ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog/"
+    val rootPDF = File(pathPDF)
+    fileNotWrite(rootPDF)
+    val filesAndFoldersPDF = rootPDF.listFiles() ?: return
+
+    val filesAndFoldersNewPDF = arrayOfNulls<File>(1)
+    for (i in filesAndFoldersPDF.indices) {
+        if (filesAndFoldersPDF[i].name.endsWith(".pdf")) {
+            filesAndFoldersNewPDF[0] = filesAndFoldersPDF[i]
+            break
         }
-        document.close()
-
     }
 
-    private fun getGraphViewBitmap(graphView: GraphView): Bitmap {
-        // Create a Bitmap object with the dimensions of the GraphView
-        val bitmap = Bitmap.createBitmap(graphView.width, graphView.height, Bitmap.Config.ARGB_8888)
+    plAdapter = PDF_CSV_Adapter(
+        requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF), "PhLog", this
+    )
+    binding.recyclerViewCSVLog.adapter = plAdapter
+    plAdapter.notifyDataSetChanged()
+    binding.recyclerViewCSVLog.layoutManager =
+        LinearLayoutManager(requireContext().applicationContext)
+}
 
-        // Create a Canvas using the Bitmap
-        val canvas = Canvas(bitmap)
+private fun setPreviousData() {
+    val phVal = SharedPref.getSavedData(requireContext(), "phValue" + PhActivity.DEVICE_ID)
 
-        // Draw the GraphView onto the Canvas
-        graphView.draw(canvas)
-
-        return bitmap
-    }
-
-
-    private fun showPdfFiles() {
-        val pathPDF =
-            ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog/"
-        val rootPDF = File(pathPDF)
-        fileNotWrite(rootPDF)
-        val filesAndFoldersPDF = rootPDF.listFiles() ?: return
-
-        // Sort the files based on last modified timestamp in descending order
-        val sortedFiles = filesAndFoldersPDF.sortedByDescending { it.lastModified() }
-
-        // Find the first PDF file
-        val pdfFile =
-            sortedFiles.firstOrNull { it.name.endsWith(".pdf") || it.name.endsWith(".csv") }
-
-        // Set up RecyclerView with adapter
-        plAdapter = PDF_CSV_Adapter(requireContext(), sortedFiles.toTypedArray(), "PhLog", this)
-        binding.recyclerViewCSVLog.adapter = plAdapter
-        plAdapter.notifyDataSetChanged()
-        binding.recyclerViewCSVLog.layoutManager = LinearLayoutManager(requireContext())
-    }
-
-    private fun showPdfFiles1() {
-        val pathPDF =
-            ContextWrapper(requireContext()).externalMediaDirs[0].toString() + File.separator + "/LabApp/Currentlog/"
-        val rootPDF = File(pathPDF)
-        fileNotWrite(rootPDF)
-        val filesAndFoldersPDF = rootPDF.listFiles() ?: return
-
-        val filesAndFoldersNewPDF = arrayOfNulls<File>(1)
-        for (i in filesAndFoldersPDF.indices) {
-            if (filesAndFoldersPDF[i].name.endsWith(".pdf")) {
-                filesAndFoldersNewPDF[0] = filesAndFoldersPDF[i]
-                break
-            }
+    if (phVal != null) {
+        var floatVal = 0.0f
+        if (PhFragment.validateNumber(phVal)) {
+            floatVal = phVal.toFloat()
+            binding.tvPhCurr.text = floatVal.toString()
+            binding.phView.moveTo(floatVal)
+            ph = floatVal.toString()
+            AlarmConstants.PH = floatVal
         }
-
-        plAdapter = PDF_CSV_Adapter(
-            requireContext().applicationContext, reverseFileArray(filesAndFoldersPDF), "PhLog", this
-        )
-        binding.recyclerViewCSVLog.adapter = plAdapter
-        plAdapter.notifyDataSetChanged()
-        binding.recyclerViewCSVLog.layoutManager =
-            LinearLayoutManager(requireContext().applicationContext)
     }
 
-    private fun setPreviousData() {
-        val phVal = SharedPref.getSavedData(requireContext(), "phValue" + PhActivity.DEVICE_ID)
-
-        if (phVal != null) {
-            var floatVal = 0.0f
-            if (PhFragment.validateNumber(phVal)) {
-                floatVal = phVal.toFloat()
-                binding.tvPhCurr.text = floatVal.toString()
-                binding.phView.moveTo(floatVal)
-                ph = floatVal.toString()
-                AlarmConstants.PH = floatVal
-            }
-        }
-
-        val tempVal = SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
-        if (tempVal != null) {
-            temp = tempVal
+    val tempVal = SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
+    if (tempVal != null) {
+        temp = tempVal
 //            binding.tvTempCurr.text = "$tempVal °C"
-        }
+    }
 
 
-        val slopeVal = SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
+    val slopeVal = SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
 
-        if (slopeVal != null) {
-            slope = slopeVal
+    if (slopeVal != null) {
+        slope = slopeVal
 //            binding.finalSlope.text2t = "$slopeVal %"
 
-        }
-
-        val ecValue = SharedPref.getSavedData(requireContext(), "ecValue" + PhActivity.DEVICE_ID)
-        if (ecValue != null) {
-//            binding.tvEcCurr.text = ecValue
-        }
-
-
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    fun onMessageEvent(event: MessageEvent) {
-        // Update UI with event.message
-        val message = event.message.toString()
-        try {
-            updateMessage(message)
+    val ecValue = SharedPref.getSavedData(requireContext(), "ecValue" + PhActivity.DEVICE_ID)
+    if (ecValue != null) {
+//            binding.tvEcCurr.text = ecValue
+    }
 
-            jsonData = JSONObject(message)
 
-            if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
-                    "DEVICE_ID"
-                ) == PhActivity.DEVICE_ID
-            ) {
-                if (switchBtnClick.isChecked) {
+}
 
-                    log_counter++
-                    binding.logCounter.text = log_counter.toString()
+@Subscribe(threadMode = ThreadMode.MAIN)
+fun onMessageEvent(event: MessageEvent) {
+    // Update UI with event.message
+    val message = event.message.toString()
+    try {
+        updateMessage(message)
 
-                }
+        jsonData = JSONObject(message)
+
+        if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
+                "DEVICE_ID"
+            ) == PhActivity.DEVICE_ID
+        ) {
+            if (switchBtnClick.isChecked) {
+
+                log_counter++
+                binding.logCounter.text = log_counter.toString()
+
             }
+        }
 
-            requireActivity().runOnUiThread {
+        requireActivity().runOnUiThread {
 
 
-                Log.d("JSONReceived:PHLogFragment", "onMessage: " + message)
+            Log.d("JSONReceived:PHLogFragment", "onMessage: " + message)
 //                    Log.d("JSONReceived:PHLogFragment", "Vishal: " + message)
 
-                if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                    val battery: String = jsonData.getString("BATTERY")
+            if (jsonData.has("BATTERY") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                val battery: String = jsonData.getString("BATTERY")
 //                        binding.batteryPercent.setText("$battery %")
-                    SharedPref.saveData(
-                        requireContext(),
-                        "battery" + PhActivity.DEVICE_ID,
-                        battery
+                SharedPref.saveData(
+                    requireContext(),
+                    "battery" + PhActivity.DEVICE_ID,
+                    battery
+                )
+
+            }
+
+            if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                var phk = 0.0f
+                if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
+                        jsonData.getString("PH_VAL")
                     )
+                ) {
+                    phk = jsonData.getString("PH_VAL").toFloat()
+                }
+                tvPhCurr.text = phk.toString()
+                phView.moveTo(phk)
+                SharedPref.saveData(
+                    requireContext(), "phValue" + PhActivity.DEVICE_ID, phk.toString()
+                )
+                ph = phk.toString()
+                AlarmConstants.PH = phk
+            }
+            if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                var tempval = 0.0f
+                if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
+                        jsonData.getString("TEMP_VAL")
+                    )
+                ) {
+                    tempval = jsonData.getString("TEMP_VAL").toFloat()
 
                 }
+                val temp1 = Math.round(tempval).toString()
 
-                if (jsonData.has("PH_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                    var phk = 0.0f
-                    if (jsonData.getString("PH_VAL") != "nan" && PhFragment.validateNumber(
-                            jsonData.getString("PH_VAL")
-                        )
-                    ) {
-                        phk = jsonData.getString("PH_VAL").toFloat()
-                    }
-                    tvPhCurr.text = phk.toString()
-                    phView.moveTo(phk)
-                    SharedPref.saveData(
-                        requireContext(), "phValue" + PhActivity.DEVICE_ID, phk.toString()
-                    )
-                    ph = phk.toString()
-                    AlarmConstants.PH = phk
-                }
-                if (jsonData.has("TEMP_VAL") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                    var tempval = 0.0f
-                    if (jsonData.getString("TEMP_VAL") != "nan" && PhFragment.validateNumber(
-                            jsonData.getString("TEMP_VAL")
-                        )
-                    ) {
-                        tempval = jsonData.getString("TEMP_VAL").toFloat()
+                if (tempToggleSharedPref != null) {
+                    if (tempToggleSharedPref == "true") {
 
-                    }
-                    val temp1 = Math.round(tempval).toString()
-
-                    if (tempToggleSharedPref != null) {
-                        if (tempToggleSharedPref == "true") {
-
-                            temp = if (temp1.toInt() <= -127) {
-
-                                "NA"
-                            } else {
-                                temp1
-                            }
-
-                            SharedPref.saveData(
-                                requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
-                            )
-                        }
-                    } else {
                         temp = if (temp1.toInt() <= -127) {
 
                             "NA"
@@ -1535,12 +1555,24 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                             requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
                         )
                     }
+                } else {
+                    temp = if (temp1.toInt() <= -127) {
+
+                        "NA"
+                    } else {
+                        temp1
+                    }
+
+                    SharedPref.saveData(
+                        requireContext(), "tempValue" + PhActivity.DEVICE_ID, temp
+                    )
                 }
-                if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
-                        "DEVICE_ID"
-                    ) == PhActivity.DEVICE_ID
-                ) {
-                    if (switchBtnClick.isChecked) {
+            }
+            if (jsonData.has("LOG") && jsonData.getString("LOG") == "1" && jsonData.getString(
+                    "DEVICE_ID"
+                ) == PhActivity.DEVICE_ID
+            ) {
+                if (switchBtnClick.isChecked) {
 
 
 //                            log_counter
@@ -1549,67 +1581,67 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //                            binding.logCounter.text = log_counter.toString()
 //                            Log.e("LogCounterText", log_counter.toString())
 
+                    date = SimpleDateFormat(
+                        "yyyy-MM-dd", Locale.getDefault()
+                    ).format(Date())
+                    time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+                    //                        fetch_logs();
+                    if (ph == null || temp == null || mv == null) {
+//                                Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
+                    }
+                    ph = binding.tvPhCurr.text.toString()
+
+
+                    takeLog()
+                }
+                //                        deviceRef.child("Data").child("LOG").setValue(0);
+            }
+            if (jsonData.has("HOLD") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
+                if (switchHold.isChecked) {
+                    if (jsonData.getString("HOLD") == "0") {
+                        holdFlag = 0
+                    }
+                }
+                if (switchHold.isChecked) {
+                    if (jsonData.getString("HOLD") == "1") {
+                        holdFlag++
                         date = SimpleDateFormat(
                             "yyyy-MM-dd", Locale.getDefault()
                         ).format(Date())
-                        time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                        //                        fetch_logs();
-                        if (ph == null || temp == null || mv == null) {
-//                                Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
-                        }
+                        time = SimpleDateFormat(
+                            "HH:mm", Locale.getDefault()
+                        ).format(Date())
+                        //                            fetch_logs();
+//                                Toast.makeText(getContext(), "HOLD " + jsonData.getString("HOLD"), Toast.LENGTH_SHORT).show();
+                        jsonData = JSONObject()
+                        jsonData.put("HOLD", 0.toString())
+                        jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
+                        WebSocketManager.sendMessage(jsonData.toString())
                         ph = binding.tvPhCurr.text.toString()
 
-
-                        takeLog()
-                    }
-                    //                        deviceRef.child("Data").child("LOG").setValue(0);
-                }
-                if (jsonData.has("HOLD") && jsonData.getString("DEVICE_ID") == PhActivity.DEVICE_ID) {
-                    if (switchHold.isChecked) {
-                        if (jsonData.getString("HOLD") == "0") {
-                            holdFlag = 0
-                        }
-                    }
-                    if (switchHold.isChecked) {
-                        if (jsonData.getString("HOLD") == "1") {
-                            holdFlag++
-                            date = SimpleDateFormat(
-                                "yyyy-MM-dd", Locale.getDefault()
-                            ).format(Date())
-                            time = SimpleDateFormat(
-                                "HH:mm", Locale.getDefault()
-                            ).format(Date())
-                            //                            fetch_logs();
-//                                Toast.makeText(getContext(), "HOLD " + jsonData.getString("HOLD"), Toast.LENGTH_SHORT).show();
-                            jsonData = JSONObject()
-                            jsonData.put("HOLD", 0.toString())
-                            jsonData.put("DEVICE_ID", PhActivity.DEVICE_ID)
-                            WebSocketManager.sendMessage(jsonData.toString())
-                            ph = binding.tvPhCurr.text.toString()
-
 //                                deviceRef.child("Data").child("HOLD").setValue(0);
-                            if (holdFlag == 1) {
-                                if (ph == null || temp == null || mv == null) {
+                        if (holdFlag == 1) {
+                            if (ph == null || temp == null || mv == null) {
 //                                    Toast.makeText(getContext(), "Fetching Data", Toast.LENGTH_SHORT).show();
-                                }
-                                //                                } else {
+                            }
+                            //                                } else {
 //                                    databaseHelper.print_insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
 //                                    databaseHelper.insert_log_data(date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID);
 //                                    databaseHelper.insert_action_data(time, date, "Log pressed : " + Source.userName, ph, temp, mv, compound_name, PhActivity.DEVICE_ID);
 //                                }
-                                adapter = LogAdapter(context, getList())
-                                recyclerView.adapter = adapter
-                                if (Constants.OFFLINE_MODE) {
-                                    databaseHelper.print_insert_log_data(
-                                        date,
-                                        time,
-                                        ph,
-                                        temp,
-                                        batchnum,
-                                        arnum,
-                                        compound_name,
-                                        PhActivity.DEVICE_ID
-                                    )
+                            adapter = LogAdapter(context, getList())
+                            recyclerView.adapter = adapter
+                            if (Constants.OFFLINE_MODE) {
+                                databaseHelper.print_insert_log_data(
+                                    date,
+                                    time,
+                                    ph,
+                                    temp,
+                                    batchnum,
+                                    arnum,
+                                    compound_name,
+                                    PhActivity.DEVICE_ID
+                                )
 //                                        databaseHelper.insert_log_data(
 //                                            date,
 //                                            time,
@@ -1621,33 +1653,33 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //                                            PhActivity.DEVICE_ID
 //                                        )
 
-                                    addLogData(
-                                        ph, temp, batchnum, arnum, compound_name
-                                    )
+                                addLogData(
+                                    ph, temp, batchnum, arnum, compound_name
+                                )
 
-                                }
                             }
                         }
                     }
                 }
             }
-        } catch (e: JSONException) {
-            e.printStackTrace()
         }
-
+    } catch (e: JSONException) {
+        e.printStackTrace()
     }
 
+}
 
-    public fun webSocketConnection() {
+
+public fun webSocketConnection() {
 
 
-        WebSocketManager.setCloseListener { i, s, b ->
-            sharedViewModel.closeConnectionLiveData.value = s + ""
+    WebSocketManager.setCloseListener { i, s, b ->
+        sharedViewModel.closeConnectionLiveData.value = s + ""
 
-        }
-        WebSocketManager.setOpenListener {
-            sharedViewModel.openConnectionLiveData.value = ""
-        }
+    }
+    WebSocketManager.setOpenListener {
+        sharedViewModel.openConnectionLiveData.value = ""
+    }
 
 //        WebSocketManager.setErrorListener { error ->
 //            requireActivity().runOnUiThread {
@@ -1656,13 +1688,13 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //            }
 //        }
 
-        WebSocketManager.getErrorLiveData().observe(this, Observer { error ->
-            requireActivity().runOnUiThread {
-                updateError(error.toString())
-            }
-        })
+    WebSocketManager.getErrorLiveData().observe(this, Observer { error ->
+        requireActivity().runOnUiThread {
+            updateError(error.toString())
+        }
+    })
 
-        messageObserver = Observer { message ->
+    messageObserver = Observer { message ->
 //            try {
 //                updateMessage(message)
 //
@@ -1852,214 +1884,214 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //                e.printStackTrace()
 //            }
 //
-        }
-
-        WebSocketManager.getMessageLiveData().observe(viewLifecycleOwner, messageObserver)
-
-        WebSocketManager.setMessageListener { message ->
-
-
-        }
     }
 
+    WebSocketManager.getMessageLiveData().observe(viewLifecycleOwner, messageObserver)
 
-    private fun updateAutoLog() {
-        val AutoLog = autoLogggg
-        Source.auto_log = AutoLog
-        if (AutoLog == 0) {
-            exportBtn.isEnabled = true
-            printBtn.isEnabled = true
-            binding.printGraph.isEnabled = true
-            logBtn.isEnabled = true
-        } else if (AutoLog == 1) {
-            exportBtn.isEnabled = false
-            printBtn.isEnabled = false
-            binding.printGraph.isEnabled = false
-            logBtn.isEnabled = false
-            switchHold.isChecked = true
-            switchInterval.isChecked = false
-            switchBtnClick.isChecked = false
-        } else if (AutoLog == 2) {
-            exportBtn.isEnabled = false
-            printBtn.isEnabled = false
-            binding.printGraph.isEnabled = false
-            isAlertShow = false
-            logBtn.isEnabled = false
-            switchHold.isChecked = false
-            switchInterval.isChecked = true
-            switchBtnClick.isChecked = false
-        } else if (AutoLog == 3) {
-            exportBtn.isEnabled = false
-            printBtn.isEnabled = false
-            binding.printGraph.isEnabled = false
-            switchHold.isChecked = false
-            switchInterval.isChecked = false
-            logBtn.isEnabled = false
-            switchBtnClick.isChecked = true
-        } else {
-            exportBtn.isEnabled = true
-            logBtn.isEnabled = true
-            printBtn.isEnabled = true
-            binding.printGraph.isEnabled = true
-        }
-    }
+    WebSocketManager.setMessageListener { message ->
 
-    private fun autoLogs() {
-        autoLog.visibility = View.GONE
 
     }
+}
 
-    private fun startTimer() {
-        LOG_INTERVAL = enterTime.text.toString().toFloat() * 60
-        log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
-        handler1 = Handler()
-        runnable1 = object : Runnable {
-            override fun run() {
-                if (!Constants.logIntervalActive) {
-                    LOG_INTERVAL = 0F
-                    log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
-                    handler1!!.removeCallbacks(this)
-                }
-                Log.d("Runnable", "Handler is working")
-                if (LOG_INTERVAL === 0.toFloat()) { // just remove call backs
-                    log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
-                    handler1!!.removeCallbacks(this)
-                    Log.d("Runnable", "ok")
-                } else { // post again
-                    --LOG_INTERVAL
-                    log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
-                    handler1!!.postDelayed(this, 1000)
-                }
+
+private fun updateAutoLog() {
+    val AutoLog = autoLogggg
+    Source.auto_log = AutoLog
+    if (AutoLog == 0) {
+        exportBtn.isEnabled = true
+        printBtn.isEnabled = true
+        binding.printGraph.isEnabled = true
+        logBtn.isEnabled = true
+    } else if (AutoLog == 1) {
+        exportBtn.isEnabled = false
+        printBtn.isEnabled = false
+        binding.printGraph.isEnabled = false
+        logBtn.isEnabled = false
+        switchHold.isChecked = true
+        switchInterval.isChecked = false
+        switchBtnClick.isChecked = false
+    } else if (AutoLog == 2) {
+        exportBtn.isEnabled = false
+        printBtn.isEnabled = false
+        binding.printGraph.isEnabled = false
+        isAlertShow = false
+        logBtn.isEnabled = false
+        switchHold.isChecked = false
+        switchInterval.isChecked = true
+        switchBtnClick.isChecked = false
+    } else if (AutoLog == 3) {
+        exportBtn.isEnabled = false
+        printBtn.isEnabled = false
+        binding.printGraph.isEnabled = false
+        switchHold.isChecked = false
+        switchInterval.isChecked = false
+        logBtn.isEnabled = false
+        switchBtnClick.isChecked = true
+    } else {
+        exportBtn.isEnabled = true
+        logBtn.isEnabled = true
+        printBtn.isEnabled = true
+        binding.printGraph.isEnabled = true
+    }
+}
+
+private fun autoLogs() {
+    autoLog.visibility = View.GONE
+
+}
+
+private fun startTimer() {
+    LOG_INTERVAL = enterTime.text.toString().toFloat() * 60
+    log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
+    handler1 = Handler()
+    runnable1 = object : Runnable {
+        override fun run() {
+            if (!Constants.logIntervalActive) {
+                LOG_INTERVAL = 0F
+                log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
+                handler1!!.removeCallbacks(this)
+            }
+            Log.d("Runnable", "Handler is working")
+            if (LOG_INTERVAL === 0.toFloat()) { // just remove call backs
+                log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
+                handler1!!.removeCallbacks(this)
+                Log.d("Runnable", "ok")
+            } else { // post again
+                --LOG_INTERVAL
+                log_interval_text.text = java.lang.String.valueOf(LOG_INTERVAL)
+                handler1!!.postDelayed(this, 1000)
             }
         }
-        runnable1.run()
     }
+    runnable1.run()
+}
 
-    fun getCompanyLogo(): Bitmap? {
-        val sh = requireActivity().getSharedPreferences("logo", Context.MODE_PRIVATE)
-        val photo = sh.getString("logo_data", "")
-        var bitmap: Bitmap? = null
-        if (!photo.equals("", ignoreCase = true)) {
-            val b: ByteArray = Base64.decode(photo, Base64.DEFAULT)
-            bitmap = BitmapFactory.decodeByteArray(b, 0, b.size)
-        }
-        return bitmap
+fun getCompanyLogo(): Bitmap? {
+    val sh = requireActivity().getSharedPreferences("logo", Context.MODE_PRIVATE)
+    val photo = sh.getString("logo_data", "")
+    var bitmap: Bitmap? = null
+    if (!photo.equals("", ignoreCase = true)) {
+        val b: ByteArray = Base64.decode(photo, Base64.DEFAULT)
+        bitmap = BitmapFactory.decodeByteArray(b, 0, b.size)
     }
+    return bitmap
+}
 
-    @Throws(FileNotFoundException::class)
-    private fun generatePDF() {
+@Throws(FileNotFoundException::class)
+private fun generatePDF() {
 
 //        Toast.makeText(requireContext(), "Printing...", Toast.LENGTH_LONG).show()
 
-        var company_name = ""
+    var company_name = ""
 
-        val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
-        if (companyname != null) {
-            company_name = "Company: $companyname"
+    val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
+    if (companyname != null) {
+        company_name = "Company: $companyname"
 
+    } else {
+        company_name = "Company: N/A"
+
+    }
+
+    val user_name = "Username: " + Source.userName
+    val device_id = "DeviceID: " + PhActivity.DEVICE_ID
+    reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    reportTime = "Time: " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+    val shp = requireContext().getSharedPreferences("Extras", MODE_PRIVATE)
+    offset = "Offset: " + shp.getString("offset", "")
+    if (Constants.OFFLINE_DATA) {
+        offset = if (SharedPref.getSavedData(
+                requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
+            ) != null && SharedPref.getSavedData(
+                requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
+            ) !== ""
+        ) {
+            val data =
+                SharedPref.getSavedData(requireContext(), "OFFSET_" + PhActivity.DEVICE_ID)
+            "Offset: $data"
         } else {
-            company_name = "Company: N/A"
+            "Offset: " + "0"
+        }
+    } else {
+    }
+    tempe = "Temperature: " + shp.getString("temp", "")
+    battery = "Battery: " + shp.getString("battery", "")
+    if (Constants.OFFLINE_DATA) {
+        slope = if (SharedPref.getSavedData(
+                requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
+            ) != null && SharedPref.getSavedData(
+                requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
+            ) !== ""
+        ) {
+            val data =
+                SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
+            "Slope: $data"
+        } else {
+            "Slope: " + "0"
+        }
+        val tempData =
+            SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
+        tempe = if (SharedPref.getSavedData(
+                requireContext(), "tempValue" + PhActivity.DEVICE_ID
+            ) != null && SharedPref.getSavedData(
+                requireContext(), "tempValue" + PhActivity.DEVICE_ID
+            ) !== ""
+        ) {
 
+            "Temperature: $tempData"
+        } else {
+            "Temperature: " + "0"
         }
 
-        val user_name = "Username: " + Source.userName
-        val device_id = "DeviceID: " + PhActivity.DEVICE_ID
-        reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        reportTime = "Time: " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        val shp = requireContext().getSharedPreferences("Extras", MODE_PRIVATE)
-        offset = "Offset: " + shp.getString("offset", "")
-        if (Constants.OFFLINE_DATA) {
-            offset = if (SharedPref.getSavedData(
-                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
-                ) !== ""
-            ) {
-                val data =
-                    SharedPref.getSavedData(requireContext(), "OFFSET_" + PhActivity.DEVICE_ID)
-                "Offset: $data"
+        val batteryVal =
+            SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
+        if (batteryVal != null) {
+            if (batteryVal != "") {
+                battery = "Battery: $batteryVal %"
             } else {
-                "Offset: " + "0"
+                battery = "Battery: 0 %"
+
             }
-        } else {
         }
-        tempe = "Temperature: " + shp.getString("temp", "")
-        battery = "Battery: " + shp.getString("battery", "")
-        if (Constants.OFFLINE_DATA) {
-            slope = if (SharedPref.getSavedData(
-                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
-                ) !== ""
-            ) {
-                val data =
-                    SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
-                "Slope: $data"
-            } else {
-                "Slope: " + "0"
-            }
-            val tempData =
-                SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
-            tempe = if (SharedPref.getSavedData(
-                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
-                ) !== ""
-            ) {
 
-                "Temperature: $tempData"
-            } else {
-                "Temperature: " + "0"
-            }
-
-            val batteryVal =
-                SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
-            if (batteryVal != null) {
-                if (batteryVal != "") {
-                    battery = "Battery: $batteryVal %"
-                } else {
-                    battery = "Battery: 0 %"
-
-                }
-            }
-
-        } else {
-            slope = "Slope: " + shp.getString("slope", "")
-        }
+    } else {
+        slope = "Slope: " + shp.getString("slope", "")
+    }
 
 //        File exportDir = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator + "/LabApp/Currentlog");
 //        if (!exportDir.exists()) {
 //            exportDir.mkdirs();
 //        }
-        val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
-        val currentDateandTime = sdf.format(Date())
-        //        String tempPath = requireContext().getExternalFilesDir(null).getAbsolutePath() + "/LabApp/Currentlog";
-        val tempPath =
-            ContextWrapper(requireContext()).externalMediaDirs[0].toString() + "/LabApp/Currentlog"
-        val tempRoot = File(tempPath)
-        fileNotWrite(tempRoot)
-        val tempFilesAndFolders = tempRoot.listFiles()
+    val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
+    val currentDateandTime = sdf.format(Date())
+    //        String tempPath = requireContext().getExternalFilesDir(null).getAbsolutePath() + "/LabApp/Currentlog";
+    val tempPath =
+        ContextWrapper(requireContext()).externalMediaDirs[0].toString() + "/LabApp/Currentlog"
+    val tempRoot = File(tempPath)
+    fileNotWrite(tempRoot)
+    val tempFilesAndFolders = tempRoot.listFiles()
 
 //        Toast.makeText(requireContext(), "" + tempFilesAndFolders.length, Toast.LENGTH_SHORT).show();
 
 //        File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator
 //                + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders != null ? tempFilesAndFolders.length : 0) - 1)
 //                + ".pdf");
-        val filePath = ("" //                requireContext().getExternalFilesDir(null)
-                + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
-            ?: 0) - 1) + ".pdf")
+    val filePath = ("" //                requireContext().getExternalFilesDir(null)
+            + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
+        ?: 0) - 1) + ".pdf")
 
 
 //        File file = new File(requireContext().getExternalFilesDir(null).getAbsolutePath(), filePath);
-        val file = File(ContextWrapper(requireContext()).externalMediaDirs[0], filePath)
-        Log.e("FileNameError", file.path)
-        Log.e("FileNameError", file.absolutePath)
-        val outputStream: OutputStream = FileOutputStream(file)
-        val writer = PdfWriter(file)
-        val pdfDocument = PdfDocument(writer)
-        val document = Document(pdfDocument)
-        try {
-            val imgBit = getCompanyLogo()
+    val file = File(ContextWrapper(requireContext()).externalMediaDirs[0], filePath)
+    Log.e("FileNameError", file.path)
+    Log.e("FileNameError", file.absolutePath)
+    val outputStream: OutputStream = FileOutputStream(file)
+    val writer = PdfWriter(file)
+    val pdfDocument = PdfDocument(writer)
+    val document = Document(pdfDocument)
+    try {
+        val imgBit = getCompanyLogo()
 //            if (imgBit != null) {
 //                val uri: Uri? = getImageUri(requireContext(), imgBit)
 //                try {
@@ -2073,544 +2105,544 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //                    e.printStackTrace()
 //                }
 //            }
-            //
+        //
 
-            if (imgBit != null) {
+        if (imgBit != null) {
 
-                val byteArrayOutputStream = ByteArrayOutputStream()
-                imgBit.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-                val byteArray = byteArrayOutputStream.toByteArray()
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            imgBit.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
 
 // Create ImageData from byte array
-                val imageData = ImageDataFactory.create(byteArray)
+            val imageData = ImageDataFactory.create(byteArray)
 
 // Create an Image element
-                val image = Image(imageData).setHeight(80f).setWidth(80f)
-                document.add(image)
+            val image = Image(imageData).setHeight(80f).setWidth(80f)
+            document.add(image)
 
-            } else {
+        } else {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
-            }
-            ///
-            if (Constants.OFFLINE_MODE) {
+        }
+        ///
+        if (Constants.OFFLINE_MODE) {
 //                document.add(new Paragraph("Offline Mode"));
-            }
-            if (Source.cfr_mode) {
+        }
+        if (Source.cfr_mode) {
 
-                document.add(
-                    Paragraph(
-                        """
+            document.add(
+                Paragraph(
+                    """
                 $company_name
                 $user_name
                 $device_id
                 """.trimIndent()
-                    )
                 )
-            } else {
-                document.add(
-                    Paragraph(
-                        """
+            )
+        } else {
+            document.add(
+                Paragraph(
+                    """
                 $company_name
                 $device_id
                 """.trimIndent()
-                    )
-                )
-            }
-            document.add(Paragraph(""))
-
-            document.add(
-                Paragraph(
-                    """$reportDate  |  $reportTime
-                                 $offset  |  $battery
-                                 $slope  |  $tempe"""
                 )
             )
+        }
+        document.add(Paragraph(""))
+
+        document.add(
+            Paragraph(
+                """$reportDate  |  $reportTime
+                                 $offset  |  $battery
+                                 $slope  |  $tempe"""
+            )
+        )
 
 
-            document.add(Paragraph(""))
-            document.add(Paragraph("Calibration Table"))
-            val columnWidth = floatArrayOf(200f, 210f, 190f, 170f, 340f, 170f)
-            val table = Table(columnWidth)
-            table.addCell("pH")
-            table.addCell("pH Aft Calib")
-            table.addCell("Slope")
-            table.addCell("mV")
-            table.addCell("Date & Time")
-            table.addCell("Temperature")
-            val db = databaseHelper.writableDatabase
-            var calibCSV: Cursor? = null
-            if (Constants.OFFLINE_MODE) {
+        document.add(Paragraph(""))
+        document.add(Paragraph("Calibration Table"))
+        val columnWidth = floatArrayOf(200f, 210f, 190f, 170f, 340f, 170f)
+        val table = Table(columnWidth)
+        table.addCell("pH")
+        table.addCell("pH Aft Calib")
+        table.addCell("Slope")
+        table.addCell("mV")
+        table.addCell("Date & Time")
+        table.addCell("Temperature")
+        val db = databaseHelper.writableDatabase
+        var calibCSV: Cursor? = null
+        if (Constants.OFFLINE_MODE) {
 //            calibCSV = db.rawQuery("SELECT * FROM CalibOfflineData", null);
 //            calibCSV = db.rawQuery("SELECT * FROM CalibOfflineData", null);
-                if (Source.calibMode == 0) {
-                    calibCSV = db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
-                }
-                if (Source.calibMode == 1) {
+            if (Source.calibMode == 0) {
+                calibCSV = db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
+            }
+            if (Source.calibMode == 1) {
 //                    calibCSV = db.rawQuery("SELECT * FROM CalibOfflineDataThree", null)
-                    calibCSV = db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
-                }
+                calibCSV = db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
+            }
+        } else {
+            calibCSV = db.rawQuery("SELECT * FROM CalibData", null)
+        }
+        while (calibCSV != null && calibCSV.moveToNext()) {
+            val ph = calibCSV.getString(calibCSV.getColumnIndex("PH"))
+            val mv = calibCSV.getString(calibCSV.getColumnIndex("MV"))
+            val date = calibCSV.getString(calibCSV.getColumnIndex("DT"))
+            val slope = calibCSV.getString(calibCSV.getColumnIndex("SLOPE"))
+            val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC"))
+            val temperature1 = calibCSV.getString(calibCSV.getColumnIndex("temperature"))
+            table.addCell(ph ?: "--")
+            table.addCell(pHAC ?: "--")
+            table.addCell(slope ?: "--")
+            table.addCell(mv ?: "--")
+            table.addCell(date ?: "--")
+            table.addCell(temperature1 ?: "--")
+        }
+        document.add(table)
+        document.add(Paragraph(""))
+        document.add(Paragraph("Log Table"))
+        val columnWidth1 = floatArrayOf(240f, 120f, 150f, 150f, 270f, 270f, 270f)
+        val table1 = Table(columnWidth1)
+        table1.addCell("Date")
+        table1.addCell("Time")
+        table1.addCell("pH")
+        table1.addCell("Temp")
+        table1.addCell("Batch No")
+        table1.addCell("AR No")
+        table1.addCell("Product")
+        val curCSV: Cursor
+        curCSV = if (Constants.OFFLINE_MODE) {
+            db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+        } else {
+            db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+        }
+        while (curCSV.moveToNext()) {
+            val date = curCSV.getString(curCSV.getColumnIndex("date"))
+            val time = curCSV.getString(curCSV.getColumnIndex("time"))
+            val pH = curCSV.getString(curCSV.getColumnIndex("ph"))
+            val temp = curCSV.getString(curCSV.getColumnIndex("temperature"))
+            val batchnum = curCSV.getString(curCSV.getColumnIndex("batchnum"))
+            val arnum = curCSV.getString(curCSV.getColumnIndex("arnum"))
+            val comp = curCSV.getString(curCSV.getColumnIndex("compound"))
+            var newBatchNum: String? = "--"
+            if (batchnum != null && batchnum.length >= 8) {
+                newBatchNum = stringSplitter(batchnum)
             } else {
-                calibCSV = db.rawQuery("SELECT * FROM CalibData", null)
+                newBatchNum = batchnum
             }
-            while (calibCSV != null && calibCSV.moveToNext()) {
-                val ph = calibCSV.getString(calibCSV.getColumnIndex("PH"))
-                val mv = calibCSV.getString(calibCSV.getColumnIndex("MV"))
-                val date = calibCSV.getString(calibCSV.getColumnIndex("DT"))
-                val slope = calibCSV.getString(calibCSV.getColumnIndex("SLOPE"))
-                val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC"))
-                val temperature1 = calibCSV.getString(calibCSV.getColumnIndex("temperature"))
-                table.addCell(ph ?: "--")
-                table.addCell(pHAC ?: "--")
-                table.addCell(slope ?: "--")
-                table.addCell(mv ?: "--")
-                table.addCell(date ?: "--")
-                table.addCell(temperature1 ?: "--")
-            }
-            document.add(table)
-            document.add(Paragraph(""))
-            document.add(Paragraph("Log Table"))
-            val columnWidth1 = floatArrayOf(240f, 120f, 150f, 150f, 270f, 270f, 270f)
-            val table1 = Table(columnWidth1)
-            table1.addCell("Date")
-            table1.addCell("Time")
-            table1.addCell("pH")
-            table1.addCell("Temp")
-            table1.addCell("Batch No")
-            table1.addCell("AR No")
-            table1.addCell("Product")
-            val curCSV: Cursor
-            curCSV = if (Constants.OFFLINE_MODE) {
-                db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+            var newArum: String? = "--"
+            if (arnum != null && arnum.length >= 8) {
+                newArum = stringSplitter(arnum)
             } else {
-                db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+                newArum = arnum
             }
-            while (curCSV.moveToNext()) {
-                val date = curCSV.getString(curCSV.getColumnIndex("date"))
-                val time = curCSV.getString(curCSV.getColumnIndex("time"))
-                val pH = curCSV.getString(curCSV.getColumnIndex("ph"))
-                val temp = curCSV.getString(curCSV.getColumnIndex("temperature"))
-                val batchnum = curCSV.getString(curCSV.getColumnIndex("batchnum"))
-                val arnum = curCSV.getString(curCSV.getColumnIndex("arnum"))
-                val comp = curCSV.getString(curCSV.getColumnIndex("compound"))
-                var newBatchNum: String? = "--"
-                if (batchnum != null && batchnum.length >= 8) {
-                    newBatchNum = stringSplitter(batchnum)
-                } else {
-                    newBatchNum = batchnum
-                }
-                var newArum: String? = "--"
-                if (arnum != null && arnum.length >= 8) {
-                    newArum = stringSplitter(arnum)
-                } else {
-                    newArum = arnum
-                }
-                var newComp: String? = "--"
-                if (comp != null && comp.length >= 8) {
-                    newComp = stringSplitter(comp)
-                } else {
-                    newComp = comp
-                }
-                table1.addCell(date ?: "--")
-                table1.addCell(time ?: "--")
-                table1.addCell(pH ?: "--")
-                table1.addCell(temp ?: "--")
-                table1.addCell(newBatchNum ?: "--")
-                table1.addCell(newArum ?: "--")
-                table1.addCell(newComp ?: "--")
-            }
-            document.add(table1)
-
-            val leftDesignationString =
-                SharedPref.getSavedData(requireContext(), SharedKeys.LEFT_DESIGNATION_KEY)
-            val rightDesignationString =
-                SharedPref.getSavedData(requireContext(), SharedKeys.RIGHT_DESIGNATION_KEY)
-
-            if (leftDesignationString != null && leftDesignationString != "") {
-
+            var newComp: String? = "--"
+            if (comp != null && comp.length >= 8) {
+                newComp = stringSplitter(comp)
             } else {
-                SharedPref.saveData(
-                    requireContext(),
-                    SharedKeys.LEFT_DESIGNATION_KEY,
-                    "Operator Sign"
-                )
+                newComp = comp
             }
+            table1.addCell(date ?: "--")
+            table1.addCell(time ?: "--")
+            table1.addCell(pH ?: "--")
+            table1.addCell(temp ?: "--")
+            table1.addCell(newBatchNum ?: "--")
+            table1.addCell(newArum ?: "--")
+            table1.addCell(newComp ?: "--")
+        }
+        document.add(table1)
 
-            if (rightDesignationString != null && rightDesignationString != "") {
-            } else {
-                SharedPref.saveData(
-                    requireContext(),
-                    SharedKeys.RIGHT_DESIGNATION_KEY,
-                    "Supervisor Sign"
-                )
-            }
+        val leftDesignationString =
+            SharedPref.getSavedData(requireContext(), SharedKeys.LEFT_DESIGNATION_KEY)
+        val rightDesignationString =
+            SharedPref.getSavedData(requireContext(), SharedKeys.RIGHT_DESIGNATION_KEY)
 
-            if (leftDesignationString != null && leftDesignationString != "" &&
-                rightDesignationString != null && rightDesignationString != ""
-            ) {
-                document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
+        if (leftDesignationString != null && leftDesignationString != "") {
 
-            } else {
-                document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
+        } else {
+            SharedPref.saveData(
+                requireContext(),
+                SharedKeys.LEFT_DESIGNATION_KEY,
+                "Operator Sign"
+            )
+        }
 
-            }
+        if (rightDesignationString != null && rightDesignationString != "") {
+        } else {
+            SharedPref.saveData(
+                requireContext(),
+                SharedKeys.RIGHT_DESIGNATION_KEY,
+                "Supervisor Sign"
+            )
+        }
 
-            val imgBit1: Bitmap? = getSignImage()
+        if (leftDesignationString != null && leftDesignationString != "" &&
+            rightDesignationString != null && rightDesignationString != ""
+        ) {
+            document.add(Paragraph("$leftDesignationString                                                                                      $rightDesignationString"))
 
-            if (imgBit1 != null) {
+        } else {
+            document.add(Paragraph("Operator Sign                                                                                      Supervisor Sign"))
 
-                val byteArrayOutputStream = ByteArrayOutputStream()
-                imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
-                val byteArray = byteArrayOutputStream.toByteArray()
+        }
+
+        val imgBit1: Bitmap? = getSignImage()
+
+        if (imgBit1 != null) {
+
+            val byteArrayOutputStream = ByteArrayOutputStream()
+            imgBit1.compress(Bitmap.CompressFormat.PNG, 100, byteArrayOutputStream)
+            val byteArray = byteArrayOutputStream.toByteArray()
 
 // Create ImageData from byte array
-                val imageData = ImageDataFactory.create(byteArray)
+            val imageData = ImageDataFactory.create(byteArray)
 
 // Create an Image element
-                val image = Image(imageData).setHeight(80f).setWidth(80f)
-                document.add(image)
+            val image = Image(imageData).setHeight(80f).setWidth(80f)
+            document.add(image)
 
-            } else {
+        } else {
 //                Toast.makeText(requireContext(), "Null", Toast.LENGTH_SHORT).show()
-            }
-        } catch (e: Exception) {
+        }
+    } catch (e: Exception) {
 //            Toast.makeText(
 //                requireContext(), "Error : " + e.message, Toast.LENGTH_SHORT
 //            ).show()
-        }
-        document.close()
-//        Toast.makeText(context, "Pdf generated", Toast.LENGTH_SHORT).show()
     }
+    document.close()
+//        Toast.makeText(context, "Pdf generated", Toast.LENGTH_SHORT).show()
+}
 
 
-    private fun exportLogCsv() {
-        try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
-            val currentDateandTime = sdf.format(Date())
-            val tempPath =
-                File(requireContext().externalMediaDirs[0], "/LabApp/Currentlog")
-            tempPath.mkdirs()
+private fun exportLogCsv() {
+    try {
+        val sdf = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault())
+        val currentDateandTime = sdf.format(Date())
+        val tempPath =
+            File(requireContext().externalMediaDirs[0], "/LabApp/Currentlog")
+        tempPath.mkdirs()
 
-            val filePath =
-                File(tempPath, "CL_$currentDateandTime-${tempPath.listFiles()?.size ?: 0}.csv")
-            val writer = CSVWriter(FileWriter(filePath))
+        val filePath =
+            File(tempPath, "CL_$currentDateandTime-${tempPath.listFiles()?.size ?: 0}.csv")
+        val writer = CSVWriter(FileWriter(filePath))
 
-            val db = databaseHelper.writableDatabase
+        val db = databaseHelper.writableDatabase
 
-            var company_name1 = ""
-            val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
-            company_name1 =
-                if (!companyname.isNullOrEmpty()) "Company: $companyname" else "Company: N/A"
+        var company_name1 = ""
+        val companyname = SharedPref.getSavedData(requireContext(), "COMPANY_NAME")
+        company_name1 =
+            if (!companyname.isNullOrEmpty()) "Company: $companyname" else "Company: N/A"
 
-            val newOffset = if (SharedPref.getSavedData(
-                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
-                ) != ""
-            ) {
-                val data =
-                    SharedPref.getSavedData(requireContext(), "OFFSET_" + PhActivity.DEVICE_ID)
-                "Offset: $data"
-            } else {
-                "Offset: " + "0"
-            }
+        val newOffset = if (SharedPref.getSavedData(
+                requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
+            ) != null && SharedPref.getSavedData(
+                requireContext(), "OFFSET_" + PhActivity.DEVICE_ID
+            ) != ""
+        ) {
+            val data =
+                SharedPref.getSavedData(requireContext(), "OFFSET_" + PhActivity.DEVICE_ID)
+            "Offset: $data"
+        } else {
+            "Offset: " + "0"
+        }
 
-            val newSlope = if (SharedPref.getSavedData(
-                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
-                ) != ""
-            ) {
-                val data =
-                    SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
-                "Slope: $data"
-            } else {
-                "Slope: " + "0"
-            }
+        val newSlope = if (SharedPref.getSavedData(
+                requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
+            ) != null && SharedPref.getSavedData(
+                requireContext(), "SLOPE_" + PhActivity.DEVICE_ID
+            ) != ""
+        ) {
+            val data =
+                SharedPref.getSavedData(requireContext(), "SLOPE_" + PhActivity.DEVICE_ID)
+            "Slope: $data"
+        } else {
+            "Slope: " + "0"
+        }
 
-            val tempData =
-                SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
+        val tempData =
+            SharedPref.getSavedData(requireContext(), "tempValue" + PhActivity.DEVICE_ID)
 
-            val newTemp = if (SharedPref.getSavedData(
-                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
-                ) != null && SharedPref.getSavedData(
-                    requireContext(), "tempValue" + PhActivity.DEVICE_ID
-                ) != ""
-            ) {
+        val newTemp = if (SharedPref.getSavedData(
+                requireContext(), "tempValue" + PhActivity.DEVICE_ID
+            ) != null && SharedPref.getSavedData(
+                requireContext(), "tempValue" + PhActivity.DEVICE_ID
+            ) != ""
+        ) {
 
-                "Temperature: $tempData"
-            } else {
-                "Temperature: " + "0"
-            }
+            "Temperature: $tempData"
+        } else {
+            "Temperature: " + "0"
+        }
 
-            val batteryVal =
-                SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
-            val newBattery = if (batteryVal != null && batteryVal != "") {
-                "Battery: $batteryVal %"
-            } else {
-                "Battery: 0 %"
+        val batteryVal =
+            SharedPref.getSavedData(requireContext(), "battery" + PhActivity.DEVICE_ID)
+        val newBattery = if (batteryVal != null && batteryVal != "") {
+            "Battery: $batteryVal %"
+        } else {
+            "Battery: 0 %"
 
-            }
+        }
 
 
-            writer.writeNext(arrayOf(company_name1))
-            if (Source.cfr_mode) {
-                writer.writeNext(arrayOf("Username: ${Source.userName}"))
-            }
-            writer.writeNext(arrayOf("Device ID: ${PhActivity.DEVICE_ID}"))
-            writer.writeNext(
-                arrayOf(
-                    "Date: ${Source.getPresentDate()}",
-                    "Time: ${Source.getCurrentTime()}"
-                )
+        writer.writeNext(arrayOf(company_name1))
+        if (Source.cfr_mode) {
+            writer.writeNext(arrayOf("Username: ${Source.userName}"))
+        }
+        writer.writeNext(arrayOf("Device ID: ${PhActivity.DEVICE_ID}"))
+        writer.writeNext(
+            arrayOf(
+                "Date: ${Source.getPresentDate()}",
+                "Time: ${Source.getCurrentTime()}"
             )
-            writer.writeNext(arrayOf(newOffset, newSlope, newTemp, newBattery))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("Calibration Table", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+        )
+        writer.writeNext(arrayOf(newOffset, newSlope, newTemp, newBattery))
+        writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+        writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+        writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+        writer.writeNext(arrayOf("Calibration Table", "", "", "", "", "", "", "", ""))
+        writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
 
-            writer.writeNext(
-                arrayOf(
-                    "pH",
-                    "pH After Cal",
-                    "Slope",
-                    "mV",
-                    "Date & Time",
-                    "Temperature"
-                )
+        writer.writeNext(
+            arrayOf(
+                "pH",
+                "pH After Cal",
+                "Slope",
+                "mV",
+                "Date & Time",
+                "Temperature"
             )
+        )
 
-            var calibCSV: Cursor? = null
-            if (Constants.OFFLINE_MODE) {
-                calibCSV = if (Source.calibMode == 0) {
-                    db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
-                } else {
-                    db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
-                }
+        var calibCSV: Cursor? = null
+        if (Constants.OFFLINE_MODE) {
+            calibCSV = if (Source.calibMode == 0) {
+                db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
             } else {
-                calibCSV = db.rawQuery("SELECT * FROM CalibData", null)
+                db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
             }
+        } else {
+            calibCSV = db.rawQuery("SELECT * FROM CalibData", null)
+        }
 
-            while (calibCSV != null && calibCSV.moveToNext()) {
-                val ph = calibCSV.getString(calibCSV.getColumnIndex("PH")) ?: "--"
-                val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC")) ?: "--"
-                val slope = calibCSV.getString(calibCSV.getColumnIndex("SLOPE")) ?: "--"
-                val mv = calibCSV.getString(calibCSV.getColumnIndex("MV")) ?: "--"
-                val date = calibCSV.getString(calibCSV.getColumnIndex("DT")) ?: "--"
-                val temperature1 =
-                    calibCSV.getString(calibCSV.getColumnIndex("temperature")) ?: "--"
+        while (calibCSV != null && calibCSV.moveToNext()) {
+            val ph = calibCSV.getString(calibCSV.getColumnIndex("PH")) ?: "--"
+            val pHAC = calibCSV.getString(calibCSV.getColumnIndex("pHAC")) ?: "--"
+            val slope = calibCSV.getString(calibCSV.getColumnIndex("SLOPE")) ?: "--"
+            val mv = calibCSV.getString(calibCSV.getColumnIndex("MV")) ?: "--"
+            val date = calibCSV.getString(calibCSV.getColumnIndex("DT")) ?: "--"
+            val temperature1 =
+                calibCSV.getString(calibCSV.getColumnIndex("temperature")) ?: "--"
 
-                writer.writeNext(arrayOf(ph, pHAC, slope, mv, date, temperature1))
-            }
+            writer.writeNext(arrayOf(ph, pHAC, slope, mv, date, temperature1))
+        }
 
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("Log Table", "", "", "", "", "", ""))
-            writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
-            writer.writeNext(
-                arrayOf(
-                    "Date",
-                    "Time",
-                    "pH",
-                    "Temperature",
-                    "Batch No",
-                    "AR No",
-                    "Product"
-                )
+        writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+        writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+        writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+        writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+        writer.writeNext(arrayOf("Log Table", "", "", "", "", "", ""))
+        writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
+        writer.writeNext(
+            arrayOf(
+                "Date",
+                "Time",
+                "pH",
+                "Temperature",
+                "Batch No",
+                "AR No",
+                "Product"
             )
+        )
 
-            val cursor = db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
-            while (cursor.moveToNext()) {
-                val date = cursor.getString(cursor.getColumnIndex("date"))
-                val time = cursor.getString(cursor.getColumnIndex("time"))
-                val pH = cursor.getString(cursor.getColumnIndex("ph"))
-                val temp = cursor.getString(cursor.getColumnIndex("temperature"))
-                val batchNum = cursor.getString(cursor.getColumnIndex("batchnum"))
-                val arNum = cursor.getString(cursor.getColumnIndex("arnum"))
-                val product = cursor.getString(cursor.getColumnIndex("compound"))
+        val cursor = db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+        while (cursor.moveToNext()) {
+            val date = cursor.getString(cursor.getColumnIndex("date"))
+            val time = cursor.getString(cursor.getColumnIndex("time"))
+            val pH = cursor.getString(cursor.getColumnIndex("ph"))
+            val temp = cursor.getString(cursor.getColumnIndex("temperature"))
+            val batchNum = cursor.getString(cursor.getColumnIndex("batchnum"))
+            val arNum = cursor.getString(cursor.getColumnIndex("arnum"))
+            val product = cursor.getString(cursor.getColumnIndex("compound"))
 
-                writer.writeNext(arrayOf(date, time, pH, temp, batchNum, arNum, product))
-            }
+            writer.writeNext(arrayOf(date, time, pH, temp, batchNum, arNum, product))
+        }
 
-            writer.close()
+        writer.close()
 //            Toast.makeText(requireContext(), "CSV file exported", Toast.LENGTH_SHORT).show()
-        } catch (e: IOException) {
+    } catch (e: IOException) {
 //            Toast.makeText(
 //                requireContext(),
 //                "Error exporting CSV file: ${e.message}",
 //                Toast.LENGTH_SHORT
 //            ).show()
-            e.printStackTrace()
+        e.printStackTrace()
+    }
+}
+
+
+private fun getSignImage(): Bitmap? {
+    val sh = requireContext().getSharedPreferences("signature", MODE_PRIVATE)
+    val photo = sh.getString("signature_data", "")
+    var bitmap: Bitmap? = null
+    if (!photo.equals("", ignoreCase = true)) {
+        val b = Base64.decode(photo, Base64.DEFAULT)
+        bitmap = BitmapFactory.decodeByteArray(b, 0, b.size)
+    }
+    return bitmap
+}
+
+private fun stringSplitter(str: String): String? {
+    var newText = ""
+    val strings = Splitter.fixedLength(8).split(str)
+    for (temp in strings) {
+        newText = "$newText $temp"
+    }
+    return newText.trim { it <= ' ' }
+}
+
+private fun saveDetails() {
+    if (Constants.OFFLINE_MODE) {
+        if (!compound_name_txt.text.toString().isEmpty()) {
+            compound_name = compound_name_txt.text.toString()
+            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+
+            addUserAction(
+                "username: " + Source.userName + ", Role: " + Source.userRole + ", Compound name changed to " + compound_name,
+                ph,
+                temp,
+                mv,
+                compound_name
+            )
+        } else {
+            compound_name = "NA"
+
+            addUserAction(
+                "username: " + Source.userName + ", Role: " + Source.userRole + ", Compound name changed to " + compound_name,
+                ph,
+                temp,
+                mv,
+                compound_name
+            )
+        }
+        if (!batch_number.text.toString().isEmpty()) {
+            batchnum = batch_number.text.toString()
+            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+
+            addUserAction(
+                "username: " + Source.userName + ", Role: " + Source.userRole + ", Batchnum changed to " + batchnum,
+                ph,
+                temp,
+                mv,
+                compound_name
+            )
+        } else {
+            batchnum = "NA"
+            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+
+            addUserAction(
+                "username: " + Source.userName + ", Role: " + Source.userRole + ", Batchnum changed to " + batchnum,
+                ph,
+                temp,
+                mv,
+                compound_name
+            )
+        }
+        if (!ar_number.text.toString().isEmpty()) {
+            arnum = ar_number.text.toString()
+            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+
+            addUserAction(
+                "username: " + Source.userName + ", Role: " + Source.userRole + ", AR_NUMBER changed to " + arnum,
+                ph,
+                temp,
+                mv,
+                compound_name
+            )
+        } else {
+            arnum = "NA"
+            val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+            val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+            addUserAction(
+                "username: " + Source.userName + ", Role: " + Source.userRole + ", AR_NUMBER changed to " + arnum,
+                ph,
+                temp,
+                mv,
+                compound_name
+            )
         }
     }
+}
 
+override fun onDestroy() {
+    deleteAllLogs()
+    deleteAllLogsOffline()
+    WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
 
-    private fun getSignImage(): Bitmap? {
-        val sh = requireContext().getSharedPreferences("signature", MODE_PRIVATE)
-        val photo = sh.getString("signature_data", "")
-        var bitmap: Bitmap? = null
-        if (!photo.equals("", ignoreCase = true)) {
-            val b = Base64.decode(photo, Base64.DEFAULT)
-            bitmap = BitmapFactory.decodeByteArray(b, 0, b.size)
-        }
-        return bitmap
-    }
+    super.onDestroy()
+}
 
-    private fun stringSplitter(str: String): String? {
-        var newText = ""
-        val strings = Splitter.fixedLength(8).split(str)
-        for (temp in strings) {
-            newText = "$newText $temp"
-        }
-        return newText.trim { it <= ' ' }
-    }
+override fun onPause() {
+    Log.d("Timer", "onPause: ")
+    WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
 
-    private fun saveDetails() {
-        if (Constants.OFFLINE_MODE) {
-            if (!compound_name_txt.text.toString().isEmpty()) {
-                compound_name = compound_name_txt.text.toString()
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+    if (handler != null) handler!!.removeCallbacks(runnable)
+    super.onPause()
+}
 
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole + ", Compound name changed to " + compound_name,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            } else {
-                compound_name = "NA"
+override fun onStop() {
+    EventBus.getDefault().unregister(this)
 
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole + ", Compound name changed to " + compound_name,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            }
-            if (!batch_number.text.toString().isEmpty()) {
-                batchnum = batch_number.text.toString()
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+    WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
+    super.onStop()
 
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole + ", Batchnum changed to " + batchnum,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            } else {
-                batchnum = "NA"
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+}
 
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole + ", Batchnum changed to " + batchnum,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            }
-            if (!ar_number.text.toString().isEmpty()) {
-                arnum = ar_number.text.toString()
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole + ", AR_NUMBER changed to " + arnum,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            } else {
-                arnum = "NA"
-                val date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-                val time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-                addUserAction(
-                    "username: " + Source.userName + ", Role: " + Source.userRole + ", AR_NUMBER changed to " + arnum,
-                    ph,
-                    temp,
-                    mv,
-                    compound_name
-                )
-            }
-        }
-    }
-
-    override fun onDestroy() {
-        deleteAllLogs()
-        deleteAllLogsOffline()
-        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
-
-        super.onDestroy()
-    }
-
-    override fun onPause() {
-        Log.d("Timer", "onPause: ")
-        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
-
-        if (handler != null) handler!!.removeCallbacks(runnable)
-        super.onPause()
-    }
-
-    override fun onStop() {
-        EventBus.getDefault().unregister(this)
-
-        WebSocketManager.getMessageLiveData().removeObserver(messageObserver)
-        super.onStop()
-
-    }
-
-    fun handler() {
-        Log.d("Timer", "doInBackground: in while " + Constants.timeInSec)
+fun handler() {
+    Log.d("Timer", "doInBackground: in while " + Constants.timeInSec)
 
 
 //        Toast.makeText(getContext(), "Background service running ", Toast.LENGTH_SHORT).show();
 //        Toast.makeText(getContext(), Constants.timeInSec + "", Toast.LENGTH_SHORT).show();
-        if (handler1 != null) {
-            handler1!!.removeCallbacks(runnable1)
-        }
-        if (handler != null) {
-            handler!!.removeCallbacks(runnable)
-        }
-        startTimer()
-        handler = Handler()
-        runnable = object : Runnable {
-            override fun run() {
-                if (!Constants.logIntervalActive) {
-                    handler!!.removeCallbacks(this)
-                }
-                Log.d("Timer", "doInBackground: in handler")
-                takeLog()
-                handler()
-            }
-        }
-        handler!!.postDelayed(runnable, Constants.timeInSec.toLong())
-        Log.d("Timer", "doInBackground: out handler")
+    if (handler1 != null) {
+        handler1!!.removeCallbacks(runnable1)
     }
+    if (handler != null) {
+        handler!!.removeCallbacks(runnable)
+    }
+    startTimer()
+    handler = Handler()
+    runnable = object : Runnable {
+        override fun run() {
+            if (!Constants.logIntervalActive) {
+                handler!!.removeCallbacks(this)
+            }
+            Log.d("Timer", "doInBackground: in handler")
+            takeLog()
+            handler()
+        }
+    }
+    handler!!.postDelayed(runnable, Constants.timeInSec.toLong())
+    Log.d("Timer", "doInBackground: out handler")
+}
 
-    fun takeLog() {
-        date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
-        time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-        ph = binding.tvPhCurr.text.toString()
-        if (Constants.OFFLINE_MODE) {
-            databaseHelper.print_insert_log_data(
-                date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
-            )
+fun takeLog() {
+    date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
+    time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+    ph = binding.tvPhCurr.text.toString()
+    if (Constants.OFFLINE_MODE) {
+        databaseHelper.print_insert_log_data(
+            date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
+        )
 //            databaseHelper.insert_log_data(
 //                date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
 //            )
-            addLogData(
-                ph, temp, batchnum, arnum, compound_name
-            )
+        addLogData(
+            ph, temp, batchnum, arnum, compound_name
+        )
 //            databaseHelper.insert_action_data(
 //                time,
 //                date,
@@ -2621,490 +2653,436 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //                compound_name,
 //                PhActivity.DEVICE_ID
 //            )
-        }
-        adapter = LogAdapter(context, getList())
-        recyclerView.adapter = adapter
     }
+    adapter = LogAdapter(context, getList())
+    recyclerView.adapter = adapter
+}
 
-    private fun fileNotWrite(file: File) {
-        file.setWritable(false)
-        if (file.canWrite()) {
-            Log.d("csv", "Not Working")
-        } else {
-            Log.d("csvnw", "Working")
-        }
+private fun fileNotWrite(file: File) {
+    file.setWritable(false)
+    if (file.canWrite()) {
+        Log.d("csv", "Not Working")
+    } else {
+        Log.d("csvnw", "Working")
     }
+}
 
 
-    private fun getList(): List<phData?>? {
-        phDataModelList.add(0, phData(ph, temp, date, time, batchnum, arnum, compound_name))
-        return phDataModelList
+private fun getList(): List<phData?>? {
+    phDataModelList.add(0, phData(ph, temp, date, time, batchnum, arnum, compound_name))
+    return phDataModelList
+}
+
+private fun deleteAll() {
+    val db = databaseHelper.writableDatabase
+    db.execSQL("DELETE FROM Calibdetails")
+    db.close()
+}
+
+
+private fun deleteAllLogs() {
+    val db = databaseHelper.writableDatabase
+    db.execSQL("DELETE FROM PrintLogUserdetails")
+    db.close()
+}
+
+private fun deleteAllLogsOffline() {
+    val db = databaseHelper.writableDatabase
+    db.execSQL("DELETE FROM PrintLogUserdetailsOffline")
+    db.close()
+}
+
+private fun getSQLList(): ArrayList<phData>? {
+    val res = databaseHelper._log
+    if (res.count == 0) {
+        Toast.makeText(context, "No entry", Toast.LENGTH_SHORT).show()
     }
-
-    private fun deleteAll() {
-        val db = databaseHelper.writableDatabase
-        db.execSQL("DELETE FROM Calibdetails")
-        db.close()
-    }
-
-
-    private fun deleteAllLogs() {
-        val db = databaseHelper.writableDatabase
-        db.execSQL("DELETE FROM PrintLogUserdetails")
-        db.close()
-    }
-
-    private fun deleteAllLogsOffline() {
-        val db = databaseHelper.writableDatabase
-        db.execSQL("DELETE FROM PrintLogUserdetailsOffline")
-        db.close()
-    }
-
-    private fun getSQLList(): ArrayList<phData>? {
-        val res = databaseHelper._log
-        if (res.count == 0) {
-            Toast.makeText(context, "No entry", Toast.LENGTH_SHORT).show()
-        }
-        while (res.moveToNext()) {
-            date = SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).format(Date())
-            time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
-            currentDate_fetched = res.getString(0)
-            currentTime_fetched = res.getString(1)
-            ph_fetched = res.getString(2)
-            m_fetched = res.getString(3)
-            batchnum_fetched = res.getString(4)
-            arnum_fetched = res.getString(5)
-            compound_name_fetched = res.getString(6)
-            if (date == currentDate_fetched && time == currentTime_fetched) {
-                phDataModelList.add(
-                    0, phData(
-                        ph_fetched,
-                        m_fetched,
-                        currentDate_fetched,
-                        currentTime_fetched,
-                        batchnum_fetched,
-                        arnum_fetched,
-                        compound_name_fetched
-                    )
-                )
-            }
-        }
-        return phDataModelList
-    }
-
-
-    /**
-     * checking of permissions.
-     *
-     * @return
-     */
-    private fun checkPermission(): Boolean {
-        val permission1 =
-            ContextCompat.checkSelfPermission(requireContext(), WRITE_EXTERNAL_STORAGE)
-        val permission2 = ContextCompat.checkSelfPermission(requireContext(), READ_EXTERNAL_STORAGE)
-        return permission1 == PackageManager.PERMISSION_GRANTED && permission2 == PackageManager.PERMISSION_GRANTED
-    }
-
-    /**
-     * requesting permissions if not provided.
-     */
-    private fun requestPermission() {
-        ActivityCompat.requestPermissions(
-            (requireContext() as Activity), arrayOf(
-                WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
-            ), PERMISSION_REQUEST_CODE
-        )
-    }
-
-    override fun onRequestPermissionsResult(
-        requestCode: Int, permissions: Array<out String>, grantResults: IntArray,
-    ) {
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (grantResults.isNotEmpty()) {
-                val writeStorage = grantResults[0] == PackageManager.PERMISSION_GRANTED
-                val readStorage = grantResults[1] == PackageManager.PERMISSION_GRANTED
-                if (writeStorage && readStorage) {
-                    Toast.makeText(requireContext(), "Permission Granted..", Toast.LENGTH_SHORT)
-                        .show()
-                } else {
-                    Toast.makeText(requireContext(), "Permission Denined.", Toast.LENGTH_SHORT)
-                        .show()
-                }
-            }
-        }
-    }
-
-    fun reverseFileArray(fileArray: Array<File>): Array<File>? {
-        for (i in 0 until fileArray.size / 2) {
-            val a = fileArray[i]
-            fileArray[i] = fileArray[fileArray.size - i - 1]
-            fileArray[fileArray.size - i - 1] = a
-        }
-        return if (fileArray.isNotEmpty()) fileArray else null
-    }
-
-    fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
-        lifecycleScope.launch(Dispatchers.IO) {
-
-            userActionDao.insertUserAction(
-                UserActionEntity(
-                    0,
-                    Source.getCurrentTime(),
-                    Source.getPresentDate(),
-                    action,
-                    ph,
-                    temp,
-                    mv,
-                    compound,
-                    PhActivity.DEVICE_ID.toString()
+    while (res.moveToNext()) {
+        date = SimpleDateFormat("yyyy.MM.dd", Locale.getDefault()).format(Date())
+        time = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
+        currentDate_fetched = res.getString(0)
+        currentTime_fetched = res.getString(1)
+        ph_fetched = res.getString(2)
+        m_fetched = res.getString(3)
+        batchnum_fetched = res.getString(4)
+        arnum_fetched = res.getString(5)
+        compound_name_fetched = res.getString(6)
+        if (date == currentDate_fetched && time == currentTime_fetched) {
+            phDataModelList.add(
+                0, phData(
+                    ph_fetched,
+                    m_fetched,
+                    currentDate_fetched,
+                    currentTime_fetched,
+                    batchnum_fetched,
+                    arnum_fetched,
+                    compound_name_fetched
                 )
             )
         }
     }
+    return phDataModelList
+}
 
-    fun addLogData(
-        ph: String,
-        temperature: String,
-        batchnum: String,
-        arnum: String,
-        compound: String,
-    ) {
-        lifecycleScope.launch(Dispatchers.IO) {
-            allLogsDataDao.insertLogData(
-                AllLogsEntity(
-                    0,
-                    Source.getPresentDate(),
-                    Source.getCurrentTime(),
-                    ph,
-                    temperature,
-                    batchnum,
-                    arnum,
-                    compound,
-                    PhActivity.DEVICE_ID.toString()
-                )
+
+/**
+ * checking of permissions.
+ *
+ * @return
+ */
+private fun checkPermission(): Boolean {
+    val permission1 =
+        ContextCompat.checkSelfPermission(requireContext(), WRITE_EXTERNAL_STORAGE)
+    val permission2 = ContextCompat.checkSelfPermission(requireContext(), READ_EXTERNAL_STORAGE)
+    return permission1 == PackageManager.PERMISSION_GRANTED && permission2 == PackageManager.PERMISSION_GRANTED
+}
+
+/**
+ * requesting permissions if not provided.
+ */
+private fun requestPermission() {
+    ActivityCompat.requestPermissions(
+        (requireContext() as Activity), arrayOf(
+            WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
+        ), PERMISSION_REQUEST_CODE
+    )
+}
+
+override fun onRequestPermissionsResult(
+    requestCode: Int, permissions: Array<out String>, grantResults: IntArray,
+) {
+    if (requestCode == PERMISSION_REQUEST_CODE) {
+        if (grantResults.isNotEmpty()) {
+            val writeStorage = grantResults[0] == PackageManager.PERMISSION_GRANTED
+            val readStorage = grantResults[1] == PackageManager.PERMISSION_GRANTED
+            if (writeStorage && readStorage) {
+                Toast.makeText(requireContext(), "Permission Granted..", Toast.LENGTH_SHORT)
+                    .show()
+            } else {
+                Toast.makeText(requireContext(), "Permission Denined.", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+    }
+}
+
+fun reverseFileArray(fileArray: Array<File>): Array<File>? {
+    for (i in 0 until fileArray.size / 2) {
+        val a = fileArray[i]
+        fileArray[i] = fileArray[fileArray.size - i - 1]
+        fileArray[fileArray.size - i - 1] = a
+    }
+    return if (fileArray.isNotEmpty()) fileArray else null
+}
+
+fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
+    lifecycleScope.launch(Dispatchers.IO) {
+
+        userActionDao.insertUserAction(
+            UserActionEntity(
+                0,
+                Source.getCurrentTime(),
+                Source.getPresentDate(),
+                action,
+                ph,
+                temp,
+                mv,
+                compound,
+                PhActivity.DEVICE_ID.toString()
             )
-        }
-    }
-
-    fun observeARList() {
-        lifecycleScope.launch(Dispatchers.Main) {
-            arViewModel.productListLiveData.observe(this@PhLogFragment) { productList ->
-                val spinnerAdapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_spinner_item,
-                    productList.map { it.arNum }
-                )
-                spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                binding.arSpinner.adapter = spinnerAdapter
-
-
-                binding.arSpinner.onItemSelectedListener =
-                    object : AdapterView.OnItemSelectedListener {
-                        override fun onItemSelected(
-                            parent: AdapterView<*>?,
-                            view: View?,
-                            position: Int,
-                            id: Long,
-                        ) {
-                            if (position >= 0 && position < productList.size) {
-                                val selectedProduct = productList[position]
-                                binding.arNumber.setText(selectedProduct.arNum)
-                                arnum = selectedProduct.arNum
-                                arnum_fetched = selectedProduct.arNum
-                            }
-                        }
-
-                        override fun onNothingSelected(parent: AdapterView<*>?) {
-                            binding.arNumber.setText("Select product")
-                            arnum_fetched = "Select product"
-                            arnum = "Select product"
-
-                        }
-                    }
-
-
-            }
-
-
-        }
-
-    }
-
-    fun observeBatchList() {
-        lifecycleScope.launch(Dispatchers.Main) {
-            batchViewModel.productListLiveData.observe(this@PhLogFragment) { productList ->
-                val spinnerAdapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_spinner_item,
-                    productList.map { it.batchName }
-                )
-                spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                binding.batchSpinner.adapter = spinnerAdapter
-
-
-                binding.batchSpinner.onItemSelectedListener =
-                    object : AdapterView.OnItemSelectedListener {
-                        override fun onItemSelected(
-                            parent: AdapterView<*>?,
-                            view: View?,
-                            position: Int,
-                            id: Long,
-                        ) {
-                            if (position >= 0 && position < productList.size) {
-                                val selectedProduct = productList[position]
-                                binding.batchNumber.setText(selectedProduct.batchName)
-                                batchnum = selectedProduct.batchName
-                                batchnum_fetched = selectedProduct.batchName
-                            }
-                        }
-
-                        override fun onNothingSelected(parent: AdapterView<*>?) {
-                            binding.batchNumber.setText("Select product")
-                            batchnum_fetched = "Select product"
-                            batchnum = "Select product"
-
-                        }
-                    }
-
-
-            }
-
-
-        }
-
-    }
-
-    private fun observeProductList() {
-        lifecycleScope.launch(Dispatchers.Main) {
-            productViewModel.productListLiveData.observe(this@PhLogFragment) { productList ->
-
-                Log.e("NotErrorSpinnerItem", productList.size.toString())
-
-                val spinnerAdapter = ArrayAdapter(
-                    requireContext(),
-                    android.R.layout.simple_spinner_item,
-                    productList.map { it.productName }
-                )
-                spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-                binding.productSpinner.adapter = spinnerAdapter
-
-
-                binding.productSpinner.onItemSelectedListener =
-                    object : AdapterView.OnItemSelectedListener {
-                        override fun onItemSelected(
-                            parent: AdapterView<*>?,
-                            view: View?,
-                            position: Int,
-                            id: Long,
-                        ) {
-                            if (position >= 0 && position < productList.size) {
-                                val selectedProduct = productList[position]
-                                binding.compoundName.setText(selectedProduct.productName)
-                                compound_name = selectedProduct.productName
-                                compound_name_fetched = selectedProduct.productName
-                            }
-                        }
-
-                        override fun onNothingSelected(parent: AdapterView<*>?) {
-                            binding.compoundName.setText("Select product")
-                            compound_name = "Select product"
-                            compound_name_fetched = "Select product"
-
-                        }
-                    }
-
-
-            }
-
-
-        }
-
-
-    }
-
-    private fun updateBatchSpinner(productList: List<BatchEntity>) {
-
-        val spinnerAdapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            productList.map { it.batchName }
         )
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.batchSpinner.adapter = spinnerAdapter
-
-
-        binding.batchSpinner.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long,
-                ) {
-                    if (position >= 0 && position < productList.size) {
-                        val selectedProduct = productList[position]
-                        binding.batchNumber.setText(selectedProduct.batchName)
-                        batchnum = selectedProduct.batchName
-                        batchnum_fetched = selectedProduct.batchName
-                    }
-                }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {
-                    binding.batchNumber.setText("Select product")
-                    batchnum_fetched = "Select product"
-                    batchnum = "Select product"
-
-                }
-            }
-
-
     }
+}
 
-
-    private fun updateARSpinner(productList: List<ARNumEntity>) {
-
-        val spinnerAdapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            productList.map { it.arNum }
+fun addLogData(
+    ph: String,
+    temperature: String,
+    batchnum: String,
+    arnum: String,
+    compound: String,
+) {
+    lifecycleScope.launch(Dispatchers.IO) {
+        allLogsDataDao.insertLogData(
+            AllLogsEntity(
+                0,
+                Source.getPresentDate(),
+                Source.getCurrentTime(),
+                ph,
+                temperature,
+                batchnum,
+                arnum,
+                compound,
+                PhActivity.DEVICE_ID.toString()
+            )
         )
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.arSpinner.adapter = spinnerAdapter
+    }
+}
+
+fun observeARList() {
+    lifecycleScope.launch(Dispatchers.Main) {
+        arViewModel.productListLiveData.observe(this@PhLogFragment) { productList ->
+            val spinnerAdapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                productList.map { it.arNum }
+            )
+            spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            binding.arSpinner.adapter = spinnerAdapter
 
 
-        binding.arSpinner.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long,
-                ) {
-                    if (position >= 0 && position < productList.size) {
-                        val selectedProduct = productList[position]
-                        binding.arNumber.setText(selectedProduct.arNum)
-                        arnum = selectedProduct.arNum
-                        arnum_fetched = selectedProduct.arNum
+            binding.arSpinner.onItemSelectedListener =
+                object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(
+                        parent: AdapterView<*>?,
+                        view: View?,
+                        position: Int,
+                        id: Long,
+                    ) {
+                        if (position >= 0 && position < productList.size) {
+                            val selectedProduct = productList[position]
+                            binding.arNumber.setText(selectedProduct.arNum)
+                            arnum = selectedProduct.arNum
+                            arnum_fetched = selectedProduct.arNum
+                        }
+                    }
+
+                    override fun onNothingSelected(parent: AdapterView<*>?) {
+                        binding.arNumber.setText("Select product")
+                        arnum_fetched = "Select product"
+                        arnum = "Select product"
+
                     }
                 }
 
-                override fun onNothingSelected(parent: AdapterView<*>?) {
-                    binding.arNumber.setText("Select product")
-                    arnum_fetched = "Select product"
-                    arnum = "Select product"
-
-                }
-            }
-
-    }
-
-
-    private fun updateProductSpinner(productList: List<ProductEntity>) {
-
-        val spinnerAdapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_item,
-            productList.map { it.productName }
-        )
-        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.productSpinner.adapter = spinnerAdapter
-
-
-        binding.productSpinner.onItemSelectedListener =
-            object : AdapterView.OnItemSelectedListener {
-                override fun onItemSelected(
-                    parent: AdapterView<*>?,
-                    view: View?,
-                    position: Int,
-                    id: Long,
-                ) {
-                    if (position >= 0 && position < productList.size) {
-                        val selectedProduct = productList[position]
-                        binding.compoundName.setText(selectedProduct.productName)
-                        compound_name = selectedProduct.productName
-                        compound_name_fetched = selectedProduct.productName
-                    }
-                }
-
-                override fun onNothingSelected(parent: AdapterView<*>?) {
-                    binding.compoundName.setText("Select product")
-                    compound_name = "Select product"
-                    compound_name_fetched = "Select product"
-
-                }
-            }
-    }
-
-
-    lateinit var userDao: UserDao
-    lateinit var userActionDao: UserActionDao
-    lateinit var allLogsDataDao: AllLogsDataDao
-    var tempToggleSharedPref: String? = null
-    lateinit var productsListDao: ProductsListDao
-    lateinit var batchListDao: BatchListDao
-    lateinit var arListDao: ARNumDao
-    private lateinit var productViewModel: ProductViewModel
-    private lateinit var batchViewModel: BatchViewModel
-    private lateinit var arViewModel: ARNumViewModel
-
-    override fun onResume() {
-        super.onResume()
-
-        binding.refreshList.setOnClickListener {
-
-            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-                val productList = productViewModel.fetchProducts()
-                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                    updateProductSpinner(productList)
-                }
-            }
-
-            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-                val productList = batchViewModel.fetchBatches()
-                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                    updateBatchSpinner(productList)
-                }
-            }
-
-            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-                val productList = arViewModel.fetchARs()
-                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                    updateARSpinner(productList)
-                }
-            }
 
         }
 
-        productsListDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().productsDao()
 
-        batchListDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().batchDao()
+    }
 
-        arListDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().arNumDao()
+}
 
-        val viewModelFactory = ProductViewModelFactory(productsListDao)
-        productViewModel =
-            ViewModelProvider(this, viewModelFactory)[ProductViewModel::class.java]
+fun observeBatchList() {
+    lifecycleScope.launch(Dispatchers.Main) {
+        batchViewModel.productListLiveData.observe(this@PhLogFragment) { productList ->
+            val spinnerAdapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                productList.map { it.batchName }
+            )
+            spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            binding.batchSpinner.adapter = spinnerAdapter
 
-        val viewModelFactoryBatch = BatchViewModelFactory(batchListDao)
-        batchViewModel =
-            ViewModelProvider(this, viewModelFactoryBatch)[BatchViewModel::class.java]
 
-        val viewModelFactoryAR = ARNumViewModelFactory(arListDao)
-        arViewModel =
-            ViewModelProvider(this, viewModelFactoryAR)[ARNumViewModel::class.java]
+            binding.batchSpinner.onItemSelectedListener =
+                object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(
+                        parent: AdapterView<*>?,
+                        view: View?,
+                        position: Int,
+                        id: Long,
+                    ) {
+                        if (position >= 0 && position < productList.size) {
+                            val selectedProduct = productList[position]
+                            binding.batchNumber.setText(selectedProduct.batchName)
+                            batchnum = selectedProduct.batchName
+                            batchnum_fetched = selectedProduct.batchName
+                        }
+                    }
 
+                    override fun onNothingSelected(parent: AdapterView<*>?) {
+                        binding.batchNumber.setText("Select product")
+                        batchnum_fetched = "Select product"
+                        batchnum = "Select product"
+
+                    }
+                }
+
+
+        }
+
+
+    }
+
+}
+
+private fun observeProductList() {
+    lifecycleScope.launch(Dispatchers.Main) {
+        productViewModel.productListLiveData.observe(this@PhLogFragment) { productList ->
+
+            Log.e("NotErrorSpinnerItem", productList.size.toString())
+
+            val spinnerAdapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_spinner_item,
+                productList.map { it.productName }
+            )
+            spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            binding.productSpinner.adapter = spinnerAdapter
+
+
+            binding.productSpinner.onItemSelectedListener =
+                object : AdapterView.OnItemSelectedListener {
+                    override fun onItemSelected(
+                        parent: AdapterView<*>?,
+                        view: View?,
+                        position: Int,
+                        id: Long,
+                    ) {
+                        if (position >= 0 && position < productList.size) {
+                            val selectedProduct = productList[position]
+                            binding.compoundName.setText(selectedProduct.productName)
+                            compound_name = selectedProduct.productName
+                            compound_name_fetched = selectedProduct.productName
+                        }
+                    }
+
+                    override fun onNothingSelected(parent: AdapterView<*>?) {
+                        binding.compoundName.setText("Select product")
+                        compound_name = "Select product"
+                        compound_name_fetched = "Select product"
+
+                    }
+                }
+
+
+        }
+
+
+    }
+
+
+}
+
+private fun updateBatchSpinner(productList: List<BatchEntity>) {
+
+    val spinnerAdapter = ArrayAdapter(
+        requireContext(),
+        android.R.layout.simple_spinner_item,
+        productList.map { it.batchName }
+    )
+    spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+    binding.batchSpinner.adapter = spinnerAdapter
+
+
+    binding.batchSpinner.onItemSelectedListener =
+        object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long,
+            ) {
+                if (position >= 0 && position < productList.size) {
+                    val selectedProduct = productList[position]
+                    binding.batchNumber.setText(selectedProduct.batchName)
+                    batchnum = selectedProduct.batchName
+                    batchnum_fetched = selectedProduct.batchName
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                binding.batchNumber.setText("Select product")
+                batchnum_fetched = "Select product"
+                batchnum = "Select product"
+
+            }
+        }
+
+
+}
+
+
+private fun updateARSpinner(productList: List<ARNumEntity>) {
+
+    val spinnerAdapter = ArrayAdapter(
+        requireContext(),
+        android.R.layout.simple_spinner_item,
+        productList.map { it.arNum }
+    )
+    spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+    binding.arSpinner.adapter = spinnerAdapter
+
+
+    binding.arSpinner.onItemSelectedListener =
+        object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long,
+            ) {
+                if (position >= 0 && position < productList.size) {
+                    val selectedProduct = productList[position]
+                    binding.arNumber.setText(selectedProduct.arNum)
+                    arnum = selectedProduct.arNum
+                    arnum_fetched = selectedProduct.arNum
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                binding.arNumber.setText("Select product")
+                arnum_fetched = "Select product"
+                arnum = "Select product"
+
+            }
+        }
+
+}
+
+
+private fun updateProductSpinner(productList: List<ProductEntity>) {
+
+    val spinnerAdapter = ArrayAdapter(
+        requireContext(),
+        android.R.layout.simple_spinner_item,
+        productList.map { it.productName }
+    )
+    spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+    binding.productSpinner.adapter = spinnerAdapter
+
+
+    binding.productSpinner.onItemSelectedListener =
+        object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long,
+            ) {
+                if (position >= 0 && position < productList.size) {
+                    val selectedProduct = productList[position]
+                    binding.compoundName.setText(selectedProduct.productName)
+                    compound_name = selectedProduct.productName
+                    compound_name_fetched = selectedProduct.productName
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                binding.compoundName.setText("Select product")
+                compound_name = "Select product"
+                compound_name_fetched = "Select product"
+
+            }
+        }
+}
+
+
+lateinit var userDao: UserDao
+lateinit var userActionDao: UserActionDao
+lateinit var allLogsDataDao: AllLogsDataDao
+var tempToggleSharedPref: String? = null
+lateinit var productsListDao: ProductsListDao
+lateinit var batchListDao: BatchListDao
+lateinit var arListDao: ARNumDao
+private lateinit var productViewModel: ProductViewModel
+private lateinit var batchViewModel: BatchViewModel
+private lateinit var arViewModel: ARNumViewModel
+
+override fun onResume() {
+    super.onResume()
+
+    binding.refreshList.setOnClickListener {
 
         lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
             val productList = productViewModel.fetchProducts()
@@ -3127,6 +3105,60 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             }
         }
 
+    }
+
+    productsListDao = Room.databaseBuilder(
+        requireContext().applicationContext,
+        AppDatabase::class.java,
+        "aican-database"
+    ).build().productsDao()
+
+    batchListDao = Room.databaseBuilder(
+        requireContext().applicationContext,
+        AppDatabase::class.java,
+        "aican-database"
+    ).build().batchDao()
+
+    arListDao = Room.databaseBuilder(
+        requireContext().applicationContext,
+        AppDatabase::class.java,
+        "aican-database"
+    ).build().arNumDao()
+
+    val viewModelFactory = ProductViewModelFactory(productsListDao)
+    productViewModel =
+        ViewModelProvider(this, viewModelFactory)[ProductViewModel::class.java]
+
+    val viewModelFactoryBatch = BatchViewModelFactory(batchListDao)
+    batchViewModel =
+        ViewModelProvider(this, viewModelFactoryBatch)[BatchViewModel::class.java]
+
+    val viewModelFactoryAR = ARNumViewModelFactory(arListDao)
+    arViewModel =
+        ViewModelProvider(this, viewModelFactoryAR)[ARNumViewModel::class.java]
+
+
+    lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+        val productList = productViewModel.fetchProducts()
+        withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+            updateProductSpinner(productList)
+        }
+    }
+
+    lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+        val productList = batchViewModel.fetchBatches()
+        withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+            updateBatchSpinner(productList)
+        }
+    }
+
+    lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+        val productList = arViewModel.fetchARs()
+        withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+            updateARSpinner(productList)
+        }
+    }
+
 
 //
 //        observeBatchList()
@@ -3135,35 +3167,35 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //
 //        observeProductList()
 
-        Source.activeFragment = 3
+    Source.activeFragment = 3
 
-        tempToggleSharedPref =
-            SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
+    tempToggleSharedPref =
+        SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
 
-        setPreviousData()
-
-
-
-        userDao = Room.databaseBuilder(
-            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
-        ).build().userDao()
+    setPreviousData()
 
 
 
-
-        allLogsDataDao = Room.databaseBuilder(
-            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
-        ).build().allLogsDao()
-
-        userActionDao = Room.databaseBuilder(
-            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
-        ).build().userActionDao()
+    userDao = Room.databaseBuilder(
+        requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+    ).build().userDao()
 
 
 
 
+    allLogsDataDao = Room.databaseBuilder(
+        requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+    ).build().allLogsDao()
 
-        webSocketConnection()
+    userActionDao = Room.databaseBuilder(
+        requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+    ).build().userActionDao()
+
+
+
+
+
+    webSocketConnection()
 
 
 //        if (Source.cfr_mode) {
@@ -3186,27 +3218,27 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //            }
 //        }
 
-        Source.activeFragment = 2
-        if (handler != null && runnable != null) {
-            handler!!.removeCallbacks(runnable)
-        }
-        if (handler1 != null && runnable1 != null) {
-            handler1!!.removeCallbacks(runnable1)
-        }
-
-
+    Source.activeFragment = 2
+    if (handler != null && runnable != null) {
+        handler!!.removeCallbacks(runnable)
+    }
+    if (handler1 != null && runnable1 != null) {
+        handler1!!.removeCallbacks(runnable1)
     }
 
-    override fun onStart() {
-        super.onStart()
-        EventBus.getDefault().register(this)
+
+}
+
+override fun onStart() {
+    super.onStart()
+    EventBus.getDefault().register(this)
 
 
-    }
+}
 
-    override fun deleted() {
-        showPdfFiles()
-    }
+override fun deleted() {
+    showPdfFiles()
+}
 
 
 }
