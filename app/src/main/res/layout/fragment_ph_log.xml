@@ -615,7 +615,8 @@
                         android:textAlignment="center"
                         tools:ignore="RtlSymmetry" />
 
-                    <TextView
+                    <EditText
+                        android:id="@+id/unknownHeading2"
                         style="@style/table_header"
                         android:layout_width="5dp"
                         android:layout_height="30dp"
@@ -628,7 +629,8 @@
                         android:textAlignment="center"
                         tools:ignore="RtlSymmetry" />
 
-                    <TextView
+                    <EditText
+                        android:id="@+id/unknownHeading1"
                         style="@style/table_header"
                         android:layout_width="5dp"
                         android:layout_height="30dp"
