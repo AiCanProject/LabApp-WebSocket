@@ -55,6 +55,8 @@ import com.aican.aicanapp.roomDatabase.daoObjects.ARNumDao
 import com.aican.aicanapp.roomDatabase.daoObjects.AllLogsDataDao
 import com.aican.aicanapp.roomDatabase.daoObjects.BatchListDao
 import com.aican.aicanapp.roomDatabase.daoObjects.ProductsListDao
+import com.aican.aicanapp.roomDatabase.daoObjects.UnknownListDao1
+import com.aican.aicanapp.roomDatabase.daoObjects.UnknownListDao2
 import com.aican.aicanapp.roomDatabase.daoObjects.UserActionDao
 import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
@@ -62,6 +64,8 @@ import com.aican.aicanapp.roomDatabase.entities.ARNumEntity
 import com.aican.aicanapp.roomDatabase.entities.AllLogsEntity
 import com.aican.aicanapp.roomDatabase.entities.BatchEntity
 import com.aican.aicanapp.roomDatabase.entities.ProductEntity
+import com.aican.aicanapp.roomDatabase.entities.UnknownEntity1
+import com.aican.aicanapp.roomDatabase.entities.UnknownEntity2
 import com.aican.aicanapp.roomDatabase.entities.UserActionEntity
 import com.aican.aicanapp.utils.AlarmConstants
 import com.aican.aicanapp.utils.Constants
@@ -75,6 +79,8 @@ import com.aican.aicanapp.viewModels.BatchViewModelFactory
 import com.aican.aicanapp.viewModels.ProductViewModel
 import com.aican.aicanapp.viewModels.ProductViewModelFactory
 import com.aican.aicanapp.viewModels.SharedViewModel
+import com.aican.aicanapp.viewModels.UnknownListViewModel1
+import com.aican.aicanapp.viewModels.UnknownListViewModel2
 import com.aican.aicanapp.websocket.MessageEvent
 import com.aican.aicanapp.websocket.WebSocketManager
 import com.github.mikephil.charting.charts.LineChart
@@ -151,6 +157,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
     private var batchnum: String = ""
     private var arnum: String = ""
     private var compound_name: String = ""
+    private var unknown_product_name1: String = ""
+    private var unknown_product_name2: String = ""
     private var ph_fetched: String = ""
     private var m_fetched: String = ""
     private var currentDate_fetched: String = ""
@@ -158,6 +166,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
     private var batchnum_fetched: String = ""
     private var arnum_fetched: String = ""
     private var compound_name_fetched: String = ""
+    private var unknown_product_name_fetched1: String = ""
+    private var unknown_product_name_fetched2: String = ""
     private var ph1: String = "0.0"
     private var mv1: String = "0.0"
     private var ph2: String = "0.0"
@@ -927,6 +937,13 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         }
 
 
+    }
+
+
+    override fun onResume() {
+        super.onResume()
+
+
 
         binding.known01.text = SharedPref.getSavedData(requireContext(), "known1")
         binding.known1.text = SharedPref.getSavedData(requireContext(), "known1")
@@ -985,7 +1002,191 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             showEditDialog("known3")
         }
 
+
+        binding.refreshList.setOnClickListener {
+
+            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+                val productList = productViewModel.fetchProducts()
+                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                    updateProductSpinner(productList)
+                }
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+                val productList = batchViewModel.fetchBatches()
+                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                    updateBatchSpinner(productList)
+                }
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+                val productList = arViewModel.fetchARs()
+                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                    updateARSpinner(productList)
+                }
+            }
+
+        }
+
+
+        unknownListDao1 = Room.databaseBuilder(
+            requireContext(),
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().unknown1Dao()
+
+        unknownListDao2 = Room.databaseBuilder(
+            requireContext(),
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().unknown2Dao()
+
+        productsListDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().productsDao()
+
+        batchListDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().batchDao()
+
+        arListDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().arNumDao()
+
+        val viewModelFactory1 = ProductViewModelFactory(productsListDao)
+        unknownListViewModel1 =
+            ViewModelProvider(this, viewModelFactory1)[UnknownListViewModel1::class.java]
+
+        val viewModelFactory2 = ProductViewModelFactory(productsListDao)
+        unknownListViewModel2 =
+            ViewModelProvider(this, viewModelFactory2)[UnknownListViewModel2::class.java]
+
+        val viewModelFactory = ProductViewModelFactory(productsListDao)
+        productViewModel =
+            ViewModelProvider(this, viewModelFactory)[ProductViewModel::class.java]
+
+        val viewModelFactoryBatch = BatchViewModelFactory(batchListDao)
+        batchViewModel =
+            ViewModelProvider(this, viewModelFactoryBatch)[BatchViewModel::class.java]
+
+        val viewModelFactoryAR = ARNumViewModelFactory(arListDao)
+        arViewModel =
+            ViewModelProvider(this, viewModelFactoryAR)[ARNumViewModel::class.java]
+
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = unknownListViewModel1.fetchProducts()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateUnknown1Spinner(productList)
+            }
+        }
+
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = unknownListViewModel2.fetchProducts()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateUnknown2Spinner(productList)
+            }
+        }
+
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = productViewModel.fetchProducts()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateProductSpinner(productList)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = batchViewModel.fetchBatches()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateBatchSpinner(productList)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = arViewModel.fetchARs()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateARSpinner(productList)
+            }
+        }
+
+
+//
+//        observeBatchList()
+//
+//        observeARList()
+//
+//        observeProductList()
+
+        Source.activeFragment = 3
+
+        tempToggleSharedPref =
+            SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
+
+        setPreviousData()
+
+
+
+        userDao = Room.databaseBuilder(
+            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+        ).build().userDao()
+
+
+
+
+        allLogsDataDao = Room.databaseBuilder(
+            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+        ).build().allLogsDao()
+
+        userActionDao = Room.databaseBuilder(
+            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+        ).build().userActionDao()
+
+
+
+
+
+        webSocketConnection()
+
+
+//        if (Source.cfr_mode) {
+//            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
+//            userAuthDialog.showLoginDialog { isValidCredentials ->
+//                if (isValidCredentials) {
+//                    addUserAction(
+//                        "username: " + Source.userName + ", Role: " + Source.userRole + ", entered ph log fragment",
+//                        "",
+//                        "",
+//                        "",
+//                        ""
+//                    )
+//                } else {
+//                    requireActivity().runOnUiThread {
+//                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
+//                            .show()
+//                    }
+//                }
+//            }
+//        }
+
+        Source.activeFragment = 2
+        if (handler != null && runnable != null) {
+            handler!!.removeCallbacks(runnable)
+        }
+        if (handler1 != null && runnable1 != null) {
+            handler1!!.removeCallbacks(runnable1)
+        }
+
+
     }
+
 
     private fun showEditDialog(key: String) {
         val dialog = Dialog(requireContext())
@@ -2728,7 +2929,20 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
 
     private fun getList(): List<phData?>? {
-        phDataModelList.add(0, phData(ph, temp, date, time, batchnum, arnum, compound_name))
+        phDataModelList.add(
+            0,
+            phData(
+                ph,
+                temp,
+                date,
+                time,
+                batchnum,
+                arnum,
+                compound_name,
+                unknown_product_name1,
+                unknown_product_name2
+            )
+        )
         return phDataModelList
     }
 
@@ -2775,7 +2989,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                         currentTime_fetched,
                         batchnum_fetched,
                         arnum_fetched,
-                        compound_name_fetched
+                        compound_name_fetched, unknown_product_name1, unknown_product_name2
                     )
                 )
             }
@@ -3013,6 +3227,75 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
     }
 
+    private fun updateUnknown2Spinner(productList: List<UnknownEntity2>) {
+
+        val spinnerAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            productList.map { it.productName }
+        )
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.unknownSpinner2.adapter = spinnerAdapter
+
+
+        binding.unknownSpinner2.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long,
+                ) {
+                    if (position >= 0 && position < productList.size) {
+                        val selectedProduct = productList[position]
+                        unknown_product_name2 = selectedProduct.productName
+                        unknown_product_name_fetched2 = selectedProduct.productName
+                    }
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    unknown_product_name2 = "Select"
+                    unknown_product_name_fetched2 = "Select"
+
+                }
+            }
+    }
+
+    private fun updateUnknown1Spinner(productList: List<UnknownEntity1>) {
+
+        val spinnerAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_item,
+            productList.map { it.productName }
+        )
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.unknownSpinner1.adapter = spinnerAdapter
+
+
+        binding.unknownSpinner1.onItemSelectedListener =
+            object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long,
+                ) {
+                    if (position >= 0 && position < productList.size) {
+                        val selectedProduct = productList[position]
+                        unknown_product_name1 = selectedProduct.productName
+                        unknown_product_name_fetched1 = selectedProduct.productName
+                    }
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    unknown_product_name1 = "Select"
+                    unknown_product_name_fetched1 = "Select"
+
+                }
+            }
+    }
+
+
     private fun updateBatchSpinner(productList: List<BatchEntity>) {
 
         val spinnerAdapter = ArrayAdapter(
@@ -3131,162 +3414,20 @@ class PhLogFragment : Fragment(), UserDeleteListener {
     lateinit var userActionDao: UserActionDao
     lateinit var allLogsDataDao: AllLogsDataDao
     var tempToggleSharedPref: String? = null
+
     lateinit var productsListDao: ProductsListDao
     lateinit var batchListDao: BatchListDao
     lateinit var arListDao: ARNumDao
+
+    lateinit var unknownListDao1: UnknownListDao1
+    lateinit var unknownListDao2: UnknownListDao2
+
     private lateinit var productViewModel: ProductViewModel
     private lateinit var batchViewModel: BatchViewModel
     private lateinit var arViewModel: ARNumViewModel
 
-    override fun onResume() {
-        super.onResume()
-
-        binding.refreshList.setOnClickListener {
-
-            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-                val productList = productViewModel.fetchProducts()
-                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                    updateProductSpinner(productList)
-                }
-            }
-
-            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-                val productList = batchViewModel.fetchBatches()
-                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                    updateBatchSpinner(productList)
-                }
-            }
-
-            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-                val productList = arViewModel.fetchARs()
-                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                    updateARSpinner(productList)
-                }
-            }
-
-        }
-
-        productsListDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().productsDao()
-
-        batchListDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().batchDao()
-
-        arListDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().arNumDao()
-
-        val viewModelFactory = ProductViewModelFactory(productsListDao)
-        productViewModel =
-            ViewModelProvider(this, viewModelFactory)[ProductViewModel::class.java]
-
-        val viewModelFactoryBatch = BatchViewModelFactory(batchListDao)
-        batchViewModel =
-            ViewModelProvider(this, viewModelFactoryBatch)[BatchViewModel::class.java]
-
-        val viewModelFactoryAR = ARNumViewModelFactory(arListDao)
-        arViewModel =
-            ViewModelProvider(this, viewModelFactoryAR)[ARNumViewModel::class.java]
-
-
-        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-            val productList = productViewModel.fetchProducts()
-            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                updateProductSpinner(productList)
-            }
-        }
-
-        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-            val productList = batchViewModel.fetchBatches()
-            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                updateBatchSpinner(productList)
-            }
-        }
-
-        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-            val productList = arViewModel.fetchARs()
-            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                updateARSpinner(productList)
-            }
-        }
-
-
-//
-//        observeBatchList()
-//
-//        observeARList()
-//
-//        observeProductList()
-
-        Source.activeFragment = 3
-
-        tempToggleSharedPref =
-            SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
-
-        setPreviousData()
-
-
-
-        userDao = Room.databaseBuilder(
-            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
-        ).build().userDao()
-
-
-
-
-        allLogsDataDao = Room.databaseBuilder(
-            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
-        ).build().allLogsDao()
-
-        userActionDao = Room.databaseBuilder(
-            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
-        ).build().userActionDao()
-
-
-
-
-
-        webSocketConnection()
-
-
-//        if (Source.cfr_mode) {
-//            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
-//            userAuthDialog.showLoginDialog { isValidCredentials ->
-//                if (isValidCredentials) {
-//                    addUserAction(
-//                        "username: " + Source.userName + ", Role: " + Source.userRole + ", entered ph log fragment",
-//                        "",
-//                        "",
-//                        "",
-//                        ""
-//                    )
-//                } else {
-//                    requireActivity().runOnUiThread {
-//                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
-//                            .show()
-//                    }
-//                }
-//            }
-//        }
-
-        Source.activeFragment = 2
-        if (handler != null && runnable != null) {
-            handler!!.removeCallbacks(runnable)
-        }
-        if (handler1 != null && runnable1 != null) {
-            handler1!!.removeCallbacks(runnable1)
-        }
-
-
-    }
+    lateinit var unknownListViewModel1: UnknownListViewModel1
+    lateinit var unknownListViewModel2: UnknownListViewModel2
 
     override fun onStart() {
         super.onStart()

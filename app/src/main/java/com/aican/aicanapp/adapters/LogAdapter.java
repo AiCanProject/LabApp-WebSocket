@@ -43,6 +43,8 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
             holder.batchnum.setText(logs_list.get(position).getBatchnum());
             holder.arnum.setText(logs_list.get(position).getArnum());
             holder.compound_name.setText(logs_list.get(position).getCompound_name());
+            holder.unknown1.setText(logs_list.get(position).getUnknown1());
+            holder.unknown2.setText(logs_list.get(position).getUnknown2());
         }
     }
 
@@ -52,7 +54,7 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
     }
 
     public static class ViewHolder extends RecyclerView.ViewHolder {
-        TextView sNo, ph, temp, dt, time, batchnum, arnum, compound_name;
+        TextView sNo, ph, temp, dt, time, batchnum, arnum, compound_name, unknown1, unknown2;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -64,6 +66,8 @@ public class LogAdapter extends RecyclerView.Adapter<LogAdapter.ViewHolder> {
             batchnum = itemView.findViewById(R.id.batchnum);
             arnum = itemView.findViewById(R.id.arnum);
             compound_name = itemView.findViewById(R.id.compound);
+            unknown1 = itemView.findViewById(R.id.unknown1);
+            unknown2 = itemView.findViewById(R.id.unknown2);
         }
     }
 }
