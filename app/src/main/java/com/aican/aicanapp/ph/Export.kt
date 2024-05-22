@@ -1311,8 +1311,24 @@ class Export : AppCompatActivity(), UserDeleteListener {
                 File(this@Export.externalMediaDirs[0], "/LabApp/Sensordata")
             tempPath.mkdirs()
 
-            val filePath =
-                File(tempPath, "DSL_$currentDateandTime-${tempPath.listFiles()?.size ?: 0}.csv")
+            val filePath: File
+
+            val selectedBatch = SharedPref.getSavedData(this@Export, "selectedBatch")
+
+            if (selectedBatch != "") {
+
+                filePath = File(
+                    tempPath,
+                    selectedBatch + "_DSL_$currentDateandTime-${tempPath.listFiles()?.size ?: 0}.csv"
+                )
+
+            } else {
+
+                filePath =
+                    File(tempPath, "DSL_$currentDateandTime-${tempPath.listFiles()?.size ?: 0}.csv")
+
+            }
+
             val writer = CSVWriter(FileWriter(filePath))
 
             val db = databaseHelper.writableDatabase
@@ -1836,10 +1852,25 @@ class Export : AppCompatActivity(), UserDeleteListener {
         val tempRoot = File(tempPath)
         fileNotWrite(tempRoot)
         val tempFilesAndFolders = tempRoot.listFiles()
-        val file = File(
-            ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/DSL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
-                ?: 0) - 1) + ".pdf"
-        )
+
+        var file: File? = null
+
+        val selectedBatch = SharedPref.getSavedData(this@Export, "selectedBatch")
+
+        if (selectedBatch != "") {
+
+            file = File(
+                ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/" + selectedBatch + "_DSL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
+                    ?: 0) - 1) + ".pdf"
+            )
+        } else {
+
+            file = File(
+                ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/DSL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
+                    ?: 0) - 1) + ".pdf"
+            )
+        }
+
         val outputStream: OutputStream = FileOutputStream(file)
         val writer = PdfWriter(file)
         val pdfDocument = PdfDocument(writer)
@@ -1927,7 +1958,7 @@ class Export : AppCompatActivity(), UserDeleteListener {
         document.add(table)
         document.add(Paragraph(""))
         document.add(Paragraph("Log Table"))
-        val columnWidth1 = floatArrayOf(210f, 120f, 170f, 150f, 350f, 350f, 250f,  270f, 270f)
+        val columnWidth1 = floatArrayOf(210f, 120f, 170f, 150f, 350f, 350f, 250f, 270f, 270f)
         val table1 = Table(columnWidth1)
         table1.addCell("Date")
         table1.addCell("Time")
