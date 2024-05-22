@@ -3245,7 +3245,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
     }
 
-    private fun loadSpinnerSelection(spinner: Spinner, key: String): String {
+    private fun loadSpinnerSelection(spinner: Spinner, key: String) {
         val savedValue = SharedPref.getSavedData(requireContext(), key)
         if (savedValue != null) {
             val adapter = spinner.adapter as ArrayAdapter<String>
