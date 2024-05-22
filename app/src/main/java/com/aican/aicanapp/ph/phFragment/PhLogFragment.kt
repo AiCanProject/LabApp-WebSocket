@@ -949,12 +949,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         }
 
 
-        loadSpinnerSelection(binding.productSpinner, "selectedProduct")
-        loadSpinnerSelection(binding.batchSpinner, "selectedBatch")
-        loadSpinnerSelection(binding.arSpinner, "selectedAR")
-        loadSpinnerSelection(binding.unknownSpinner1, "selectedUnknown1")
-        loadSpinnerSelection(binding.unknownSpinner2, "selectedUnknown2")
-
 
 
     }
@@ -3441,6 +3435,12 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
                 }
             }
+
+
+        loadSpinnerSelection(binding.unknownSpinner2, "selectedUnknown2")
+
+
+
     }
 
     private fun updateUnknown1Spinner(productList: List<UnknownEntity1>) {
@@ -3475,6 +3475,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
                 }
             }
+
+        loadSpinnerSelection(binding.unknownSpinner1, "selectedUnknown1")
     }
 
 
@@ -3513,6 +3515,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 }
             }
 
+        loadSpinnerSelection(binding.batchSpinner, "selectedBatch")
 
     }
 
@@ -3552,6 +3555,10 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 }
             }
 
+
+
+        loadSpinnerSelection(binding.arSpinner, "selectedAR")
+
     }
 
 
@@ -3589,6 +3596,9 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
                 }
             }
+
+        loadSpinnerSelection(binding.productSpinner, "selectedProduct")
+
     }
 
 
