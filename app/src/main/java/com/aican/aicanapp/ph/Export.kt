@@ -2206,6 +2206,11 @@ class Export : AppCompatActivity(), UserDeleteListener {
                     table1.addCell(time)
                     table1.addCell(pH ?: "--")
                     table1.addCell(temp ?: "--")
+                    if (comp == null) {
+                        comp = "--"
+                    }
+                    table1.addCell(if (comp != null && comp.length >= 8) stringSplitter(comp) else comp)
+
                     if (batchnum == null) {
                         batchnum = "--"
                     }
@@ -2218,10 +2223,6 @@ class Export : AppCompatActivity(), UserDeleteListener {
                         arnum = "--"
                     }
                     table1.addCell(if (arnum != null && arnum.length >= 8) stringSplitter(arnum) else arnum)
-                    if (comp == null) {
-                        comp = "--"
-                    }
-                    table1.addCell(if (comp != null && comp.length >= 8) stringSplitter(comp) else comp)
 
                     if (unknown_one == null) {
                         unknown_one = "--"

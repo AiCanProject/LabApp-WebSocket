@@ -2503,6 +2503,14 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 val comp = curCSV.getString(curCSV.getColumnIndex("compound"))
                 val unknown_one = curCSV.getString(curCSV.getColumnIndex("unknown_one"))
                 val unknown_two = curCSV.getString(curCSV.getColumnIndex("unknown_two"))
+
+                var newComp: String? = "--"
+                if (comp != null && comp.length >= 8) {
+                    newComp = stringSplitter(comp)
+                } else {
+                    newComp = comp
+                }
+
                 var newBatchNum: String? = "--"
                 if (batchnum != null && batchnum.length >= 8) {
                     newBatchNum = stringSplitter(batchnum)
@@ -2515,12 +2523,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 } else {
                     newArum = arnum
                 }
-                var newComp: String? = "--"
-                if (comp != null && comp.length >= 8) {
-                    newComp = stringSplitter(comp)
-                } else {
-                    newComp = comp
-                }
+
 
                 var newUnknownOne: String? = "--"
                 if (unknown_one != null && unknown_one.length >= 8) {
