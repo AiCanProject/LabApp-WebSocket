@@ -128,19 +128,19 @@
                     android:id="@+id/known01"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="5dp"
-                    android:minWidth="100dp"
-                    android:text="Product"
                     android:layout_weight="1"
-                    android:drawablePadding="5dp"
                     android:drawableEnd="@drawable/ic_edit_btn"
+                    android:drawablePadding="5dp"
+                    android:minWidth="100dp"
+                    android:padding="5dp"
+                    android:text="Product"
                     android:textSize="14dp" />
 
                 <Spinner
                     android:id="@+id/productSpinner"
                     android:layout_width="200dp"
-                    android:layout_weight="3"
                     android:layout_height="45dp"
+                    android:layout_weight="3"
                     android:background="@drawable/update_background"
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="8dp" />
@@ -186,19 +186,19 @@
                     android:id="@+id/known02"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:padding="5dp"
                     android:layout_weight="1"
-                    android:text="Batch"
-                    android:minWidth="100dp"
-                    android:drawablePadding="5dp"
                     android:drawableEnd="@drawable/ic_edit_btn"
-                    android:textSize="14dp"  />
+                    android:drawablePadding="5dp"
+                    android:minWidth="100dp"
+                    android:padding="5dp"
+                    android:text="Batch"
+                    android:textSize="14dp" />
 
                 <Spinner
                     android:id="@+id/batchSpinner"
                     android:layout_width="200dp"
-                    android:layout_weight="3"
                     android:layout_height="45dp"
+                    android:layout_weight="3"
                     android:background="@drawable/update_background"
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="8dp" />
@@ -243,13 +243,13 @@
                     android:id="@+id/known03"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:drawableEnd="@drawable/ic_edit_btn"
+                    android:drawablePadding="5dp"
+                    android:minWidth="100dp"
                     android:padding="5dp"
                     android:text="AR"
-                    android:layout_weight="1"
-                    android:minWidth="100dp"
-                    android:drawablePadding="5dp"
-                    android:drawableEnd="@drawable/ic_edit_btn"
-                    android:textSize="14dp"  />
+                    android:textSize="14dp" />
 
                 <Spinner
                     android:id="@+id/arSpinner"
@@ -301,13 +301,13 @@
                     android:id="@+id/unknownHeading01"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:drawableEnd="@drawable/ic_edit_btn"
+                    android:drawablePadding="5dp"
                     android:minWidth="100dp"
                     android:padding="5dp"
                     android:text="Unknown"
-                    android:layout_weight="1"
-                    android:drawablePadding="5dp"
-                    android:drawableEnd="@drawable/ic_edit_btn"
-                    android:textSize="14dp"  />
+                    android:textSize="14dp" />
 
                 <Spinner
                     android:id="@+id/unknownSpinner1"
@@ -317,7 +317,6 @@
                     android:background="@drawable/update_background"
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="8dp" />
-
 
 
             </LinearLayout>
@@ -332,13 +331,13 @@
                     android:id="@+id/unknownHeading02"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:drawableEnd="@drawable/ic_edit_btn"
+                    android:drawablePadding="5dp"
+                    android:minWidth="100dp"
                     android:padding="5dp"
                     android:text="Unknown"
-                    android:layout_weight="1"
-                    android:minWidth="100dp"
-                    android:drawablePadding="5dp"
-                    android:drawableEnd="@drawable/ic_edit_btn"
-                    android:textSize="14dp"  />
+                    android:textSize="14dp" />
 
                 <Spinner
                     android:id="@+id/unknownSpinner2"
@@ -348,8 +347,6 @@
                     android:background="@drawable/update_background"
                     android:paddingHorizontal="12dp"
                     android:paddingVertical="8dp" />
-
-
 
 
             </LinearLayout>
@@ -464,15 +461,15 @@
                 android:id="@+id/clear"
                 android:layout_width="100dp"
                 android:layout_height="35dp"
-                android:layout_marginEnd="10dp"
                 android:layout_gravity="end"
-                android:text="Clear Logs"
-                android:background="@drawable/red_circle"
-                android:textAllCaps="false"
                 android:layout_marginTop="5dp"
+                android:layout_marginEnd="10dp"
                 android:layout_marginBottom="10dp"
-                android:textSize="12sp"
+                android:background="@drawable/red_circle"
+                android:text="Clear Logs"
+                android:textAllCaps="false"
                 android:textColor="@color/white"
+                android:textSize="12sp"
                 android:visibility="visible" />
 
             <androidx.cardview.widget.CardView
@@ -487,15 +484,15 @@
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:padding="4dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:padding="4dp">
 
 
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_weight="1"
                         android:layout_marginStart="10dp"
+                        android:layout_weight="1"
                         android:orientation="vertical">
 
                         <androidx.appcompat.widget.SwitchCompat
@@ -682,10 +679,10 @@
                         style="@style/table_header"
                         android:layout_width="10dp"
                         android:layout_height="30dp"
-                        android:drawableEnd="@drawable/ic_edit_btn"
                         android:layout_column="2"
                         android:layout_gravity="center_horizontal"
                         android:layout_weight="2"
+                        android:drawableEnd="@drawable/ic_edit_btn"
                         android:gravity="center"
                         android:paddingEnd="5dp"
                         android:text="Product"
@@ -698,9 +695,9 @@
                         android:layout_width="5dp"
                         android:layout_height="30dp"
                         android:layout_column="2"
-                        android:drawableEnd="@drawable/ic_edit_btn"
                         android:layout_gravity="center_horizontal"
                         android:layout_weight="2"
+                        android:drawableEnd="@drawable/ic_edit_btn"
                         android:gravity="center"
                         android:paddingEnd="5dp"
                         android:text="Batch No"
@@ -715,8 +712,8 @@
                         android:layout_column="2"
                         android:layout_gravity="center_horizontal"
                         android:layout_weight="2"
-                        android:gravity="center"
                         android:drawableEnd="@drawable/ic_edit_btn"
+                        android:gravity="center"
                         android:paddingEnd="5dp"
                         android:text="AR No"
                         android:textAlignment="center"

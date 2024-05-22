@@ -954,17 +954,52 @@ class PhLogFragment : Fragment(), UserDeleteListener {
     override fun onResume() {
         super.onResume()
 
+        val known1 = SharedPref.getSavedData(requireContext(), "known1").trim()
+
+        if (known1 == "" || known1 == null) {
+            SharedPref.saveData(requireContext(), "known1", "Product")
+
+            binding.known01.text = "Product"
+            binding.known1.text = "Product"
+
+        } else {
+
+            binding.known01.text = known1
+            binding.known1.text = known1
+
+        }
+
+        val known2 = SharedPref.getSavedData(requireContext(), "known2").trim()
+
+        if (known2 == "" || known2 == null) {
+            SharedPref.saveData(requireContext(), "known2", "Batch No")
+
+            binding.known02.text = "Batch No"
+            binding.known2.text = "Batch No"
+
+        } else {
+
+            binding.known02.text = known2
+            binding.known2.text = known2
+
+        }
+
+        val known3 = SharedPref.getSavedData(requireContext(), "known2").trim()
+
+        if (known3 == "" || known3 == null) {
+            SharedPref.saveData(requireContext(), "known3", "AR No")
+
+            binding.known03.text = "AR No"
+            binding.known3.text = "AR No"
+
+        } else {
 
 
-        binding.known01.text = SharedPref.getSavedData(requireContext(), "known1")
-        binding.known1.text = SharedPref.getSavedData(requireContext(), "known1")
+            binding.known03.text = known3
+            binding.known3.text = known3
 
+        }
 
-        binding.known02.text = SharedPref.getSavedData(requireContext(), "known2")
-        binding.known2.text = SharedPref.getSavedData(requireContext(), "known2")
-
-        binding.known03.text = SharedPref.getSavedData(requireContext(), "known3")
-        binding.known3.text = SharedPref.getSavedData(requireContext(), "known3")
 
 
         binding.unknownHeading1.text = SharedPref.getSavedData(requireContext(), "unknownHeading1")
@@ -1415,11 +1450,17 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //        File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator
 //                + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders != null ? tempFilesAndFolders.length : 0) - 1)
 //                + ".pdf");
-        val filePath = ("" //                requireContext().getExternalFilesDir(null)
-                + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
-            ?: 0) - 1) + ".pdf")
 
-
+        var filePath: String = ""
+        if (batchnum.trim() != "") {
+            filePath =
+                ("" + "/LabApp/Currentlog/" + batchnum + "_GRAPH" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
+                    ?: 0) - 1) + ".pdf")
+        } else {
+            filePath =
+                ("" + "/LabApp/Currentlog/CL_GRAPH" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
+                    ?: 0) - 1) + ".pdf")
+        }
 //        File file = new File(requireContext().getExternalFilesDir(null).getAbsolutePath(), filePath);
         val file = File(ContextWrapper(requireContext()).externalMediaDirs[0], filePath)
         Log.e("FileNameError", file.path)
@@ -1537,7 +1578,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
             document.add(Paragraph(""))
             document.add(Paragraph("Log Table"))
-            val columnWidth1 = floatArrayOf(240f, 120f, 150f, 150f, 270f, 270f, 270f)
+            val columnWidth1 = floatArrayOf(240f, 120f, 150f, 150f, 270f, 270f, 270f, 270f, 270f)
             val table1 = Table(columnWidth1)
             table1.addCell("Date")
             table1.addCell("Time")
@@ -1564,6 +1605,27 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 val batchnum = curCSV.getString(curCSV.getColumnIndex("batchnum"))
                 val arnum = curCSV.getString(curCSV.getColumnIndex("arnum"))
                 val comp = curCSV.getString(curCSV.getColumnIndex("compound"))
+
+
+                val unknown_one = curCSV.getString(curCSV.getColumnIndex("unknown_one"))
+                val unknown_two = curCSV.getString(curCSV.getColumnIndex("unknown_two"))
+
+                var newUnknownOne: String? = "--"
+                if (unknown_one != null && unknown_one.length >= 8) {
+                    newUnknownOne = stringSplitter(unknown_one)
+                } else {
+                    newUnknownOne = unknown_one
+                }
+
+
+                var newUnknownTwo: String? = "--"
+                if (unknown_two != null && unknown_two.length >= 8) {
+                    newUnknownTwo = stringSplitter(unknown_two)
+                } else {
+                    newUnknownTwo = unknown_two
+                }
+
+
                 var newBatchNum: String? = "--"
                 if (batchnum != null && batchnum.length >= 8) {
                     newBatchNum = stringSplitter(batchnum)
@@ -1586,9 +1648,11 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 table1.addCell(time ?: "--")
                 table1.addCell(pH ?: "--")
                 table1.addCell(temp ?: "--")
+                table1.addCell(newComp ?: "--")
                 table1.addCell(newBatchNum ?: "--")
                 table1.addCell(newArum ?: "--")
-                table1.addCell(newComp ?: "--")
+                table1.addCell(newUnknownOne ?: "--")
+                table1.addCell(newUnknownTwo ?: "--")
             }
             document.add(table1)
 
@@ -2352,9 +2416,20 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 //        File file = new File(Environment.getExternalStorageDirectory().getAbsolutePath() + File.separator
 //                + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders != null ? tempFilesAndFolders.length : 0) - 1)
 //                + ".pdf");
-        val filePath = ("" //                requireContext().getExternalFilesDir(null)
-                + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
-            ?: 0) - 1) + ".pdf")
+
+        var filePath = ""
+
+        if (batchnum.trim() != "") {
+            filePath = ("" //                requireContext().getExternalFilesDir(null)
+                    + "/LabApp/Currentlog/" + batchnum + "_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
+                ?: 0) - 1) + ".pdf")
+
+        } else {
+            filePath = ("" //                requireContext().getExternalFilesDir(null)
+                    + "/LabApp/Currentlog/CL_" + currentDateandTime + "_" + ((tempFilesAndFolders?.size
+                ?: 0) - 1) + ".pdf")
+
+        }
 
 
 //        File file = new File(requireContext().getExternalFilesDir(null).getAbsolutePath(), filePath);
@@ -2623,8 +2698,23 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 File(requireContext().externalMediaDirs[0], "/LabApp/Currentlog")
             tempPath.mkdirs()
 
-            val filePath =
-                File(tempPath, "CL_$currentDateandTime-${tempPath.listFiles()?.size ?: 0}.csv")
+            var filePath: String = ""
+            if (batchnum.trim() != "") {
+
+                filePath =
+                    File(
+                        tempPath,
+                        "" + batchnum + "_$currentDateandTime-${tempPath.listFiles()?.size ?: 0}.csv"
+                    ).toString()
+            } else {
+
+                filePath =
+                    File(
+                        tempPath,
+                        "CL_$currentDateandTime-${tempPath.listFiles()?.size ?: 0}.csv"
+                    ).toString()
+            }
+
             val writer = CSVWriter(FileWriter(filePath))
 
             val db = databaseHelper.writableDatabase
