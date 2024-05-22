@@ -2476,7 +2476,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             document.add(table)
             document.add(Paragraph(""))
             document.add(Paragraph("Log Table"))
-            val columnWidth1 = floatArrayOf(240f, 120f, 150f, 150f, 270f, 270f, 270f)
+            val columnWidth1 = floatArrayOf(240f, 120f, 150f, 150f, 270f, 270f, 270f, 270f, 270f)
             val table1 = Table(columnWidth1)
             table1.addCell("Date")
             table1.addCell("Time")

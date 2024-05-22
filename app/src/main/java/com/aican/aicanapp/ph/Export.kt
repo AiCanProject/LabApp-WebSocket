@@ -1927,7 +1927,7 @@ class Export : AppCompatActivity(), UserDeleteListener {
         document.add(table)
         document.add(Paragraph(""))
         document.add(Paragraph("Log Table"))
-        val columnWidth1 = floatArrayOf(210f, 120f, 170f, 150f, 350f, 350f, 250f)
+        val columnWidth1 = floatArrayOf(210f, 120f, 170f, 150f, 350f, 350f, 250f,  270f, 270f)
         val table1 = Table(columnWidth1)
         table1.addCell("Date")
         table1.addCell("Time")
