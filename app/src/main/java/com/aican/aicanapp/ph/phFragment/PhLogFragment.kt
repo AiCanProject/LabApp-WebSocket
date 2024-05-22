@@ -2545,9 +2545,9 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 table1.addCell(time ?: "--")
                 table1.addCell(pH ?: "--")
                 table1.addCell(temp ?: "--")
+                table1.addCell(newComp ?: "--")
                 table1.addCell(newBatchNum ?: "--")
                 table1.addCell(newArum ?: "--")
-                table1.addCell(newComp ?: "--")
                 table1.addCell(newUnknownOne ?: "--")
                 table1.addCell(newUnknownTwo ?: "--")
             }
@@ -2775,9 +2775,9 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                         time,
                         pH,
                         temp,
+                        product,
                         batchNum,
                         arNum,
-                        product,
                         unknown_one,
                         unknown_two
                     )

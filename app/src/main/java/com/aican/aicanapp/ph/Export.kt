@@ -1722,9 +1722,9 @@ class Export : AppCompatActivity(), UserDeleteListener {
                             time,
                             pH,
                             temp,
+                            comp,
                             batchnum,
                             arnum,
-                            comp,
                             unknown_one,
                             unknown_two
                         )
