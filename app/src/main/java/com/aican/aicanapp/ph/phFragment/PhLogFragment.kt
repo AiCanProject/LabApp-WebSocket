@@ -3245,7 +3245,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
     }
 
-    private fun loadSpinnerSelection(spinner: Spinner, key: String) {
+    private fun loadSpinnerSelection(spinner: Spinner, key: String): String {
         val savedValue = SharedPref.getSavedData(requireContext(), key)
         if (savedValue != null) {
             val adapter = spinner.adapter as ArrayAdapter<String>
@@ -3255,16 +3255,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             }
         }
 
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                val selectedValue = parent?.getItemAtPosition(position).toString()
-                SharedPref.saveData(requireContext(), key, selectedValue)
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                // Do nothing
-            }
-        }
     }
 
     fun observeARList() {
@@ -3413,6 +3403,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.unknownSpinner2.adapter = spinnerAdapter
 
+        loadSpinnerSelection(binding.unknownSpinner2, "selectedUnknown2")
 
         binding.unknownSpinner2.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
@@ -3424,6 +3415,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 ) {
                     if (position >= 0 && position < productList.size) {
                         val selectedProduct = productList[position]
+                        SharedPref.saveData(requireContext(), "selectedUnknown2", selectedProduct.productName)
+
                         unknown_product_name2 = selectedProduct.productName
                         unknown_product_name_fetched2 = selectedProduct.productName
                     }
@@ -3437,7 +3430,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             }
 
 
-        loadSpinnerSelection(binding.unknownSpinner2, "selectedUnknown2")
 
 
 
@@ -3453,6 +3445,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.unknownSpinner1.adapter = spinnerAdapter
 
+        loadSpinnerSelection(binding.unknownSpinner1, "selectedUnknown1")
 
         binding.unknownSpinner1.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
@@ -3464,6 +3457,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 ) {
                     if (position >= 0 && position < productList.size) {
                         val selectedProduct = productList[position]
+                        SharedPref.saveData(requireContext(), "selectedUnknown1", selectedProduct.productName)
+
                         unknown_product_name1 = selectedProduct.productName
                         unknown_product_name_fetched1 = selectedProduct.productName
                     }
@@ -3476,7 +3471,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 }
             }
 
-        loadSpinnerSelection(binding.unknownSpinner1, "selectedUnknown1")
     }
 
 
@@ -3490,6 +3484,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.batchSpinner.adapter = spinnerAdapter
 
+        loadSpinnerSelection(binding.batchSpinner, "selectedBatch")
+
 
         binding.batchSpinner.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
@@ -3501,6 +3497,9 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 ) {
                     if (position >= 0 && position < productList.size) {
                         val selectedProduct = productList[position]
+
+                        SharedPref.saveData(requireContext(), "selectedBatch", selectedProduct.batchName)
+
                         binding.batchNumber.setText(selectedProduct.batchName)
                         batchnum = selectedProduct.batchName
                         batchnum_fetched = selectedProduct.batchName
@@ -3515,7 +3514,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 }
             }
 
-        loadSpinnerSelection(binding.batchSpinner, "selectedBatch")
 
     }
 
@@ -3530,6 +3528,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         binding.arSpinner.adapter = spinnerAdapter
 
+        loadSpinnerSelection(binding.arSpinner, "selectedAR")
 
         binding.arSpinner.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
@@ -3541,6 +3540,9 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 ) {
                     if (position >= 0 && position < productList.size) {
                         val selectedProduct = productList[position]
+
+                        SharedPref.saveData(requireContext(), "selectedAR", selectedProduct.arNum)
+
                         binding.arNumber.setText(selectedProduct.arNum)
                         arnum = selectedProduct.arNum
                         arnum_fetched = selectedProduct.arNum
@@ -3557,7 +3559,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
 
 
-        loadSpinnerSelection(binding.arSpinner, "selectedAR")
 
     }
 
@@ -3573,6 +3574,10 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         binding.productSpinner.adapter = spinnerAdapter
 
 
+
+        loadSpinnerSelection(binding.productSpinner, "selectedProduct")
+
+
         binding.productSpinner.onItemSelectedListener =
             object : AdapterView.OnItemSelectedListener {
                 override fun onItemSelected(
@@ -3583,6 +3588,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 ) {
                     if (position >= 0 && position < productList.size) {
                         val selectedProduct = productList[position]
+                        SharedPref.saveData(requireContext(), "selectedProduct", selectedProduct.productName)
+
                         binding.compoundName.setText(selectedProduct.productName)
                         compound_name = selectedProduct.productName
                         compound_name_fetched = selectedProduct.productName
@@ -3596,8 +3603,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
                 }
             }
-
-        loadSpinnerSelection(binding.productSpinner, "selectedProduct")
 
     }
 
