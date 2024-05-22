@@ -949,11 +949,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         }
 
 
-
-
     }
-
-
 
 
     private fun showEditDialog(key: String) {
@@ -2273,8 +2269,10 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             document.add(table)
             document.add(Paragraph(""))
             document.add(Paragraph("Log Table"))
-            val columnWidth1 = floatArrayOf(240f, 120f, 150f, 150f, 270f, 270f, 270f, 270f, 270f)
+            val columnWidth1 =
+                floatArrayOf(120f, 240f, 120f, 150f, 150f, 270f, 270f, 270f, 270f, 270f)
             val table1 = Table(columnWidth1)
+            table1.addCell("S.No.")
             table1.addCell("Date")
             table1.addCell("Time")
             table1.addCell("pH")
@@ -2290,6 +2288,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             } else {
                 db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
             }
+            var i = 1
             while (curCSV.moveToNext()) {
                 val date = curCSV.getString(curCSV.getColumnIndex("date"))
                 val time = curCSV.getString(curCSV.getColumnIndex("time"))
@@ -2338,6 +2337,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 }
 
 
+                table1.addCell(i.toString() ?: "--")
                 table1.addCell(date ?: "--")
                 table1.addCell(time ?: "--")
                 table1.addCell(pH ?: "--")
@@ -2347,6 +2347,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 table1.addCell(newArum ?: "--")
                 table1.addCell(newUnknownOne ?: "--")
                 table1.addCell(newUnknownTwo ?: "--")
+
+                i++
             }
             document.add(table1)
 
@@ -2557,6 +2559,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             writer.writeNext(arrayOf("", "", "", "", "", "", "", "", "", "", ""))
             writer.writeNext(
                 arrayOf(
+                    "S.No.",
                     "Date",
                     "Time",
                     "pH",
@@ -2570,6 +2573,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             )
 
             val cursor = db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
+            var i = 1
             while (cursor.moveToNext()) {
                 val date = cursor.getString(cursor.getColumnIndex("date"))
                 val time = cursor.getString(cursor.getColumnIndex("time"))
@@ -2583,6 +2587,7 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
                 writer.writeNext(
                     arrayOf(
+                        i.toString(),
                         date,
                         time,
                         pH,
@@ -2594,6 +2599,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                         unknown_two
                     )
                 )
+
+                i++
             }
 
             writer.close()
@@ -3415,7 +3422,11 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 ) {
                     if (position >= 0 && position < productList.size) {
                         val selectedProduct = productList[position]
-                        SharedPref.saveData(requireContext(), "selectedUnknown2", selectedProduct.productName)
+                        SharedPref.saveData(
+                            requireContext(),
+                            "selectedUnknown2",
+                            selectedProduct.productName
+                        )
 
                         unknown_product_name2 = selectedProduct.productName
                         unknown_product_name_fetched2 = selectedProduct.productName
@@ -3428,9 +3439,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
                 }
             }
-
-
-
 
 
     }
@@ -3457,7 +3465,11 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 ) {
                     if (position >= 0 && position < productList.size) {
                         val selectedProduct = productList[position]
-                        SharedPref.saveData(requireContext(), "selectedUnknown1", selectedProduct.productName)
+                        SharedPref.saveData(
+                            requireContext(),
+                            "selectedUnknown1",
+                            selectedProduct.productName
+                        )
 
                         unknown_product_name1 = selectedProduct.productName
                         unknown_product_name_fetched1 = selectedProduct.productName
@@ -3498,7 +3510,11 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                     if (position >= 0 && position < productList.size) {
                         val selectedProduct = productList[position]
 
-                        SharedPref.saveData(requireContext(), "selectedBatch", selectedProduct.batchName)
+                        SharedPref.saveData(
+                            requireContext(),
+                            "selectedBatch",
+                            selectedProduct.batchName
+                        )
 
 
 
@@ -3560,8 +3576,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             }
 
 
-
-
     }
 
 
@@ -3590,7 +3604,11 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 ) {
                     if (position >= 0 && position < productList.size) {
                         val selectedProduct = productList[position]
-                        SharedPref.saveData(requireContext(), "selectedProduct", selectedProduct.productName)
+                        SharedPref.saveData(
+                            requireContext(),
+                            "selectedProduct",
+                            selectedProduct.productName
+                        )
 
                         binding.compoundName.setText(selectedProduct.productName)
                         compound_name = selectedProduct.productName

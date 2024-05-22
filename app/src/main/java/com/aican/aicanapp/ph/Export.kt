@@ -1710,6 +1710,7 @@ class Export : AppCompatActivity(), UserDeleteListener {
                         .show()
 
                     val headers = arrayOf(
+                        "S.No.",
                         "Date",
                         "Time",
                         "pH",
@@ -1721,7 +1722,7 @@ class Export : AppCompatActivity(), UserDeleteListener {
                         "" + SharedPref.getSavedData(this@Export, "unknownHeading2"),
                     )
                     writer.writeNext(headers)
-
+                    var i = 1
                     for (logs in allLogsArrayList) {
                         val date = logs.date
                         val time = logs.time
@@ -1734,6 +1735,7 @@ class Export : AppCompatActivity(), UserDeleteListener {
                         val unknown_two = logs.unknown_two
 
                         val row = arrayOf(
+                            i.toString(),
                             date,
                             time,
                             pH,
@@ -1745,6 +1747,8 @@ class Export : AppCompatActivity(), UserDeleteListener {
                             unknown_two
                         )
                         writer.writeNext(row)
+
+                        i++
                     }
 
                     Toast.makeText(this@Export, "CSV file exported", Toast.LENGTH_SHORT).show()
@@ -1958,8 +1962,9 @@ class Export : AppCompatActivity(), UserDeleteListener {
         document.add(table)
         document.add(Paragraph(""))
         document.add(Paragraph("Log Table"))
-        val columnWidth1 = floatArrayOf(210f, 120f, 170f, 150f, 350f, 350f, 250f, 270f, 270f)
+        val columnWidth1 = floatArrayOf(120f, 210f, 120f, 170f, 150f, 350f, 350f, 250f, 270f, 270f)
         val table1 = Table(columnWidth1)
+        table1.addCell("S.No.")
         table1.addCell("Date")
         table1.addCell("Time")
         table1.addCell("pH")
@@ -2221,6 +2226,7 @@ class Export : AppCompatActivity(), UserDeleteListener {
 
             if (allLogsArrayList != null) {
                 Toast.makeText(this@Export, "" + allLogsArrayList.size, Toast.LENGTH_SHORT).show()
+                var i = 1
                 for (logs in allLogsArrayList) {
                     val date = logs.date
                     val time = logs.time
@@ -2233,6 +2239,7 @@ class Export : AppCompatActivity(), UserDeleteListener {
                     var unknown_one = logs.unknown_one
                     var unknown_two = logs.unknown_two
 
+                    table1.addCell(i.toString())
                     table1.addCell(date)
                     table1.addCell(time)
                     table1.addCell(pH ?: "--")
@@ -2273,6 +2280,7 @@ class Export : AppCompatActivity(), UserDeleteListener {
                         ) else unknown_two
                     )
 
+                    i++
 
                 }
 
