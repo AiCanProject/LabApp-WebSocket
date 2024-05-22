@@ -18,5 +18,7 @@ data class AllLogsEntity(
     val batchnum: String,
     val arnum: String,
     val compound: String,
-    val deviceID: String
+    val deviceID: String,
+    val unknown_one: String,
+    val unknown_two: String,
 )

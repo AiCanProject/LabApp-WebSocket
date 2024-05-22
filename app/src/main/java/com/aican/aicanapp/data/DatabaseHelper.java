@@ -27,12 +27,12 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase sqLiteDatabase) {
 
         sqLiteDatabase.execSQL("create Table Userdetails(name TEXT,role TEXT,id TEXT,passcode TEXT,expiryDate TEXT,dateCreated TEXT)");
-        sqLiteDatabase.execSQL("create Table LogUserdetails(date TEXT, time TEXT, ph TEXT, temperature TEXT, batchnum TEXT, arnum TEXT, compound TEXT,deviceID TEXT)");
-        sqLiteDatabase.execSQL("create Table LogUserdetailsOffline(date TEXT, time TEXT, ph TEXT, temperature TEXT, batchnum TEXT, arnum TEXT, compound TEXT,deviceID TEXT)");
-        sqLiteDatabase.execSQL("create Table TempLogUserdetails(date TEXT, time TEXT, set_temp TEXT, temp1 TEXT, temp2 TEXT, batchnum TEXT, product TEXT)");
-        sqLiteDatabase.execSQL("create Table PrintLogUserdetails(date TEXT, time TEXT, ph TEXT, temperature TEXT, batchnum TEXT, arnum TEXT, compound TEXT, deviceID TEXT)");
-        sqLiteDatabase.execSQL("create Table PrintLogUserdetailsOffline(date TEXT, time TEXT, ph TEXT, temperature TEXT, batchnum TEXT, arnum TEXT, compound TEXT, deviceID TEXT)");
-        sqLiteDatabase.execSQL("create Table PrintTempLogUserdetails(date TEXT, time TEXT, set_temp TEXT, temp1 TEXT, temp2 TEXT, batchnum TEXT, product TEXT)");
+        sqLiteDatabase.execSQL("create Table LogUserdetails(date TEXT, time TEXT, ph TEXT, temperature TEXT, batchnum TEXT, arnum TEXT, compound TEXT,deviceID TEXT, unknown_one TEXT, unknown_two TEXT)");//ff
+        sqLiteDatabase.execSQL("create Table LogUserdetailsOffline(date TEXT, time TEXT, ph TEXT, temperature TEXT, batchnum TEXT, arnum TEXT, compound TEXT,deviceID TEXT, unknown_one TEXT, unknown_two TEXT)");//ff
+        sqLiteDatabase.execSQL("create Table TempLogUserdetails(date TEXT, time TEXT, set_temp TEXT, temp1 TEXT, temp2 TEXT, batchnum TEXT, product TEXT, unknown_one TEXT, unknown_two TEXT)"); //ff
+        sqLiteDatabase.execSQL("create Table PrintLogUserdetails(date TEXT, time TEXT, ph TEXT, temperature TEXT, batchnum TEXT, arnum TEXT, compound TEXT, deviceID TEXT, unknown_one TEXT, unknown_two TEXT)");//ff
+        sqLiteDatabase.execSQL("create Table PrintLogUserdetailsOffline(date TEXT, time TEXT, ph TEXT, temperature TEXT, batchnum TEXT, arnum TEXT, compound TEXT, deviceID TEXT, unknown_one TEXT, unknown_two TEXT)"); //ff
+        sqLiteDatabase.execSQL("create Table PrintTempLogUserdetails(date TEXT, time TEXT, set_temp TEXT, temp1 TEXT, temp2 TEXT, batchnum TEXT, product TEXT , unknown_one TEXT, unknown_two TEXT)");// ff
         sqLiteDatabase.execSQL("create Table Calibdetails(pH TEXT, mV TEXT, date TEXT)");
         sqLiteDatabase.execSQL("create Table UserActiondetails(time TEXT,date TEXT, useraction TEXT, ph TEXT, temperature TEXT, mv TEXT, compound TEXT, deviceID TEXT)");
         sqLiteDatabase.execSQL("create Table TempUserActiondetails(time TEXT, useraction TEXT, ph TEXT, temperature TEXT, mv TEXT, compound TEXT)");
@@ -277,7 +277,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     public Boolean insertCalibrationAllDataOffline(String PH, String MV, String slope, String DT, String BFD, String pHAC,
-                                            String temperature, String date, String time) {
+                                                   String temperature, String date, String time) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put("PH", PH);
@@ -410,7 +410,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     // for pH log
-    public Boolean insert_log_data(String date, String time, String ph, String temperature, String batchnum, String arnum, String compound, String deviceID) {
+    public Boolean insert_log_data(String date, String time, String ph, String temperature, String batchnum, String arnum, String compound, String deviceID, String unknown_one, String unknown_two) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put("date", date);
@@ -421,6 +421,9 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         contentValues.put("arnum", arnum);
         contentValues.put("compound", compound);
         contentValues.put("deviceID", deviceID);
+        contentValues.put("unknown_one", unknown_one);
+        contentValues.put("unknown_two", unknown_two);
+        //, unknown_one TEXT, unknown_two TEXT
         long result = db.insert("LogUserdetails", null, contentValues);
         if (result == -1) {
             return false;
@@ -430,7 +433,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     // for pH log
-    public Boolean print_insert_log_data(String date, String time, String ph, String temperature, String batchnum, String arnum, String compound, String deviceID) {
+    public Boolean print_insert_log_data(String date, String time, String ph, String temperature, String batchnum, String arnum, String compound, String deviceID, String unknown_one, String unknown_two) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put("date", date);
@@ -441,6 +444,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         contentValues.put("arnum", arnum);
         contentValues.put("compound", compound);
         contentValues.put("deviceID", deviceID);
+        contentValues.put("unknown_one", unknown_one);
+        contentValues.put("unknown_two", unknown_two);
         long result = db.insert("PrintLogUserdetails", null, contentValues);
         if (result == -1) {
             return false;
@@ -449,7 +454,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         }
     }
 
-    public Boolean insert_log_data_Offline(String date, String time, String ph, String temperature, String batchnum, String arnum, String compound, String deviceID) {
+    public Boolean insert_log_data_Offline(String date, String time, String ph, String temperature, String batchnum, String arnum, String compound, String deviceID, String unknown_one, String unknown_two) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put("date", date);
@@ -460,6 +465,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         contentValues.put("arnum", arnum);
         contentValues.put("compound", compound);
         contentValues.put("deviceID", deviceID);
+        contentValues.put("unknown_one", unknown_one);
+        contentValues.put("unknown_two", unknown_two);
         long result = db.insert("LogUserdetailsOffline", null, contentValues);
         if (result == -1) {
             return false;
@@ -469,7 +476,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     // for temp log
-    public Boolean insert_temp_log_data(String date, String time, String set_temp, String temp1, String temp2, String batchnum, String product) {
+    public Boolean insert_temp_log_data(String date, String time, String set_temp, String temp1, String temp2, String batchnum, String product,
+                                        String unknown_one, String unknown_two) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put("date", date);
@@ -479,6 +487,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         contentValues.put("temp2", temp2);
         contentValues.put("batchnum", batchnum);
         contentValues.put("product", product);
+        contentValues.put("unknown_one", unknown_one);
+        contentValues.put("unknown_two", unknown_two);
         long result = db.insert("TempLogUserdetails", null, contentValues);
         if (result == -1) {
             return false;
@@ -488,7 +498,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
 
-    public Boolean print_insert_log_data_Offline(String date, String time, String ph, String temperature, String batchnum, String arnum, String compound, String deviceID) {
+    public Boolean print_insert_log_data_Offline(String date, String time, String ph, String temperature, String batchnum, String arnum, String compound, String deviceID, String unknown_one, String unknown_two) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put("date", date);
@@ -499,6 +509,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         contentValues.put("arnum", arnum);
         contentValues.put("compound", compound);
         contentValues.put("deviceID", deviceID);
+        contentValues.put("unknown_one", unknown_one);
+        contentValues.put("unknown_two", unknown_two);
         long result = db.insert("PrintLogUserdetailsOffline", null, contentValues);
         if (result == -1) {
             return false;
@@ -508,7 +520,7 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     }
 
     // for temp log - temp
-    public Boolean print_insert_log_data_temp(String date, String time, String set_temp, String temp1, String temp2, String batchnum, String product) {
+    public Boolean print_insert_log_data_temp(String date, String time, String set_temp, String temp1, String temp2, String batchnum, String product, String unknown_one, String unknown_two) {
         SQLiteDatabase db = this.getWritableDatabase();
         ContentValues contentValues = new ContentValues();
         contentValues.put("date", date);
@@ -518,6 +530,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         contentValues.put("temp2", temp2);
         contentValues.put("batchnum", batchnum);
         contentValues.put("product", product);
+        contentValues.put("unknown_one", unknown_one);
+        contentValues.put("unknown_two", unknown_two);
         long result = db.insert("PrintTempLogUserdetails", null, contentValues);
         if (result == -1) {
             return false;
@@ -692,8 +706,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
         String presentDate = dateFormat.format(date);
         return presentDate;
     }
-    public void deletePhBufferMVTable()
-    {
+
+    public void deletePhBufferMVTable() {
         SQLiteDatabase db = this.getWritableDatabase();
         db.execSQL("DELETE FROM PHBuffer");
     }

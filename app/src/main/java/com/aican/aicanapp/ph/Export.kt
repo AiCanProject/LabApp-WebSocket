@@ -1698,9 +1698,11 @@ class Export : AppCompatActivity(), UserDeleteListener {
                         "Time",
                         "pH",
                         "Temperature",
-                        "Batch No",
-                        "AR No",
-                        "Product"
+                        "" + SharedPref.getSavedData(this@Export, "known1"),
+                        "" + SharedPref.getSavedData(this@Export, "known2"),
+                        "" + SharedPref.getSavedData(this@Export, "known3"),
+                        "" + SharedPref.getSavedData(this@Export, "unknownHeading1"),
+                        "" + SharedPref.getSavedData(this@Export, "unknownHeading2"),
                     )
                     writer.writeNext(headers)
 
@@ -1712,8 +1714,20 @@ class Export : AppCompatActivity(), UserDeleteListener {
                         val batchnum = logs.batchnum ?: "--"
                         val arnum = logs.arnum ?: "--"
                         val comp = logs.compound ?: "--"
+                        val unknown_one = logs.unknown_one
+                        val unknown_two = logs.unknown_two
 
-                        val row = arrayOf(date, time, pH, temp, batchnum, arnum, comp)
+                        val row = arrayOf(
+                            date,
+                            time,
+                            pH,
+                            temp,
+                            batchnum,
+                            arnum,
+                            comp,
+                            unknown_one,
+                            unknown_two
+                        )
                         writer.writeNext(row)
                     }
 
@@ -1919,9 +1933,11 @@ class Export : AppCompatActivity(), UserDeleteListener {
         table1.addCell("Time")
         table1.addCell("pH")
         table1.addCell("Temp")
-        table1.addCell("Batch No")
-        table1.addCell("AR No")
-        table1.addCell("Product")
+        table1.addCell("" + SharedPref.getSavedData(this@Export, "known1"))
+        table1.addCell("" + SharedPref.getSavedData(this@Export, "known2"))
+        table1.addCell("" + SharedPref.getSavedData(this@Export, "known3"))
+        table1.addCell("" + SharedPref.getSavedData(this@Export, "unknownHeading1"))
+        table1.addCell("" + SharedPref.getSavedData(this@Export, "unknownHeading2"))
 
         GlobalScope.launch(Dispatchers.Main) {
             var allLogsArrayList: List<AllLogsEntity>? = null
@@ -2183,6 +2199,9 @@ class Export : AppCompatActivity(), UserDeleteListener {
                     var batchnum = logs.batchnum
                     var arnum = logs.arnum
                     var comp = logs.compound
+                    var unknown_one = logs.unknown_one
+                    var unknown_two = logs.unknown_two
+
                     table1.addCell(date)
                     table1.addCell(time)
                     table1.addCell(pH ?: "--")
@@ -2203,6 +2222,24 @@ class Export : AppCompatActivity(), UserDeleteListener {
                         comp = "--"
                     }
                     table1.addCell(if (comp != null && comp.length >= 8) stringSplitter(comp) else comp)
+
+                    if (unknown_one == null) {
+                        unknown_one = "--"
+                    }
+                    table1.addCell(
+                        if (unknown_one != null && comp.length >= 8) stringSplitter(
+                            unknown_one
+                        ) else unknown_one
+                    )
+
+                    if (unknown_two == null) {
+                        unknown_two = "--"
+                    }
+                    table1.addCell(
+                        if (unknown_two != null && comp.length >= 8) stringSplitter(
+                            unknown_two
+                        ) else unknown_two
+                    )
 
 
                 }

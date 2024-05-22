@@ -396,7 +396,16 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                     compound_name
                 )
                 databaseHelper.print_insert_log_data(
-                    date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
+                    date,
+                    time,
+                    ph,
+                    temp,
+                    batchnum,
+                    arnum,
+                    compound_name,
+                    PhActivity.DEVICE_ID,
+                    unknown_product_name1,
+                    unknown_product_name2
                 )
 //                databaseHelper.insert_log_data(
 //                    date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
@@ -1534,9 +1543,11 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             table1.addCell("Time")
             table1.addCell("pH")
             table1.addCell("Temp")
-            table1.addCell("Batch No")
-            table1.addCell("AR No")
-            table1.addCell("Product")
+            table1.addCell("" + SharedPref.getSavedData(requireContext(), "known1"))
+            table1.addCell("" + SharedPref.getSavedData(requireContext(), "known2"))
+            table1.addCell("" + SharedPref.getSavedData(requireContext(), "known3"))
+            table1.addCell("" + SharedPref.getSavedData(requireContext(), "unknownHeading1"))
+            table1.addCell("" + SharedPref.getSavedData(requireContext(), "unknownHeading2"))
 
 
             val curCSV: Cursor
@@ -1902,7 +1913,9 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                                         batchnum,
                                         arnum,
                                         compound_name,
-                                        PhActivity.DEVICE_ID
+                                        PhActivity.DEVICE_ID,
+                                        unknown_product_name1,
+                                        unknown_product_name2
                                     )
 //                                        databaseHelper.insert_log_data(
 //                                            date,
@@ -2469,9 +2482,11 @@ class PhLogFragment : Fragment(), UserDeleteListener {
             table1.addCell("Time")
             table1.addCell("pH")
             table1.addCell("Temp")
-            table1.addCell("Batch No")
-            table1.addCell("AR No")
-            table1.addCell("Product")
+            table1.addCell("" + SharedPref.getSavedData(requireContext(), "known1"))
+            table1.addCell("" + SharedPref.getSavedData(requireContext(), "known2"))
+            table1.addCell("" + SharedPref.getSavedData(requireContext(), "known3"))
+            table1.addCell("" + SharedPref.getSavedData(requireContext(), "unknownHeading1"))
+            table1.addCell("" + SharedPref.getSavedData(requireContext(), "unknownHeading2"))
             val curCSV: Cursor
             curCSV = if (Constants.OFFLINE_MODE) {
                 db.rawQuery("SELECT * FROM PrintLogUserdetails", null)
@@ -2486,6 +2501,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 val batchnum = curCSV.getString(curCSV.getColumnIndex("batchnum"))
                 val arnum = curCSV.getString(curCSV.getColumnIndex("arnum"))
                 val comp = curCSV.getString(curCSV.getColumnIndex("compound"))
+                val unknown_one = curCSV.getString(curCSV.getColumnIndex("unknown_one"))
+                val unknown_two = curCSV.getString(curCSV.getColumnIndex("unknown_two"))
                 var newBatchNum: String? = "--"
                 if (batchnum != null && batchnum.length >= 8) {
                     newBatchNum = stringSplitter(batchnum)
@@ -2504,6 +2521,23 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 } else {
                     newComp = comp
                 }
+
+                var newUnknownOne: String? = "--"
+                if (unknown_one != null && unknown_one.length >= 8) {
+                    newUnknownOne = stringSplitter(unknown_one)
+                } else {
+                    newUnknownOne = unknown_one
+                }
+
+
+                var newUnknownTwo: String? = "--"
+                if (unknown_two != null && unknown_two.length >= 8) {
+                    newUnknownTwo = stringSplitter(unknown_two)
+                } else {
+                    newUnknownTwo = unknown_two
+                }
+
+
                 table1.addCell(date ?: "--")
                 table1.addCell(time ?: "--")
                 table1.addCell(pH ?: "--")
@@ -2511,6 +2545,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 table1.addCell(newBatchNum ?: "--")
                 table1.addCell(newArum ?: "--")
                 table1.addCell(newComp ?: "--")
+                table1.addCell(newUnknownOne ?: "--")
+                table1.addCell(newUnknownTwo ?: "--")
             }
             document.add(table1)
 
@@ -2710,9 +2746,11 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                     "Time",
                     "pH",
                     "Temperature",
-                    "Batch No",
-                    "AR No",
-                    "Product"
+                    "" + SharedPref.getSavedData(requireContext(), "known1"),
+                    "" + SharedPref.getSavedData(requireContext(), "known2"),
+                    "" + SharedPref.getSavedData(requireContext(), "known3"),
+                    "" + SharedPref.getSavedData(requireContext(), "unknownHeading1"),
+                    "" + SharedPref.getSavedData(requireContext(), "unknownHeading2")
                 )
             )
 
@@ -2725,8 +2763,22 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                 val batchNum = cursor.getString(cursor.getColumnIndex("batchnum"))
                 val arNum = cursor.getString(cursor.getColumnIndex("arnum"))
                 val product = cursor.getString(cursor.getColumnIndex("compound"))
+                val unknown_one = cursor.getString(cursor.getColumnIndex("unknown_one"))
+                val unknown_two = cursor.getString(cursor.getColumnIndex("unknown_two"))
 
-                writer.writeNext(arrayOf(date, time, pH, temp, batchNum, arNum, product))
+                writer.writeNext(
+                    arrayOf(
+                        date,
+                        time,
+                        pH,
+                        temp,
+                        batchNum,
+                        arNum,
+                        product,
+                        unknown_one,
+                        unknown_two
+                    )
+                )
             }
 
             writer.close()
@@ -2897,7 +2949,16 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         ph = binding.tvPhCurr.text.toString()
         if (Constants.OFFLINE_MODE) {
             databaseHelper.print_insert_log_data(
-                date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
+                date,
+                time,
+                ph,
+                temp,
+                batchnum,
+                arnum,
+                compound_name,
+                PhActivity.DEVICE_ID,
+                unknown_product_name1,
+                unknown_product_name2
             )
 //            databaseHelper.insert_log_data(
 //                date, time, ph, temp, batchnum, arnum, compound_name, PhActivity.DEVICE_ID
@@ -3000,11 +3061,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
     }
 
 
-    /**
-     * checking of permissions.
-     *
-     * @return
-     */
     private fun checkPermission(): Boolean {
         val permission1 =
             ContextCompat.checkSelfPermission(requireContext(), WRITE_EXTERNAL_STORAGE)
@@ -3012,9 +3068,6 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         return permission1 == PackageManager.PERMISSION_GRANTED && permission2 == PackageManager.PERMISSION_GRANTED
     }
 
-    /**
-     * requesting permissions if not provided.
-     */
     private fun requestPermission() {
         ActivityCompat.requestPermissions(
             (requireContext() as Activity), arrayOf(
@@ -3087,7 +3140,9 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                     batchnum,
                     arnum,
                     compound,
-                    PhActivity.DEVICE_ID.toString()
+                    PhActivity.DEVICE_ID.toString(),
+                    unknown_product_name1,
+                    unknown_product_name2,
                 )
             )
         }
