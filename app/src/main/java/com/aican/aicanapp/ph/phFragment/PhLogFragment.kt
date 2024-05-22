@@ -26,6 +26,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ImageButton
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.widget.SwitchCompat
@@ -948,290 +949,17 @@ class PhLogFragment : Fragment(), UserDeleteListener {
         }
 
 
+        loadSpinnerSelection(binding.productSpinner, "selectedProduct")
+        loadSpinnerSelection(binding.batchSpinner, "selectedBatch")
+        loadSpinnerSelection(binding.arSpinner, "selectedAR")
+        loadSpinnerSelection(binding.unknownSpinner1, "selectedUnknown1")
+        loadSpinnerSelection(binding.unknownSpinner2, "selectedUnknown2")
+
+
+
     }
 
 
-    override fun onResume() {
-        super.onResume()
-
-        val known1 = SharedPref.getSavedData(requireContext(), "known1").trim()
-
-        if (known1 == "" || known1 == null) {
-            SharedPref.saveData(requireContext(), "known1", "Product")
-
-            binding.known01.text = "Product"
-            binding.known1.text = "Product"
-
-        } else {
-
-            binding.known01.text = known1
-            binding.known1.text = known1
-
-        }
-
-        val known2 = SharedPref.getSavedData(requireContext(), "known2").trim()
-
-        if (known2 == "" || known2 == null) {
-            SharedPref.saveData(requireContext(), "known2", "Batch No")
-
-            binding.known02.text = "Batch No"
-            binding.known2.text = "Batch No"
-
-        } else {
-
-            binding.known02.text = known2
-            binding.known2.text = known2
-
-        }
-
-        val known3 = SharedPref.getSavedData(requireContext(), "known2").trim()
-
-        if (known3 == "" || known3 == null) {
-            SharedPref.saveData(requireContext(), "known3", "AR No")
-
-            binding.known03.text = "AR No"
-            binding.known3.text = "AR No"
-
-        } else {
-
-
-            binding.known03.text = known3
-            binding.known3.text = known3
-
-        }
-
-
-
-        binding.unknownHeading1.text = SharedPref.getSavedData(requireContext(), "unknownHeading1")
-
-        binding.unknownHeading01.text = SharedPref.getSavedData(requireContext(), "unknownHeading1")
-        binding.unknownHeading2.text = SharedPref.getSavedData(requireContext(), "unknownHeading2")
-        binding.unknownHeading02.text = SharedPref.getSavedData(requireContext(), "unknownHeading2")
-
-        binding.unknownHeading1.setOnClickListener {
-            showEditDialog("unknownHeading1")
-        }
-
-        binding.unknownHeading2.setOnClickListener {
-            showEditDialog("unknownHeading2")
-        }
-
-        binding.known1.setOnClickListener {
-            showEditDialog("known1")
-        }
-
-        binding.known2.setOnClickListener {
-            showEditDialog("known2")
-        }
-
-        binding.known3.setOnClickListener {
-            showEditDialog("known3")
-        }
-
-        binding.unknownHeading01.setOnClickListener {
-            showEditDialog("unknownHeading1")
-        }
-
-        binding.unknownHeading02.setOnClickListener {
-            showEditDialog("unknownHeading2")
-        }
-
-        binding.known01.setOnClickListener {
-            showEditDialog("known1")
-        }
-
-        binding.known02.setOnClickListener {
-            showEditDialog("known2")
-        }
-
-        binding.known03.setOnClickListener {
-            showEditDialog("known3")
-        }
-
-
-        binding.refreshList.setOnClickListener {
-
-            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-                val productList = productViewModel.fetchProducts()
-                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                    updateProductSpinner(productList)
-                }
-            }
-
-            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-                val productList = batchViewModel.fetchBatches()
-                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                    updateBatchSpinner(productList)
-                }
-            }
-
-            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-                val productList = arViewModel.fetchARs()
-                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                    updateARSpinner(productList)
-                }
-            }
-
-        }
-
-
-        unknownListDao1 = Room.databaseBuilder(
-            requireContext(),
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().unknown1Dao()
-
-        unknownListDao2 = Room.databaseBuilder(
-            requireContext(),
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().unknown2Dao()
-
-        productsListDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().productsDao()
-
-        batchListDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().batchDao()
-
-        arListDao = Room.databaseBuilder(
-            requireContext().applicationContext,
-            AppDatabase::class.java,
-            "aican-database"
-        ).build().arNumDao()
-
-        val viewModelFactory1 = UnknownListViewModelFactory1(unknownListDao1)
-        unknownListViewModel1 =
-            ViewModelProvider(this, viewModelFactory1)[UnknownListViewModel1::class.java]
-
-        val viewModelFactory2 = UnknownListViewModelFactory2(unknownListDao2)
-        unknownListViewModel2 =
-            ViewModelProvider(this, viewModelFactory2)[UnknownListViewModel2::class.java]
-
-        val viewModelFactory = ProductViewModelFactory(productsListDao)
-        productViewModel =
-            ViewModelProvider(this, viewModelFactory)[ProductViewModel::class.java]
-
-        val viewModelFactoryBatch = BatchViewModelFactory(batchListDao)
-        batchViewModel =
-            ViewModelProvider(this, viewModelFactoryBatch)[BatchViewModel::class.java]
-
-        val viewModelFactoryAR = ARNumViewModelFactory(arListDao)
-        arViewModel =
-            ViewModelProvider(this, viewModelFactoryAR)[ARNumViewModel::class.java]
-
-
-        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-            val productList = unknownListViewModel1.fetchProducts()
-            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                updateUnknown1Spinner(productList)
-            }
-        }
-
-
-        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-            val productList = unknownListViewModel2.fetchProducts()
-            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                updateUnknown2Spinner(productList)
-            }
-        }
-
-
-        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-            val productList = productViewModel.fetchProducts()
-            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                updateProductSpinner(productList)
-            }
-        }
-
-        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-            val productList = batchViewModel.fetchBatches()
-            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                updateBatchSpinner(productList)
-            }
-        }
-
-        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
-            val productList = arViewModel.fetchARs()
-            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
-                updateARSpinner(productList)
-            }
-        }
-
-
-//
-//        observeBatchList()
-//
-//        observeARList()
-//
-//        observeProductList()
-
-        Source.activeFragment = 3
-
-        tempToggleSharedPref =
-            SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
-
-        setPreviousData()
-
-
-
-        userDao = Room.databaseBuilder(
-            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
-        ).build().userDao()
-
-
-
-
-        allLogsDataDao = Room.databaseBuilder(
-            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
-        ).build().allLogsDao()
-
-        userActionDao = Room.databaseBuilder(
-            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
-        ).build().userActionDao()
-
-
-
-
-
-        webSocketConnection()
-
-
-//        if (Source.cfr_mode) {
-//            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
-//            userAuthDialog.showLoginDialog { isValidCredentials ->
-//                if (isValidCredentials) {
-//                    addUserAction(
-//                        "username: " + Source.userName + ", Role: " + Source.userRole + ", entered ph log fragment",
-//                        "",
-//                        "",
-//                        "",
-//                        ""
-//                    )
-//                } else {
-//                    requireActivity().runOnUiThread {
-//                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
-//                            .show()
-//                    }
-//                }
-//            }
-//        }
-
-        Source.activeFragment = 2
-        if (handler != null && runnable != null) {
-            handler!!.removeCallbacks(runnable)
-        }
-        if (handler1 != null && runnable1 != null) {
-            handler1!!.removeCallbacks(runnable1)
-        }
-
-
-    }
 
 
     private fun showEditDialog(key: String) {
@@ -3238,6 +2966,310 @@ class PhLogFragment : Fragment(), UserDeleteListener {
                     unknown_product_name2,
                 )
             )
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+
+        val known1 = SharedPref.getSavedData(requireContext(), "known1").trim()
+
+        if (known1 == "" || known1 == null) {
+            SharedPref.saveData(requireContext(), "known1", "Product")
+
+            binding.known01.text = "Product"
+            binding.known1.text = "Product"
+
+        } else {
+
+            binding.known01.text = known1
+            binding.known1.text = known1
+
+        }
+
+        val known2 = SharedPref.getSavedData(requireContext(), "known2").trim()
+
+        if (known2 == "" || known2 == null) {
+            SharedPref.saveData(requireContext(), "known2", "Batch No")
+
+            binding.known02.text = "Batch No"
+            binding.known2.text = "Batch No"
+
+        } else {
+
+            binding.known02.text = known2
+            binding.known2.text = known2
+
+        }
+
+        val known3 = SharedPref.getSavedData(requireContext(), "known2").trim()
+
+        if (known3 == "" || known3 == null) {
+            SharedPref.saveData(requireContext(), "known3", "AR No")
+
+            binding.known03.text = "AR No"
+            binding.known3.text = "AR No"
+
+        } else {
+
+
+            binding.known03.text = known3
+            binding.known3.text = known3
+
+        }
+
+
+
+        binding.unknownHeading1.text = SharedPref.getSavedData(requireContext(), "unknownHeading1")
+
+        binding.unknownHeading01.text = SharedPref.getSavedData(requireContext(), "unknownHeading1")
+        binding.unknownHeading2.text = SharedPref.getSavedData(requireContext(), "unknownHeading2")
+        binding.unknownHeading02.text = SharedPref.getSavedData(requireContext(), "unknownHeading2")
+
+        binding.unknownHeading1.setOnClickListener {
+            showEditDialog("unknownHeading1")
+        }
+
+        binding.unknownHeading2.setOnClickListener {
+            showEditDialog("unknownHeading2")
+        }
+
+        binding.known1.setOnClickListener {
+            showEditDialog("known1")
+        }
+
+        binding.known2.setOnClickListener {
+            showEditDialog("known2")
+        }
+
+        binding.known3.setOnClickListener {
+            showEditDialog("known3")
+        }
+
+        binding.unknownHeading01.setOnClickListener {
+            showEditDialog("unknownHeading1")
+        }
+
+        binding.unknownHeading02.setOnClickListener {
+            showEditDialog("unknownHeading2")
+        }
+
+        binding.known01.setOnClickListener {
+            showEditDialog("known1")
+        }
+
+        binding.known02.setOnClickListener {
+            showEditDialog("known2")
+        }
+
+        binding.known03.setOnClickListener {
+            showEditDialog("known3")
+        }
+
+
+        binding.refreshList.setOnClickListener {
+
+            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+                val productList = productViewModel.fetchProducts()
+                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                    updateProductSpinner(productList)
+                }
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+                val productList = batchViewModel.fetchBatches()
+                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                    updateBatchSpinner(productList)
+                }
+            }
+
+            lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+                val productList = arViewModel.fetchARs()
+                withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                    updateARSpinner(productList)
+                }
+            }
+
+        }
+
+
+        unknownListDao1 = Room.databaseBuilder(
+            requireContext(),
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().unknown1Dao()
+
+        unknownListDao2 = Room.databaseBuilder(
+            requireContext(),
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().unknown2Dao()
+
+        productsListDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().productsDao()
+
+        batchListDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().batchDao()
+
+        arListDao = Room.databaseBuilder(
+            requireContext().applicationContext,
+            AppDatabase::class.java,
+            "aican-database"
+        ).build().arNumDao()
+
+        val viewModelFactory1 = UnknownListViewModelFactory1(unknownListDao1)
+        unknownListViewModel1 =
+            ViewModelProvider(this, viewModelFactory1)[UnknownListViewModel1::class.java]
+
+        val viewModelFactory2 = UnknownListViewModelFactory2(unknownListDao2)
+        unknownListViewModel2 =
+            ViewModelProvider(this, viewModelFactory2)[UnknownListViewModel2::class.java]
+
+        val viewModelFactory = ProductViewModelFactory(productsListDao)
+        productViewModel =
+            ViewModelProvider(this, viewModelFactory)[ProductViewModel::class.java]
+
+        val viewModelFactoryBatch = BatchViewModelFactory(batchListDao)
+        batchViewModel =
+            ViewModelProvider(this, viewModelFactoryBatch)[BatchViewModel::class.java]
+
+        val viewModelFactoryAR = ARNumViewModelFactory(arListDao)
+        arViewModel =
+            ViewModelProvider(this, viewModelFactoryAR)[ARNumViewModel::class.java]
+
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = unknownListViewModel1.fetchProducts()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateUnknown1Spinner(productList)
+            }
+        }
+
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = unknownListViewModel2.fetchProducts()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateUnknown2Spinner(productList)
+            }
+        }
+
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = productViewModel.fetchProducts()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateProductSpinner(productList)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = batchViewModel.fetchBatches()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateBatchSpinner(productList)
+            }
+        }
+
+        lifecycleScope.launch(Dispatchers.IO) { // Use the IO dispatcher for database operations
+            val productList = arViewModel.fetchARs()
+            withContext(Dispatchers.Main) { // Switch back to the Main dispatcher to update the UI
+                updateARSpinner(productList)
+            }
+        }
+
+
+//
+//        observeBatchList()
+//
+//        observeARList()
+//
+//        observeProductList()
+
+        Source.activeFragment = 3
+
+        tempToggleSharedPref =
+            SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
+
+        setPreviousData()
+
+
+
+        userDao = Room.databaseBuilder(
+            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+        ).build().userDao()
+
+
+
+
+        allLogsDataDao = Room.databaseBuilder(
+            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+        ).build().allLogsDao()
+
+        userActionDao = Room.databaseBuilder(
+            requireContext().applicationContext, AppDatabase::class.java, "aican-database"
+        ).build().userActionDao()
+
+
+
+
+
+        webSocketConnection()
+
+
+//        if (Source.cfr_mode) {
+//            val userAuthDialog = UserAuthDialog(requireContext(), userDao)
+//            userAuthDialog.showLoginDialog { isValidCredentials ->
+//                if (isValidCredentials) {
+//                    addUserAction(
+//                        "username: " + Source.userName + ", Role: " + Source.userRole + ", entered ph log fragment",
+//                        "",
+//                        "",
+//                        "",
+//                        ""
+//                    )
+//                } else {
+//                    requireActivity().runOnUiThread {
+//                        Toast.makeText(requireContext(), "Invalid credentials", Toast.LENGTH_SHORT)
+//                            .show()
+//                    }
+//                }
+//            }
+//        }
+
+        Source.activeFragment = 2
+        if (handler != null && runnable != null) {
+            handler!!.removeCallbacks(runnable)
+        }
+        if (handler1 != null && runnable1 != null) {
+            handler1!!.removeCallbacks(runnable1)
+        }
+
+
+    }
+
+    private fun loadSpinnerSelection(spinner: Spinner, key: String) {
+        val savedValue = SharedPref.getSavedData(requireContext(), key)
+        if (savedValue != null) {
+            val adapter = spinner.adapter as ArrayAdapter<String>
+            val position = adapter.getPosition(savedValue)
+            if (position >= 0) {
+                spinner.setSelection(position)
+            }
+        }
+
+        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedValue = parent?.getItemAtPosition(position).toString()
+                SharedPref.saveData(requireContext(), key, selectedValue)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                // Do nothing
+            }
         }
     }
 
