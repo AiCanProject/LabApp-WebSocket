@@ -3500,6 +3500,8 @@ class PhLogFragment : Fragment(), UserDeleteListener {
 
                         SharedPref.saveData(requireContext(), "selectedBatch", selectedProduct.batchName)
 
+
+
                         binding.batchNumber.setText(selectedProduct.batchName)
                         batchnum = selectedProduct.batchName
                         batchnum_fetched = selectedProduct.batchName
