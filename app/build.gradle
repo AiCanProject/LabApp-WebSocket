@@ -83,8 +83,10 @@ dependencies {
     implementation 'org.java-websocket:Java-WebSocket:1.5.4'
     implementation("org.greenrobot:eventbus:3.3.1")
 
-    implementation 'com.kyanogen.signatureview:signature-view:1.2'
-    implementation 'com.github.barteksc:android-pdf-viewer:2.8.2'
+//    implementation 'com.kyanogen.signatureview:signature-view:1.2'
+//    implementation 'com.kyanogen.signatureview:SignatureView:1.2'
+//    implementation 'com.github.barteksc:android-pdf-viewer:2.8.2'
+    implementation 'com.github.barteksc:AndroidPdfViewer:2.0.2'
 
     implementation 'com.github.bumptech.glide:glide:4.12.0'
 
