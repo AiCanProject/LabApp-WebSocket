@@ -23,11 +23,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.aican.aicanapp.Authentication.AdminLoginActivity
 import com.aican.aicanapp.FirebaseAccounts.PrimaryAccount
 import com.aican.aicanapp.data.DatabaseHelper
+import com.aican.aicanapp.dep_libraries.signature_view.SignatureView
 import com.aican.aicanapp.ph.PhActivity
 import com.aican.aicanapp.utils.Source
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
-import com.kyanogen.signatureview.SignatureView
 import java.io.ByteArrayOutputStream
 import java.io.FileNotFoundException
 import java.io.FileOutputStream

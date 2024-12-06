@@ -20,10 +20,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
 import com.aican.aicanapp.SettingActivity
 import com.aican.aicanapp.databinding.ActivityAddNewUserBinding
+import com.aican.aicanapp.dep_libraries.signature_view.SignatureView
 import com.aican.aicanapp.roomDatabase.daoObjects.UserDao
 import com.aican.aicanapp.roomDatabase.database.AppDatabase
 import com.aican.aicanapp.roomDatabase.entities.UserEntity
-import com.kyanogen.signatureview.SignatureView
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
