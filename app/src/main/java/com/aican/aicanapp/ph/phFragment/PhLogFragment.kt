@@ -1271,10 +1271,18 @@ class PhLogFragment : Fragment() {
             }
             document.add(Paragraph(""))
 
+//            document.add(
+//                Paragraph(
+//                    """$reportDate  |  $reportTime
+//                                 $offset  |  $battery
+//                                 $slope  |  $tempe"""
+//                )
+//            )
+
             document.add(
                 Paragraph(
                     """$reportDate  |  $reportTime
-                                 $offset  |  $battery
+                                 $offset 
                                  $slope  |  $tempe"""
                 )
             )

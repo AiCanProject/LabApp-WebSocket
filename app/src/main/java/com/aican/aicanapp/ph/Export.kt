@@ -145,7 +145,7 @@ class Export : AppCompatActivity() {
         binding = ActivityExportBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-         recyclerView = findViewById<RecyclerView>(R.id.recyclerViewCSV)
+        recyclerView = findViewById<RecyclerView>(R.id.recyclerViewCSV)
         val userRecyclerView = findViewById<RecyclerView>(R.id.recyclerViewUserData)
 //        TextView noFilesText = findViewById(R.id.nofiles_textview);
         //        TextView noFilesText = findViewById(R.id.nofiles_textview);
@@ -497,7 +497,8 @@ class Export : AppCompatActivity() {
     }
 
     private fun updateRecyclerView() {
-        val pathPDF = ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/"
+        val pathPDF =
+            ContextWrapper(this@Export).externalMediaDirs[0].toString() + File.separator + "/LabApp/Sensordata/"
         val rootPDF = File(pathPDF)
         fileNotWrite(rootPDF)
         val filesAndFoldersPDF = rootPDF.listFiles()
@@ -572,7 +573,7 @@ class Export : AppCompatActivity() {
                 if (batteryVal != "") {
                     battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
-                }else{
+                } else {
                     battery = "Battery: 0 %"
 
                 }
@@ -649,10 +650,17 @@ class Export : AppCompatActivity() {
             )
         }
         document.add(Paragraph(""))
+//        document.add(
+//            Paragraph(
+//                """$reportDate  |  $reportTime
+//$offset  |  $battery
+//$slope  |  $temp"""
+//            )
+//        )
         document.add(
             Paragraph(
                 """$reportDate  |  $reportTime
-$offset  |  $battery
+$offset
 $slope  |  $temp"""
             )
         )
@@ -660,7 +668,7 @@ $slope  |  $temp"""
         document.add(Paragraph("Calibration Table"))
         val db = databaseHelper.writableDatabase
         var calibCSV: Cursor? = null
-            calibCSV = db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
+        calibCSV = db.rawQuery("SELECT * FROM CalibAllDataOffline", null)
 //            calibCSV = if (startDateString != null) {
 //                db.rawQuery(
 //                    "SELECT * FROM CalibAllDataOffline WHERE (DATE(date) BETWEEN '$startDateString' AND '$endDateString') AND (time BETWEEN '$startTimeString' AND '$endTimeString')",
@@ -682,7 +690,11 @@ $slope  |  $temp"""
         table.addCell("Temperature")
         var rowCounter = 0 // To keep track of the number of rows processed
         runOnUiThread {
-            Toast.makeText(this@Export, "" + calibCSV.count + ", " + calibCSV.columnCount, Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this@Export,
+                "" + calibCSV.count + ", " + calibCSV.columnCount,
+                Toast.LENGTH_SHORT
+            ).show()
         }
         while (calibCSV.moveToNext()) {
             val ph = calibCSV.getString(calibCSV.getColumnIndex("PH"))
@@ -968,7 +980,7 @@ $slope  |  $temp"""
                 if (batteryVal != "") {
                     battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
-                }else{
+                } else {
                     battery = "Battery: 0 %"
 
                 }
@@ -1038,7 +1050,8 @@ $slope  |  $temp"""
             Paragraph(
                 reportDate
                         + "  |  " + reportTime + "\n" +
-                        offset + "  |  " + battery + "\n" + slope + "  |  " + temp
+//                        offset + "  |  " + battery + "\n" + slope + "  |  " + temp
+                        offset + "\n" + slope + "  |  " + temp
             )
         )
         document.add(Paragraph(""))
@@ -1393,7 +1406,7 @@ $slope  |  $temp"""
                 if (batteryVal != "") {
                     battery = "Battery: $batteryVal %"
 //                    binding.batteryPercent.text = "$batteryVal %"
-                }else{
+                } else {
                     battery = "Battery: 0 %"
 
                 }
@@ -1447,10 +1460,18 @@ $slope  |  $temp"""
             )
         )
         document.add(Paragraph(""))
+//        document.add(
+//            Paragraph(
+//                """$reportDate  |  $reportTime
+//$offset  |  $battery
+//$slope  |  $tempe"""
+//            )
+//        )
+
         document.add(
             Paragraph(
                 """$reportDate  |  $reportTime
-$offset  |  $battery
+$offset 
 $slope  |  $tempe"""
             )
         )
@@ -1480,7 +1501,7 @@ $slope  |  $tempe"""
             val allUserActionsArrayList = withContext(Dispatchers.IO) {
                 userActionDao.getAllUsersActions()
             }
-            for (userA in allUserActionsArrayList){
+            for (userA in allUserActionsArrayList) {
                 val Time = userA.time
                 var Date = userA.date
                 val activity = userA.userAction

@@ -1628,7 +1628,7 @@ class PhCalibFragmentNew : Fragment() {
             if (batteryVal != null) {
                 if (batteryVal != "") {
                     battery = "Battery: $batteryVal %"
-                }else{
+                } else {
                     battery = "Battery: 0 %"
                 }
             }
@@ -1705,7 +1705,8 @@ class PhCalibFragmentNew : Fragment() {
         document.add(Paragraph(""))
         document.add(
             Paragraph(
-                reportDate + "  |  " + reportTime + "\n" + offset + "  |  " + battery + "\n" + slope + "  |  " + temp
+//                reportDate + "  |  " + reportTime + "\n" + offset + "  |  " + battery + "\n" + slope + "  |  " + temp
+                reportDate + "  |  " + reportTime + "\n" + offset + "\n" + slope + "  |  " + temp
             )
         )
         document.add(Paragraph(""))
