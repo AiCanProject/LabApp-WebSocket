@@ -1312,6 +1312,11 @@ class PhLogFragment : Fragment() {
 
             calibCSV?.close()
 
+            val averageTemp = if (tempCount > 0) tempSum / tempCount else null
+            val averageTempText = averageTemp?.let { "Average Temperature: %.2f".format(it) } ?: "Average Temperature: null"
+            document.add(Paragraph("$averageTempText"))
+
+
             document.add(Paragraph(""))
             document.add(Paragraph("Calibration Table"))
             val columnWidth = floatArrayOf(200f, 210f, 190f, 170f, 340f, 170f)
