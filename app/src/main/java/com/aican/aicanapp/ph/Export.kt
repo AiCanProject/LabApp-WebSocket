@@ -1051,9 +1051,45 @@ $slope  |  $temp"""
                 reportDate
                         + "  |  " + reportTime + "\n" +
 //                        offset + "  |  " + battery + "\n" + slope + "  |  " + temp
-                        offset + "\n" + slope + "  |  " + temp
+                        offset + "\n" + slope
             )
         )
+
+
+        // Calculate average temperature from database
+        val db = databaseHelper.writableDatabase
+        var calibCSV: Cursor? = null
+        if (Constants.OFFLINE_MODE || Constants.OFFLINE_DATA) {
+            calibCSV = when (Source.calibMode) {
+                0 -> db.rawQuery("SELECT * FROM CalibOfflineDataFive", null)
+                1 -> db.rawQuery("SELECT * FROM CalibOfflineDataThree", null)
+                else -> null
+            }
+        } else {
+            calibCSV = db.rawQuery("SELECT * FROM CalibData", null)
+        }
+
+        var tempSum = 0.0
+        var tempCount = 0
+        while (calibCSV?.moveToNext() == true) {
+            val rawTempValue = calibCSV.getString(calibCSV.getColumnIndex("temperature"))
+            val tempValue =
+                rawTempValue?.replace("°C", "", ignoreCase = true)?.trim()?.toDoubleOrNull()
+            if (tempValue != null) {
+                tempSum += tempValue
+                tempCount++
+            }
+        }
+
+        calibCSV?.close()
+
+        val averageTemp = if (tempCount > 0) tempSum / tempCount else null
+        val averageTempText = averageTemp?.let { "Average Temperature: %.2f".format(it) }
+            ?: "Average Temperature: null"
+
+
+
+
         document.add(Paragraph(""))
         document.add(Paragraph("Calibration Table"))
         val columnWidth = floatArrayOf(200f, 210f, 190f, 170f, 340f, 170f)
@@ -1064,8 +1100,7 @@ $slope  |  $temp"""
         table.addCell("mV")
         table.addCell("Date & Time")
         table.addCell("Temperature")
-        val db = databaseHelper.writableDatabase
-        var calibCSV: Cursor? = null
+
         if (Constants.OFFLINE_MODE) {
 //            calibCSV = db.rawQuery("SELECT * FROM CalibOfflineData", null);
             if (Source.calibMode === 0) {
