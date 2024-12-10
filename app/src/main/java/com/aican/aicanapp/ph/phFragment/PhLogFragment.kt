@@ -1283,7 +1283,7 @@ class PhLogFragment : Fragment() {
                 Paragraph(
                     """$reportDate  |  $reportTime
                                  $offset 
-                                 $slope  |  $tempe"""
+                                 $slope  """
                 )
             )
 
