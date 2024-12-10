@@ -1088,6 +1088,7 @@ $slope  |  $temp"""
             ?: "Average Temperature: null"
 
 
+        document.add(Paragraph("$averageTempText"))
 
 
         document.add(Paragraph(""))
