@@ -1,18 +1,22 @@
 package com.aican.aicanapp.ph.phFragment
 
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Context
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.CompoundButton
+import android.widget.EditText
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.room.Room
+import com.aican.aicanapp.R
 import com.aican.aicanapp.data.DatabaseHelper
 import com.aican.aicanapp.databinding.FragmentPhBinding
 import com.aican.aicanapp.dialogs.UserAuthDialog
@@ -40,7 +44,7 @@ class PhFragment : Fragment() {
 
 
     lateinit var binding: FragmentPhBinding
-    lateinit var jsonData: JSONObject
+    private lateinit var jsonData: JSONObject
     private val sharedViewModel: SharedViewModel by activityViewModels()
     lateinit var databaseHelper: DatabaseHelper
 
@@ -57,7 +61,55 @@ class PhFragment : Fragment() {
         jsonData = JSONObject()
         databaseHelper = DatabaseHelper(requireContext())
 
+        if (SharedPref.getSavedData(
+                requireActivity(),
+                PhActivity.DEVICE_ID
+            ) == null || SharedPref.getSavedData(requireActivity(), PhActivity.DEVICE_ID) == ""
+        ) {
+            SharedPref.saveData(requireActivity(), PhActivity.DEVICE_ID, PhActivity.DEVICE_ID)
+        } else {
+            binding.deviceNameTxt.text =
+                SharedPref.getSavedData(requireActivity(), PhActivity.DEVICE_ID)
+        }
 
+        binding.deviceNameTxt.setOnClickListener {
+            showDeviceNameDialog()
+        }
+
+
+    }
+
+    private fun showDeviceNameDialog() {
+        // Create a dialog
+        val dialog = AlertDialog.Builder(requireContext()).create()
+        val dialogView = layoutInflater.inflate(R.layout.dialog_device_name, null)
+
+        // Find views in the custom layout
+        val editText = dialogView.findViewById<EditText>(R.id.editTextDeviceName)
+        val saveButton = dialogView.findViewById<Button>(R.id.buttonSaveDeviceName)
+
+        // Pre-fill the EditText with the current device name
+        editText.setText(SharedPref.getSavedData(requireActivity(), PhActivity.DEVICE_ID))
+
+        // Set the save button click listener
+        saveButton.setOnClickListener {
+            val newDeviceName = editText.text.toString().trim()
+            if (newDeviceName.isNotEmpty()) {
+                // Save the device name in SharedPreferences
+                SharedPref.saveData(requireActivity(), PhActivity.DEVICE_ID, newDeviceName)
+                // Update the TextView with the new device name
+                binding.deviceNameTxt.text = newDeviceName
+                // Dismiss the dialog
+                dialog.dismiss()
+            } else {
+                Toast.makeText(requireContext(), "Device name cannot be empty", Toast.LENGTH_SHORT)
+                    .show()
+            }
+        }
+
+        // Set the custom layout to the dialog and show it
+        dialog.setView(dialogView)
+        dialog.show()
     }
 
     fun addUserAction(action: String, ph: String, temp: String, mv: String, compound: String) {
@@ -79,7 +131,7 @@ class PhFragment : Fragment() {
         super.onResume()
 
 
-         tempToggleSharedPref =
+        tempToggleSharedPref =
             SharedPref.getSavedData(requireContext(), "setTempToggle" + PhActivity.DEVICE_ID)
 
         getPreviousData()
@@ -117,10 +169,7 @@ class PhFragment : Fragment() {
         }
 
 
-
-
     }
-
 
 
     private fun turnAtcSwitch() {
@@ -346,7 +395,7 @@ class PhFragment : Fragment() {
                                         binding.switchAtc.setEnabled(true)
                                     }
                                 }
-                            }else{
+                            } else {
                                 binding.tvTempCurr.setText("$temp°C")
                                 SharedPref.saveData(
                                     requireContext(),
