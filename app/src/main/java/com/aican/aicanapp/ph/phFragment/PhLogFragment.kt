@@ -1116,7 +1116,8 @@ class PhLogFragment : Fragment() {
         }
 
         val user_name = "Username: " + Source.logUserName
-        val device_id = "DeviceID: " + PhActivity.DEVICE_ID
+//        val device_id = "DeviceID: " + PhActivity.DEVICE_ID
+        val device_id = SharedPref.getSavedData(requireActivity(), PhActivity.DEVICE_ID)
         reportDate = "Date: " + SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         reportTime = "Time: " + SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())
         val shp = requireContext().getSharedPreferences("Extras", MODE_PRIVATE)

@@ -67,6 +67,9 @@ class PhFragment : Fragment() {
             ) == null || SharedPref.getSavedData(requireActivity(), PhActivity.DEVICE_ID) == ""
         ) {
             SharedPref.saveData(requireActivity(), PhActivity.DEVICE_ID, PhActivity.DEVICE_ID)
+
+            binding.deviceNameTxt.text = PhActivity.DEVICE_ID.toString()
+
         } else {
             binding.deviceNameTxt.text =
                 SharedPref.getSavedData(requireActivity(), PhActivity.DEVICE_ID)
@@ -349,7 +352,9 @@ class PhFragment : Fragment() {
                             )
 
                         } else {
-                            binding.switchAtc.setChecked(false)
+                            And she went home with anger in her mind.binding.switchAtc.setChecked(
+                                false
+                            )
                             SharedPref.saveData(
                                 requireContext(),
                                 "toggleValue" + PhActivity.DEVICE_ID,
