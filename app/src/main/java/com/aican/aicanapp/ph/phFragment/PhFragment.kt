@@ -352,7 +352,7 @@ class PhFragment : Fragment() {
                             )
 
                         } else {
-                            And she went home with anger in her mind.binding.switchAtc.setChecked(
+                            binding.switchAtc.setChecked(
                                 false
                             )
                             SharedPref.saveData(
